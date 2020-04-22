@@ -3,8 +3,10 @@ package meshlib.conversion;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
+import com.jme3.util.BufferUtils;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 
 public class TriangleExtractor {
     public static interface TriangleIndexVisitor {
@@ -44,11 +46,25 @@ public class TriangleExtractor {
         meshMode = mesh.getMode();
 
         VertexBuffer vbPos = mesh.getBuffer(VertexBuffer.Type.Position);
-        positionBuffer = ((FloatBuffer) vbPos.getData()).array();
+        positionBuffer = BufferUtils.getFloatArray((FloatBuffer) vbPos.getData());
 
         VertexBuffer vbIdx = mesh.getBuffer(VertexBuffer.Type.Index);
-        // TODO: Check format, vbIdx.getFormat()
-        indexBuffer = ((IntBuffer) vbIdx.getData()).array();
+        switch(vbIdx.getFormat()) {
+            case Int:
+                indexBuffer = BufferUtils.getIntArray((IntBuffer) vbIdx.getData());
+                break;
+
+            case Short:
+            case UnsignedShort: {
+                ShortBuffer buf = (ShortBuffer) vbIdx.getData();
+                buf.clear();
+                indexBuffer = new int[buf.limit()];
+                for(int i=0; i<indexBuffer.length; ++i)
+                    indexBuffer[i] = buf.get();
+                break;
+            }
+        }
+        
     }
 
 

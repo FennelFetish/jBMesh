@@ -18,6 +18,7 @@ public class Face {
 
         @Override
         public void release(Face element) {
+            element.index = -1;
             element.loop = null;
         }
 

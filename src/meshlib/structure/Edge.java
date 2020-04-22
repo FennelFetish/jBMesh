@@ -20,7 +20,7 @@ public class Edge {
     // Never NULL
     private Edge v1NextEdge = this;
 
-
+    // Can be null
     public Loop loop;
 
     private Edge() {}
@@ -50,9 +50,12 @@ public class Edge {
 
         // Insert loop at end of linked list
         Loop lastLoop = this.loop;
-        do {
+        while(lastLoop.nextEdgeLoop != this.loop)
             lastLoop = lastLoop.nextEdgeLoop;
-        } while(lastLoop.nextEdgeLoop != this.loop);
+
+        /*do {
+            lastLoop = lastLoop.nextEdgeLoop;
+        } while(lastLoop.nextEdgeLoop != this.loop);*/
 
         loop.nextEdgeLoop = this.loop;
         lastLoop.nextEdgeLoop = loop;

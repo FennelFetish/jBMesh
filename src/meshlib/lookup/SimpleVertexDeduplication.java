@@ -2,13 +2,17 @@ package meshlib.lookup;
 
 import com.jme3.math.Vector3f;
 import meshlib.structure.BMesh;
+import meshlib.structure.BMeshData;
+import meshlib.structure.BMeshProperties;
 import meshlib.structure.Vertex;
 
 public class SimpleVertexDeduplication implements VertexDeduplication {
+    private final BMeshData<Vertex>.Property propPosition;
     private float epsilonSquared;
 
 
-    public SimpleVertexDeduplication() {
+    public SimpleVertexDeduplication(BMesh bmesh) {
+        propPosition = bmesh.vertexData().getProperty(BMeshProperties.Vertex.POSITION);
         setRange(0.01f);
     }
 
@@ -22,7 +26,7 @@ public class SimpleVertexDeduplication implements VertexDeduplication {
     public Vertex getOrCreateVertex(BMesh mesh, Vector3f location) {
         Vector3f loc = new Vector3f();
         for(Vertex vert : mesh.vertices()) {
-            vert.getLocation(loc);
+            propPosition.getVec3(vert, loc);
             if(location.distanceSquared(loc) <= epsilonSquared) {
                 return vert;
             }

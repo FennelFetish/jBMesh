@@ -5,7 +5,9 @@ package meshlib.structure;
 
 // (stores per-face-vertex data, UV's, vertex-colors, etc)
 public class Loop {
-    public final Face face;
+    private int index;
+
+    public Face face;
 
     public Edge edge;
 
@@ -19,10 +21,37 @@ public class Loop {
     // prev?
 
     // Radial Cycle: Loop around edge (iterate to list faces on an edge)
-    public Loop nextEdgeLoop;
+    // Never null
+    public Loop nextEdgeLoop = this;
 
 
-    Loop(Face face) {
-        this.face = face;
-    }
+    private Loop() {}
+
+
+    static final BMeshData.ElementAccessor<Loop> ACCESSOR = new BMeshData.ElementAccessor<Loop>() {
+        @Override
+        public Loop create() {
+            return new Loop();
+        }
+
+        @Override
+        public void release(Loop element) {
+            element.index = -1;
+            element.face = null;
+            element.edge = null;
+            element.vertex = null;
+            element.nextFaceLoop = null;
+            element.nextEdgeLoop = null;
+        }
+
+        @Override
+        public int getIndex(Loop element) {
+            return element.index;
+        }
+
+        @Override
+        public void setIndex(Loop element, int index) {
+            element.index = index;
+        }
+    };
 }

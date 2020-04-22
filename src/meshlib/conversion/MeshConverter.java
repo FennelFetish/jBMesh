@@ -14,7 +14,7 @@ public class MeshConverter {
     // Deduplicates each vertex once per referencing index
     public static BMesh convert(Mesh mesh) {
         BMesh convertedMesh = new BMesh();
-        VertexDeduplication dedup = new SimpleVertexDeduplication();
+        VertexDeduplication dedup = new SimpleVertexDeduplication(convertedMesh);
 
         TriangleExtractor triangleExtractor = new TriangleExtractor(mesh);
         triangleExtractor.process(triangleExtractor.new TriangleLocationVisitor() {
@@ -43,7 +43,7 @@ public class MeshConverter {
 
         BMesh bmesh = new BMesh();
         TriangleExtractor triangleExtractor = new TriangleExtractor(mesh);
-        VertexDeduplication dedup = new GridVertexDeduplication();
+        VertexDeduplication dedup = new GridVertexDeduplication(bmesh);
         Vector3f location = new Vector3f();
 
         for(int i=0; i<numIndices; ++i) {

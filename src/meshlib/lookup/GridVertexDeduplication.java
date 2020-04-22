@@ -4,19 +4,21 @@ import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
 import meshlib.structure.BMesh;
+import meshlib.structure.BMeshData;
+import meshlib.structure.BMeshProperties;
 import meshlib.structure.Vertex;
 import meshlib.util.HashGrid;
 
 public class GridVertexDeduplication implements VertexDeduplication {
     // TODO: The mean of accumulated vertices will move - which location to use? What if the mean leaves a cell? Don't care?
-    private static final class VertexAccumulator {
+    /*private static final class VertexAccumulator {
         public final Vertex vertex;
         public final List<Vector3f> locations = new ArrayList<>();
 
         public VertexAccumulator(Vertex vertex) {
             this.vertex = vertex;
         }
-    }
+    }*/
 
     
     private static final class Cell {
@@ -39,17 +41,19 @@ public class GridVertexDeduplication implements VertexDeduplication {
     };
 
 
+    private final BMeshData<Vertex>.Property propPosition;
     private final HashGrid<Cell> grid;
     private final float epsilonSquared;
 
 
-    public GridVertexDeduplication() {
-        this(HashGrid.DEFAULT_CELLSIZE);
+    public GridVertexDeduplication(BMesh bmesh) {
+        this(bmesh, HashGrid.DEFAULT_CELLSIZE);
     }
 
-    public GridVertexDeduplication(float epsilon) {
+    public GridVertexDeduplication(BMesh bmesh, float epsilon) {
         grid = new HashGrid<>(epsilon);
         epsilonSquared = epsilon * epsilon;
+        propPosition = bmesh.vertexData().getProperty(BMeshProperties.Vertex.POSITION);
     }
 
 
@@ -85,8 +89,10 @@ public class GridVertexDeduplication implements VertexDeduplication {
     
 
     private Vertex searchVertex(Cell cell, Vector3f location) {
+        Vector3f currentLocation = new Vector3f();
         for(Vertex vertex : cell.vertices) {
-            float dist = vertex.getLocation().distanceSquared(location);
+            propPosition.getVec3(vertex, currentLocation);
+            float dist = currentLocation.distanceSquared(location);
             if(dist <= epsilonSquared)
                 return vertex;
         }

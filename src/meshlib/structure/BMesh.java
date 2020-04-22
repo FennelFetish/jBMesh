@@ -7,20 +7,18 @@ public class BMesh  {
     private final BMeshData<Vertex> vertexData;
     private final BMeshData<Edge> edgeData;
     private final BMeshData<Face> faceData;
+    private final BMeshData<Loop> loopData;
 
-    /*private final List<Vertex> vertices = new ArrayList<>();
-    private final List<Edge> edges      = new ArrayList<>();
-    private final List<Face> faces      = new ArrayList<>();
-
-    private final List<Vertex> readonlyVertices = Collections.unmodifiableList(vertices);
-    private final List<Edge> readonlyEdges      = Collections.unmodifiableList(edges);
-    private final List<Face> readonlyFaces      = Collections.unmodifiableList(faces);*/
+    private final BMeshData<Vertex>.Property propPosition;
 
 
     public BMesh() {
-        vertexData = new BMeshData<>(Vertex.ACCESSOR);
-        edgeData   = new BMeshData<>(Edge.ACCESSOR);
-        faceData   = new BMeshData<>(Face.ACCESSOR);
+        vertexData = new BMeshData<>("Vertex", Vertex.ACCESSOR);
+        edgeData   = new BMeshData<>("Edge", Edge.ACCESSOR);
+        faceData   = new BMeshData<>("Face", Face.ACCESSOR);
+        loopData   = new BMeshData<>("Loop", Loop.ACCESSOR);
+
+        propPosition = vertexData.createProperty(BMeshProperties.Vertex.POSITION, BMeshData.PropertyType.Float, 3);
     }
 
 
@@ -37,19 +35,32 @@ public class BMesh  {
     }
 
 
+    public BMeshData<Vertex> vertexData() {
+        return vertexData;
+    }
+
+    public BMeshData<Edge> edgeData() {
+        return edgeData;
+    }
+
+    public BMeshData<Face> faceData() {
+        return faceData;
+    }
+
+    public BMeshData<Loop> loopData() {
+        return loopData;
+    }
+
+
     // TODO: Make private so deduplication can work? Or leave deduplication up to the user?
     public Vertex createVertex() {
         return vertexData.add();
-
-        /*int index = data.add();
-        Vertex vert = new Vertex(index);
-        vertices.add(vert);
-        return vert;*/
     }
 
     public Vertex createVertex(float x, float y, float z) {
         Vertex vert = createVertex();
-        vert.setLocation(x, y, z); // TODO: Deduplication?
+        propPosition.setVec3(vert, x, y, z);
+        //vert.setLocation(x, y, z); // TODO: Deduplication?
         return vert;
     }
 
@@ -70,13 +81,6 @@ public class BMesh  {
             v1.addEdge(edge);
         }
 
-        /*if(edge == null) {
-            edge = new Edge(v0, v1);
-            v0.addEdge(edge);
-            v1.addEdge(edge);
-            edges.add(edge);
-        }*/
-
         return edge;
     }
 
@@ -86,11 +90,11 @@ public class BMesh  {
             throw new IllegalArgumentException("A face needs at least 3 vertices");
 
         Face face = faceData.add();
-        //Face face = new Face();
 
         Loop[] loops = new Loop[faceVertices.length];
         for(int i=0; i<faceVertices.length; ++i) {
-            loops[i] = new Loop(face);
+            loops[i] = loopData.add();
+            loops[i].face = face;
         }
         
         face.loop = loops[0];
@@ -113,6 +117,7 @@ public class BMesh  {
         vertexData.compact();
         edgeData.compact();
         faceData.compact();
+        loopData.compact();
     }
 
 

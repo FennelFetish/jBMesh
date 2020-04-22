@@ -1,12 +1,7 @@
 package meshlib.structure;
 
-import com.jme3.math.Vector3f;
-
-// Not necessarily a member of a Face or an Edge
 public class Vertex {
     private int index;
-
-    private final Vector3f location = new Vector3f();
 
     // Can be NULL
     public Edge edge;
@@ -15,7 +10,7 @@ public class Vertex {
     private Vertex() {}
 
 
-    public void setLocation(float x, float y, float z) {
+    /*public void setLocation(float x, float y, float z) {
         location.set(x, y, z);
     }
 
@@ -30,7 +25,7 @@ public class Vertex {
 
     public void getLocation(Vector3f store) {
         store.set(location);
-    }
+    }*/
 
 
     /**
@@ -94,7 +89,6 @@ public class Vertex {
         @Override
         public void release(Vertex element) {
             element.index = -1;
-            element.location.zero();
             element.edge = null;
         }
 

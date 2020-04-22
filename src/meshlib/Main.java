@@ -23,6 +23,8 @@ public class Main extends SimpleApplication {
         Box box = new Box(0.5f, 0.5f, 0.5f);
         BMesh mesh = MeshConverter.convert(box);
 
+        
+
         /*Geometry geom = new Geometry("Box", b);
 
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -30,16 +32,6 @@ public class Main extends SimpleApplication {
         geom.setMaterial(mat);
 
         rootNode.attachChild(geom);*/
-
-
-        FloatBuffer posBuffer = BufferUtils.createFloatBuffer(100 * 3);
-
-        ColorRGBA color = new ColorRGBA();
-        color.setAsSrgb(speed, speed, speed, speed);
-
-        Object arr = new int[10];
-        int[] a = (int[]) arr;
-        List<int[]> bla;
     }
 
     @Override
@@ -50,6 +42,7 @@ public class Main extends SimpleApplication {
 
     public static void main(String[] args) {
         Main app = new Main();
+        app.setShowSettings(false);
         app.start();
     }
 }
