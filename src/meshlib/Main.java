@@ -32,12 +32,23 @@ public class Main extends SimpleApplication {
         pa.shouldWork();
         pa.shouldFailAtRuntime();*/
 
-        FloatProperty<Loop> prop1 = new FloatProperty<>("Floaty", bmesh.loopData());
-        IntProperty<Edge> prop2 = new IntProperty<>("Inty", bmesh.edgeData());
-        UserProperties.Vec2TupleProperty<Face> prop3 = new UserProperties.Vec2TupleProperty<>("Tuply", bmesh.faceData());
+        FloatProperty<Loop> prop1 = new FloatProperty<>("Floaty");
+        bmesh.loopData().addProperty(prop1);
+        bmesh.loopData().removeProperty(prop1);
+        System.out.println( prop1.get(bmesh.loopData().elements().get(0)) );
+        bmesh.loopData().addProperty(prop1);
+
+        IntProperty<Edge> prop2 = new IntProperty<>("Inty");
+        bmesh.edgeData().addProperty(prop2);
+
+        UserProperties.Vec2TupleProperty<Face> prop3 = new UserProperties.Vec2TupleProperty<>("Tuply");
+        bmesh.faceData().addProperty(prop3);
+        
         bmesh.compactData();
 
-        ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR, bmesh.vertexData());
+        ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
+        bmesh.vertexData().addProperty(propVertexColor);
+
         float hue = 0;
         for(Vertex v : bmesh.vertices()) {
             ColorRGBA color = hsb(hue, 1.0f, 1.0f);

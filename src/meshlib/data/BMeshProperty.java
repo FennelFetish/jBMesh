@@ -15,17 +15,16 @@ public abstract class BMeshProperty<TArray, E extends Element> {
     protected TArray data = null;
 
 
-    protected BMeshProperty(String name, BMeshData<E> meshData, int numComponents) {
+    protected BMeshProperty(String name, int numComponents) {
         if(numComponents < 1)
             throw new IllegalArgumentException("Number of components cannot be less than 1");
 
         this.name = name;
         this.numComponents = numComponents;
-        meshData.addProperty(this);
     }
 
-    protected BMeshProperty(String name, BMeshData<E> meshData) {
-        this(name, meshData, 1);
+    protected BMeshProperty(String name) {
+        this(name, 1);
     }
 
 

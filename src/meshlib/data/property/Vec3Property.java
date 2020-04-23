@@ -6,8 +6,8 @@ import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
 public class Vec3Property<E extends Element> extends BMeshProperty<float[], E> {
-    public Vec3Property(String name, BMeshData<E> meshData) {
-        super(name, meshData, 3);
+    public Vec3Property(String name) {
+        super(name, 3);
     }
 
 

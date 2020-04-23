@@ -6,8 +6,8 @@ import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
 public class ColorProperty<E extends Element> extends BMeshProperty<float[], E> {
-    public ColorProperty(String name, BMeshData<E> meshData) {
-        super(name, meshData, 4);
+    public ColorProperty(String name) {
+        super(name, 4);
     }
 
 

@@ -5,8 +5,8 @@ import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
 public class IntProperty<E extends Element> extends BMeshProperty<int[], E>{
-    public IntProperty(String name, BMeshData<E> meshData) {
-        super(name, meshData);
+    public IntProperty(String name) {
+        super(name);
     }
 
 

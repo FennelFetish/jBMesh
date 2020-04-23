@@ -42,7 +42,6 @@ public class BMeshData<T extends Element> {
     }
 
 
-    // TODO: Don't expose add/remove methods
     public T add() {
         if(!freeList.isEmpty()) {
             int index = freeList.poll();
@@ -66,14 +65,6 @@ public class BMeshData<T extends Element> {
         return element;
     }
 
-    /*public void remove(int index) {
-        T element = elements.get(index);
-        element.release();
-
-        freeList.add(index);
-        numElementsAlive--;
-    }*/
-
     public void remove(T element) {
         element.release();
 
@@ -82,7 +73,7 @@ public class BMeshData<T extends Element> {
     }
 
 
-    void addProperty(BMeshProperty<?, T> property) {
+    public void addProperty(BMeshProperty<?, T> property) {
         if(properties.containsKey(property.name))
             throw new IllegalStateException("Property '" + property.name + "' already exists");
 
@@ -94,13 +85,10 @@ public class BMeshData<T extends Element> {
         properties.put(property.name, property);
     }
 
-
     // getProperty(name, Vec3Property.class) should return Vec3Property<T> ??
-
     BMeshProperty<?, T> getProperty(String name) {
         return properties.get(name);
     }
-
 
     public void removeProperty(BMeshProperty<?, T> property) {
         property.release();

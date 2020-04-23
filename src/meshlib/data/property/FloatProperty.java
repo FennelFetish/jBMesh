@@ -5,8 +5,8 @@ import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
 public class FloatProperty<E extends Element> extends BMeshProperty<float[], E> {
-    public FloatProperty(String name, BMeshData<E> meshData) {
-        super(name, meshData);
+    public FloatProperty(String name) {
+        super(name);
     }
 
 

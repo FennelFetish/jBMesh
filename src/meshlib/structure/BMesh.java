@@ -12,7 +12,7 @@ public class BMesh {
     private final BMeshData<Face> faceData;
     private final BMeshData<Loop> loopData;
 
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Property<Vertex> propPosition = new Vec3Property<>(BMeshProperty.Vertex.POSITION);
 
 
     public BMesh() {
@@ -21,7 +21,7 @@ public class BMesh {
         faceData   = new BMeshData<>("Face", () -> new Face());
         loopData   = new BMeshData<>("Loop", () -> new Loop());
 
-        propPosition = new Vec3Property<>(BMeshProperty.Vertex.POSITION, vertexData);
+        vertexData.addProperty(propPosition);
     }
 
 
