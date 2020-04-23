@@ -2,7 +2,9 @@ package meshlib.structure;
 
 import com.jme3.math.Vector3f;
 import java.util.List;
-import meshlib.data.Vec3Property;
+import meshlib.data.BMeshData;
+import meshlib.data.BMeshProperty;
+import meshlib.data.property.Vec3Property;
 
 public class BMesh  {
     private final BMeshData<Vertex> vertexData;
@@ -10,7 +12,7 @@ public class BMesh  {
     private final BMeshData<Face> faceData;
     private final BMeshData<Loop> loopData;
 
-    private final Vec3Property propPosition;
+    private final Vec3Property<Vertex> propPosition;
 
 
     public BMesh() {
@@ -19,7 +21,7 @@ public class BMesh  {
         faceData   = new BMeshData<>("Face", () -> new Face());
         loopData   = new BMeshData<>("Loop", () -> new Loop());
 
-        propPosition = vertexData.createProperty(BMeshProperty.Vertex.POSITION, BMeshData.PropertyType.Float, 3);
+        propPosition = new Vec3Property<>(BMeshProperty.Vertex.POSITION, vertexData);
     }
 
 
@@ -60,7 +62,7 @@ public class BMesh  {
 
     public Vertex createVertex(float x, float y, float z) {
         Vertex vert = createVertex();
-        propPosition.setVec3(vert, x, y, z);
+        propPosition.set(vert, x, y, z);
         //vert.setLocation(x, y, z); // TODO: Deduplication?
         return vert;
     }

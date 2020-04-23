@@ -1,4 +1,4 @@
-package meshlib.structure;
+package meshlib.data;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 public class BMeshData<T extends Element> {
-    interface ElementFactory<T> {
+    public static interface ElementFactory<T> {
         T createElement();
     }
 
@@ -26,12 +26,12 @@ public class BMeshData<T extends Element> {
     private int arraySize = INITIAL_ARRAY_SIZE;
     private int numElementsAlive = 0;
     
-    private final Map<String, BMeshProperty<?>> properties = new HashMap<>();
+    private final Map<String, BMeshProperty<?, T>> properties = new HashMap<>();
 
     private final String name; // Debug
 
 
-    BMeshData(String name, ElementFactory<T> factory) {
+    public BMeshData(String name, ElementFactory<T> factory) {
         this.name = name;
         this.factory = factory;
     }
@@ -42,7 +42,7 @@ public class BMeshData<T extends Element> {
     }
 
 
-    T add() {
+    public T add() {
         if(!freeList.isEmpty()) {
             int index = freeList.poll();
             T element = elements.get(index);
@@ -65,7 +65,7 @@ public class BMeshData<T extends Element> {
         return element;
     }
 
-    void remove(int index) {
+    public void remove(int index) {
         T element = elements.get(index);
         element.release();
 
@@ -73,7 +73,7 @@ public class BMeshData<T extends Element> {
         numElementsAlive--;
     }
 
-    void remove(T element) {
+    public void remove(T element) {
         element.release();
 
         freeList.add(element.getIndex());
@@ -81,26 +81,45 @@ public class BMeshData<T extends Element> {
     }
 
 
-    public BMeshProperty createProperty(String name, BMeshProperty.Type type, int numComponents) {
-        if(properties.containsKey(name))
-            return null;
+    void addProperty(BMeshProperty<?, T> property) {
+        if(properties.containsKey(property.name))
+            throw new IllegalStateException("Property '" + property.name + "' already exists");
 
-        if(numComponents < 1)
-            throw new IllegalArgumentException("Number of components cannot be less than 1");
+        if(property.data != null)
+            throw new IllegalStateException("Property '" + property.name + "' already associated with another data set");
 
-        BMeshProperty prop = new BMeshProperty(name, type, numComponents);
-        System.out.println("alloc '" + name + "': " + (arraySize * numComponents));
-        prop.data = type.allocator.alloc(arraySize * numComponents);
-        properties.put(name, prop);
-        return prop;
+        property.allocData(arraySize);
+        properties.put(property.name, property);
     }
 
-    public BMeshProperty getProperty(String name) {
+
+    // getProperty(name, Vec3Property.class) should return Vec3Property<T>
+
+    //public <TPropertyType extends BMeshProperty<?, T>> TPropertyType getProperty(String name, Class<TPropertyType> propertyType) {
+    //    return (TPropertyType) properties.get(name);
+    //}
+
+    /*public <TArray, TPropertyType extends BMeshProperty<TArray, T>> TPropertyType getProperty(String name, Class<TPropertyType> propertyType, Class<TArray> arrayType) {
+        return (TPropertyType) properties.get(name);
+    }*/
+
+    public <TPropertyType> TPropertyType getProperty(String name, Class<TPropertyType> propertyType) {
+        BMeshProperty<?, T> prop = properties.get(name);
+        return (TPropertyType) prop;
+
+        /*if(propertyType.isInstance(prop))
+            return (TPropertyType) prop;
+        else
+            throw new ClassCastException("Property not of requested type. Requested: '" + propertyType.getName() + "', Actual: '" + prop.getClass().getName() + "'");*/
+    }
+
+    public BMeshProperty<?, T> getProperty(String name) {
         return properties.get(name);
     }
 
-    public void removeProperty(BMeshProperty property) {
-        property.data = null;
+
+    public void removeProperty(BMeshProperty<?, T> property) {
+        property.release();
         properties.remove(property.name);
     }
 
@@ -120,10 +139,7 @@ public class BMeshData<T extends Element> {
         System.out.println("resize '" + name + "' from " + arraySize + " to " + size);
 
         for(BMeshProperty prop : properties.values()) {
-            System.out.println("alloc resize '" + prop.name + "': " + (size * prop.numComponents));
-            Object destArray = prop.type.allocator.alloc(size * prop.numComponents);
-            System.arraycopy(prop.data, 0, destArray, 0, copyLength * prop.numComponents);
-            prop.data = destArray;
+            prop.realloc(size, copyLength);
         }
 
         arraySize = size;
@@ -162,8 +178,9 @@ public class BMeshData<T extends Element> {
 
 
     private void compact(int[] free) {
-        int shift = 0;
+        List<CompactOp> ops = new ArrayList<>(free.length);
 
+        int shift = 0;
         for(int f=0; f<free.length; ++f) {
             shift++;
 
@@ -175,26 +192,34 @@ public class BMeshData<T extends Element> {
             else
                 copyLastIndex = free[f+1] - 1;
 
-            int copyFirstIndex = free[f] + 1;
+            CompactOp op = new CompactOp();
+            op.firstIndex = free[f] + 1;
+            op.lastIndex = copyLastIndex;
+            op.shift = shift;
+            ops.add(op);
 
-            for(BMeshProperty property : properties.values())
-                compact(property, copyFirstIndex, copyLastIndex, shift);
-
-            for(int i=copyFirstIndex; i<=copyLastIndex; ++i)
+            for(int i=op.firstIndex; i<=copyLastIndex; ++i)
                 elements.get(i).setIndex(i-shift);
+        }
+
+        for(BMeshProperty property : properties.values()) {
+            Object oldArray = property.allocData(numElementsAlive);
+            for(CompactOp op : ops) {
+                op.compact(property, oldArray);
+            }
         }
     }
 
 
-    private void compact(BMeshProperty property, int copyFirstIndex, int copyLastIndex, int shift) {
-        final int newSize = numElementsAlive * property.numComponents;
-        System.out.println("alloc compact '" + property.name + "': " + newSize);
-        
-        int copyStartIndex = copyFirstIndex * property.numComponents;
-        int copyLength = (copyLastIndex-copyFirstIndex + 1) * property.numComponents;
+    private static final class CompactOp {
+        private int firstIndex;
+        private int lastIndex;
+        private int shift;
 
-        Object destArray = property.type.allocator.alloc(newSize);
-        System.arraycopy(property.data, copyStartIndex, destArray, copyStartIndex-shift, copyLength);
-        property.data = destArray;
+        public void compact(BMeshProperty property, Object oldArray) {
+            int copyStartIndex = firstIndex * property.numComponents;
+            int copyLength = (lastIndex-firstIndex + 1) * property.numComponents;
+            System.arraycopy(oldArray, copyStartIndex, property.data, copyStartIndex-shift, copyLength);
+        }
     }
 }

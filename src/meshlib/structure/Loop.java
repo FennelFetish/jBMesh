@@ -1,6 +1,9 @@
 package meshlib.structure;
 
 // a) On each side of a BMFace  - iterate with 'nextFaceLoop'
+
+import meshlib.data.Element;
+
 // b) Runs along a BMEdge       - iterate with 'nextEdgeLoop'
 
 // (stores per-face-vertex data, UV's, vertex-colors, etc)

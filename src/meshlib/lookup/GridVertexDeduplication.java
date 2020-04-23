@@ -3,9 +3,9 @@ package meshlib.lookup;
 import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
+import meshlib.data.BMeshProperty;
+import meshlib.data.property.Vec3Property;
 import meshlib.structure.BMesh;
-import meshlib.structure.BMeshData;
-import meshlib.structure.BMeshProperty;
 import meshlib.structure.Vertex;
 import meshlib.util.HashGrid;
 
@@ -41,7 +41,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     };
 
 
-    private final BMeshData<Vertex>.Property propPosition;
+    private final Vec3Property propPosition;
     private final HashGrid<Cell> grid;
     private final float epsilonSquared;
 
@@ -53,7 +53,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     public GridVertexDeduplication(BMesh bmesh, float epsilon) {
         grid = new HashGrid<>(epsilon);
         epsilonSquared = epsilon * epsilon;
-        propPosition = bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
+        propPosition = (Vec3Property) bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
     }
 
 
@@ -91,7 +91,8 @@ public class GridVertexDeduplication implements VertexDeduplication {
     private Vertex searchVertex(Cell cell, Vector3f location) {
         Vector3f currentLocation = new Vector3f();
         for(Vertex vertex : cell.vertices) {
-            propPosition.getVec3(vertex, currentLocation);
+            propPosition.get(vertex, currentLocation);
+            
             float dist = currentLocation.distanceSquared(location);
             if(dist <= epsilonSquared)
                 return vertex;

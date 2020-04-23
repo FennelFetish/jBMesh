@@ -1,4 +1,4 @@
-package meshlib.structure;
+package meshlib.data;
 
 public abstract class Element {
     private int index;

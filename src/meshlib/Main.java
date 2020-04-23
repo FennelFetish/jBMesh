@@ -9,36 +9,39 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
 import meshlib.conversion.MeshConverter;
+import meshlib.data.BMeshProperty;
+import meshlib.data.property.ColorProperty;
+import meshlib.data.property.FloatProperty;
+import meshlib.data.property.IntProperty;
 import meshlib.structure.BMesh;
-import meshlib.structure.BMeshData;
-import meshlib.structure.BMeshProperty;
 import meshlib.structure.Vertex;
 import meshlib.util.BMeshVisualization;
 
-/**
- * This is the Main Class of your Game. You should only do initialization here.
- * Move your Logic into AppStates or Controls
- * @author normenhansen
- */
+
 public class Main extends SimpleApplication {
-    private final ColorRGBA color = new ColorRGBA().fromIntABGR(0);
 
     @Override
     public void simpleInitApp() {
         Box box = new Box(1f, 1f, 1f);
         BMesh bmesh = MeshConverter.convert(box);
-        bmesh.loopData().createProperty("Bla", BMeshData.PropertyType.Long, 14);
-        bmesh.compactData();
-        bmesh.edgeData().createProperty("Bloo", BMeshData.PropertyType.String, 2);
 
-        BMeshData<Vertex>.Property propVertexColor = bmesh.vertexData().createProperty(BMeshProperty.Vertex.COLOR, BMeshData.PropertyType.Float, 3);
+        PropertyAccess pa = new PropertyAccess(bmesh);
+        pa.init();
+        pa.shouldFailAtRuntime();
+
+        FloatProperty prop1 = new FloatProperty("Floaty", bmesh.loopData());
+        IntProperty prop2 = new IntProperty("Inty", bmesh.edgeData());
+        UserProperties.Vec2TupleProperty prop3 = new UserProperties.Vec2TupleProperty("Tuply", bmesh.faceData());
+        bmesh.compactData();
+
+        ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR, bmesh.vertexData());
         float hue = 0;
         for(Vertex v : bmesh.vertices()) {
             ColorRGBA color = hsb(hue, 1.0f, 1.0f);
             hue += 0.71f;
             if(hue > 1.0f)
                 hue -= 1.0f;
-            propVertexColor.setVec3(v, color.r, color.g, color.b);
+            propVertexColor.set(v, color.r, color.g, color.b, color.a);
         }
 
         Mesh mesh = BMeshVisualization.create(bmesh);

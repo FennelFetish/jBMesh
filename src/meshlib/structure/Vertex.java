@@ -1,5 +1,7 @@
 package meshlib.structure;
 
+import meshlib.data.Element;
+
 public class Vertex extends Element {
     // Can be NULL
     public Edge edge;

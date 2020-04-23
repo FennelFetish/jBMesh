@@ -1,6 +1,9 @@
 package meshlib.structure;
 
 // BMEdge has no specific direction
+
+import meshlib.data.Element;
+
 public class Edge extends Element {
     // Target vertex (at end).
     // Needed? Can we use BMLoop's reference instead?

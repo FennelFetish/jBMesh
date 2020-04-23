@@ -1,6 +1,7 @@
 package meshlib.structure;
 
 import java.util.Iterator;
+import meshlib.data.Element;
 
 public class Face extends Element {
     // Never NULL
