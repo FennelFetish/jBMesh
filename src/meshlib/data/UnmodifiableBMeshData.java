@@ -22,10 +22,10 @@ public class UnmodifiableBMeshData<T extends Element> extends BMeshData<T> {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override
+    /*@Override
     public void remove(int index) {
         throw new UnsupportedOperationException("Unsupported");
-    }
+    }*/
 
     @Override
     public void remove(T element) {

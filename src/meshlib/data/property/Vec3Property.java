@@ -1,58 +1,72 @@
 package meshlib.data.property;
 
 import com.jme3.math.Vector3f;
-import java.io.InvalidClassException;
 import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class Vec3Property<TElement extends Element> extends BMeshProperty<float[], TElement> {
-    public Vec3Property(String name, BMeshData<TElement> meshData) {
+public class Vec3Property<E extends Element> extends BMeshProperty<float[], E> {
+    public Vec3Property(String name, BMeshData<E> meshData) {
         super(name, meshData, 3);
     }
+
+
+    public Vector3f get(E element) {
+        int i = indexOf(element);
+        return new Vector3f(data[i], data[i+1], data[i+2]);
+    }
+    
+    public void get(E element, Vector3f store) {
+        int i = indexOf(element);
+        store.x = data[i];
+        store.y = data[i+1];
+        store.z = data[i+2];
+    }
+
+
+    public void set(E element, Vector3f vec) {
+        set(element, vec.x, vec.y, vec.z);
+    }
+    
+    public void set(E element, float x, float y, float z) {
+        int i = indexOf(element);
+        data[i]   = x;
+        data[i+1] = y;
+        data[i+2] = z;
+    }
+
+
+    public float getX(E element) {
+        return data[indexOf(element)];
+    }
+
+    public void setX(E element, float x) {
+        data[indexOf(element)] = x;
+    }
+
+    public float getY(E element) {
+        return data[indexOf(element, 1)];
+    }
+
+    public void setY(E element, float y) {
+        data[indexOf(element, 1)] = y;
+    }
+
+    public float getZ(E element) {
+        return data[indexOf(element, 2)];
+    }
+
+    public void setZ(E element, float z) {
+        data[indexOf(element, 2)] = z;
+    }
+
 
     @Override
     protected float[] alloc(int size) {
         return new float[size];
     }
 
-
-    // getX() setX() ?
-    
-
-    public Vector3f get(TElement element) {
-        int eleIndex = element.getIndex() * numComponents;
-        return new Vector3f(data[eleIndex], data[eleIndex+1], data[eleIndex+2]);
+    public static <E extends Element> Vec3Property<E> get(String name, BMeshData<E> meshData) {
+        return (Vec3Property<E>) getProperty(name, meshData, float[].class);
     }
-    
-    public void get(TElement element, Vector3f store) {
-        int eleIndex = element.getIndex() * numComponents;
-        store.x = data[eleIndex];
-        store.y = data[eleIndex+1];
-        store.z = data[eleIndex+2];
-    }
-
-
-    public void set(TElement element, Vector3f vec) {
-        set(element, vec.x, vec.y, vec.z);
-    }
-    
-    public void set(TElement element, float x, float y, float z) {
-        int eleIndex = element.getIndex() * numComponents;
-        data[eleIndex]   = x;
-        data[eleIndex+1] = y;
-        data[eleIndex+2] = z;
-    }
-
-
-    public static <TElement extends Element> Vec3Property<TElement> get(String name, BMeshData<TElement> meshData) {
-        BMeshProperty<?, TElement> prop = meshData.getProperty(name);
-        if(prop instanceof Vec3Property)
-            return (Vec3Property<TElement>) prop;
-        else
-            throw new IllegalArgumentException("Property not of requested type");
-    }
-
-    
-    public static final Class<float[]> TYPE = float[].class;
 }

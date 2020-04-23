@@ -33,8 +33,8 @@ public class BMeshVisualization {
             }
         }
 
-        Vec3Property<Vertex> propPosition = (Vec3Property<Vertex>) bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
-        ColorProperty<Vertex> propVertexColor = (ColorProperty<Vertex>) bmesh.vertexData().getProperty(BMeshProperty.Vertex.COLOR);
+        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        ColorProperty<Vertex> propVertexColor = ColorProperty.get(BMeshProperty.Vertex.COLOR, bmesh.vertexData());
 
         Mesh mesh = new Mesh();
         mesh.setMode(Mesh.Mode.Triangles);

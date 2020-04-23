@@ -4,22 +4,27 @@ import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class IntProperty<TElement extends Element> extends BMeshProperty<int[], TElement>{
-    public IntProperty(String name, BMeshData<TElement> meshData) {
+public class IntProperty<E extends Element> extends BMeshProperty<int[], E>{
+    public IntProperty(String name, BMeshData<E> meshData) {
         super(name, meshData);
     }
+
+
+    public int get(E element) {
+        return data[element.getIndex()];
+    }
+
+    public void set(E element, int i) {
+        data[element.getIndex()] = i;
+    }
+
 
     @Override
     protected int[] alloc(int size) {
         return new int[size];
     }
 
-
-    public int get(TElement element) {
-        return data[element.getIndex()];
-    }
-
-    public void set(TElement element, int i) {
-        data[element.getIndex()] = i;
+    public static <E extends Element> IntProperty<E> get(String name, BMeshData<E> meshData) {
+        return (IntProperty<E>) getProperty(name, meshData, int[].class);
     }
 }

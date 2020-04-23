@@ -4,22 +4,27 @@ import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class FloatProperty<TElement extends Element> extends BMeshProperty<float[], TElement> {
-    public FloatProperty(String name, BMeshData<TElement> meshData) {
+public class FloatProperty<E extends Element> extends BMeshProperty<float[], E> {
+    public FloatProperty(String name, BMeshData<E> meshData) {
         super(name, meshData);
     }
 
+
+    public float get(E element) {
+        return data[element.getIndex()];
+    }
+
+    public void set(E element, float f) {
+        data[element.getIndex()] = f;
+    }
+
+    
     @Override
     protected float[] alloc(int size) {
         return new float[size];
     }
 
-
-    public float get(TElement element) {
-        return data[element.getIndex()];
-    }
-
-    public void set(TElement element, float f) {
-        data[element.getIndex()] = f;
+    public static <E extends Element> FloatProperty<E> get(String name, BMeshData<E> meshData) {
+        return (FloatProperty<E>) getProperty(name, meshData, float[].class);
     }
 }

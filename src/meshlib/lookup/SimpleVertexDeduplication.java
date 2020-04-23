@@ -7,12 +7,12 @@ import meshlib.structure.BMesh;
 import meshlib.structure.Vertex;
 
 public class SimpleVertexDeduplication implements VertexDeduplication {
-    private final Vec3Property propPosition;
+    private final Vec3Property<Vertex> propPosition;
     private float epsilonSquared;
 
 
     public SimpleVertexDeduplication(BMesh bmesh) {
-        propPosition = (Vec3Property) bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
+        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
         setRange(0.01f);
     }
 

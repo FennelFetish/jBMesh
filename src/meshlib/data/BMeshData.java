@@ -42,6 +42,7 @@ public class BMeshData<T extends Element> {
     }
 
 
+    // TODO: Don't expose add/remove methods
     public T add() {
         if(!freeList.isEmpty()) {
             int index = freeList.poll();
@@ -65,13 +66,13 @@ public class BMeshData<T extends Element> {
         return element;
     }
 
-    public void remove(int index) {
+    /*public void remove(int index) {
         T element = elements.get(index);
         element.release();
 
         freeList.add(index);
         numElementsAlive--;
-    }
+    }*/
 
     public void remove(T element) {
         element.release();
@@ -88,32 +89,15 @@ public class BMeshData<T extends Element> {
         if(property.data != null)
             throw new IllegalStateException("Property '" + property.name + "' already associated with another data set");
 
-        property.allocData(arraySize);
+        Object oldArray = property.allocReplace(arraySize);
+        assert oldArray == null;
         properties.put(property.name, property);
     }
 
 
-    // getProperty(name, Vec3Property.class) should return Vec3Property<T>
+    // getProperty(name, Vec3Property.class) should return Vec3Property<T> ??
 
-    //public <TPropertyType extends BMeshProperty<?, T>> TPropertyType getProperty(String name, Class<TPropertyType> propertyType) {
-    //    return (TPropertyType) properties.get(name);
-    //}
-
-    /*public <TArray, TPropertyType extends BMeshProperty<TArray, T>> TPropertyType getProperty(String name, Class<TPropertyType> propertyType, Class<TArray> arrayType) {
-        return (TPropertyType) properties.get(name);
-    }*/
-
-    public <TPropertyType> TPropertyType getProperty(String name, Class<TPropertyType> propertyType) {
-        BMeshProperty<?, T> prop = properties.get(name);
-        return (TPropertyType) prop;
-
-        /*if(propertyType.isInstance(prop))
-            return (TPropertyType) prop;
-        else
-            throw new ClassCastException("Property not of requested type. Requested: '" + propertyType.getName() + "', Actual: '" + prop.getClass().getName() + "'");*/
-    }
-
-    public BMeshProperty<?, T> getProperty(String name) {
+    BMeshProperty<?, T> getProperty(String name) {
         return properties.get(name);
     }
 
@@ -203,7 +187,7 @@ public class BMeshData<T extends Element> {
         }
 
         for(BMeshProperty property : properties.values()) {
-            Object oldArray = property.allocData(numElementsAlive);
+            Object oldArray = property.allocReplace(numElementsAlive);
             for(CompactOp op : ops) {
                 op.compact(property, oldArray);
             }

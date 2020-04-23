@@ -5,40 +5,45 @@ import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class ColorProperty<TElement extends Element> extends BMeshProperty<float[], TElement> {
-    public ColorProperty(String name, BMeshData<TElement> meshData) {
+public class ColorProperty<E extends Element> extends BMeshProperty<float[], E> {
+    public ColorProperty(String name, BMeshData<E> meshData) {
         super(name, meshData, 4);
     }
+
+
+    public ColorRGBA get(E element) {
+        int i = indexOf(element);
+        return new ColorRGBA(data[i], data[i+1], data[i+2], data[i+3]);
+    }
+
+    public void get(E element, ColorRGBA store) {
+        int i = indexOf(element);
+        store.r = data[i];
+        store.g = data[i+1];
+        store.b = data[i+2];
+        store.a = data[i+3];
+    }
+
+
+    public void set(E element, ColorRGBA color) {
+        set(element, color.r, color.g, color.b, color.a);
+    }
+
+    public void set(E element, float r, float g, float b, float a) {
+        int i = indexOf(element);
+        data[i]   = r;
+        data[i+1] = g;
+        data[i+2] = b;
+        data[i+3] = a;
+    }
+
 
     @Override
     protected float[] alloc(int size) {
         return new float[size];
     }
 
-
-    public ColorRGBA get(TElement element) {
-        int eleIndex = element.getIndex() * numComponents;
-        return new ColorRGBA(data[eleIndex], data[eleIndex+1], data[eleIndex+2], data[eleIndex+3]);
-    }
-
-    public void get(TElement element, ColorRGBA store) {
-        int eleIndex = element.getIndex() * numComponents;
-        store.r = data[eleIndex];
-        store.g = data[eleIndex+1];
-        store.b = data[eleIndex+2];
-        store.a = data[eleIndex+3];
-    }
-
-
-    public void set(TElement element, ColorRGBA color) {
-        set(element, color.r, color.g, color.b, color.a);
-    }
-
-    public void set(TElement element, float r, float g, float b, float a) {
-        int eleIndex = element.getIndex() * numComponents;
-        data[eleIndex]   = r;
-        data[eleIndex+1] = g;
-        data[eleIndex+2] = b;
-        data[eleIndex+3] = a;
+    public static <E extends Element> ColorProperty<E> get(String name, BMeshData<E> meshData) {
+        return (ColorProperty<E>) getProperty(name, meshData, float[].class);
     }
 }

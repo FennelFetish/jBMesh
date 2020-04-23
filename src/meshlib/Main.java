@@ -14,6 +14,9 @@ import meshlib.data.property.ColorProperty;
 import meshlib.data.property.FloatProperty;
 import meshlib.data.property.IntProperty;
 import meshlib.structure.BMesh;
+import meshlib.structure.Edge;
+import meshlib.structure.Face;
+import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 import meshlib.util.BMeshVisualization;
 
@@ -25,13 +28,13 @@ public class Main extends SimpleApplication {
         Box box = new Box(1f, 1f, 1f);
         BMesh bmesh = MeshConverter.convert(box);
 
-        PropertyAccess pa = new PropertyAccess(bmesh);
-        pa.init();
-        pa.shouldFailAtRuntime();
+        /*PropertyAccessTest pa = new PropertyAccessTest(bmesh);
+        pa.shouldWork();
+        pa.shouldFailAtRuntime();*/
 
-        FloatProperty prop1 = new FloatProperty("Floaty", bmesh.loopData());
-        IntProperty prop2 = new IntProperty("Inty", bmesh.edgeData());
-        UserProperties.Vec2TupleProperty prop3 = new UserProperties.Vec2TupleProperty("Tuply", bmesh.faceData());
+        FloatProperty<Loop> prop1 = new FloatProperty<>("Floaty", bmesh.loopData());
+        IntProperty<Edge> prop2 = new IntProperty<>("Inty", bmesh.edgeData());
+        UserProperties.Vec2TupleProperty<Face> prop3 = new UserProperties.Vec2TupleProperty<>("Tuply", bmesh.faceData());
         bmesh.compactData();
 
         ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR, bmesh.vertexData());

@@ -6,7 +6,7 @@ import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
 
-public class BMesh  {
+public class BMesh {
     private final BMeshData<Vertex> vertexData;
     private final BMeshData<Edge> edgeData;
     private final BMeshData<Face> faceData;

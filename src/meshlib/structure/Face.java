@@ -25,7 +25,7 @@ public class Face extends Element {
     private static class FaceVertexIterator implements Iterator<Vertex> {
         private final Loop startLoop;
         private Loop currentLoop;
-        private boolean first = true;
+        private boolean first = true; // Get rid of this flag?
 
         public FaceVertexIterator(Loop loop) {
             startLoop = loop;
@@ -36,7 +36,6 @@ public class Face extends Element {
         public boolean hasNext() {
             return currentLoop != startLoop || first;
         }
-
 
         @Override
         public Vertex next() {

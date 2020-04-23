@@ -4,17 +4,11 @@ import com.jme3.math.Vector2f;
 import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
-import meshlib.structure.Vertex;
 
 public class UserProperties {
     // Example user-defined property
-    public static class LongProperty<TElement extends Element> extends BMeshProperty<long[], TElement> {
-
-        // Make it: public static class LongProperty extends BMeshProperty<long[], Vertex> {
-        // How to make constructor?
-
-
-        public LongProperty(String name, BMeshData<TElement> meshData) {
+    public static class LongProperty<E extends Element> extends BMeshProperty<long[], E> {
+        public LongProperty(String name, BMeshData<E> meshData) {
             super(name, meshData);
         }
 
@@ -23,19 +17,19 @@ public class UserProperties {
             return new long[size];
         }
 
-        public long get(TElement element) {
+        public long get(E element) {
             return data[element.getIndex()];
         }
 
-        public void set(TElement element, long l) {
+        public void set(E element, long l) {
             data[element.getIndex()] = l;
         }
     }
 
 
-    // Properties for arbitrary objects
-    public static class Vec2TupleProperty<TElement extends Element> extends BMeshProperty<Vector2f[], TElement> {
-        public Vec2TupleProperty(String name, BMeshData<TElement> meshData) {
+    // Example of property for arbitrary objects
+    public static class Vec2TupleProperty<E extends Element> extends BMeshProperty<Vector2f[], E> {
+        public Vec2TupleProperty(String name, BMeshData<E> meshData) {
             super(name, meshData, 2);
         }
 
@@ -45,23 +39,23 @@ public class UserProperties {
         }
 
         
-        public Vector2f getA(TElement element) {
+        public Vector2f getA(E element) {
             int eleIndex = element.getIndex() * numComponents;
             return data[eleIndex];
         }
 
-        public Vector2f getB(TElement element) {
+        public Vector2f getB(E element) {
             int eleIndex = element.getIndex() * numComponents;
             return data[eleIndex+1];
         }
 
 
-        public void setA(TElement element, Vector2f vec) {
+        public void setA(E element, Vector2f vec) {
             int eleIndex = element.getIndex() * numComponents;
             data[eleIndex] = vec;
         }
 
-        public void setB(TElement element, Vector2f vec) {
+        public void setB(E element, Vector2f vec) {
             int eleIndex = element.getIndex() * numComponents;
             data[eleIndex+1] = vec;
         }

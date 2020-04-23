@@ -53,7 +53,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     public GridVertexDeduplication(BMesh bmesh, float epsilon) {
         grid = new HashGrid<>(epsilon);
         epsilonSquared = epsilon * epsilon;
-        propPosition = (Vec3Property) bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
+        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
     }
 
 
