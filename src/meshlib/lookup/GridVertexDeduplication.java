@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import meshlib.structure.BMesh;
 import meshlib.structure.BMeshData;
-import meshlib.structure.BMeshProperties;
+import meshlib.structure.BMeshProperty;
 import meshlib.structure.Vertex;
 import meshlib.util.HashGrid;
 
@@ -53,7 +53,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     public GridVertexDeduplication(BMesh bmesh, float epsilon) {
         grid = new HashGrid<>(epsilon);
         epsilonSquared = epsilon * epsilon;
-        propPosition = bmesh.vertexData().getProperty(BMeshProperties.Vertex.POSITION);
+        propPosition = bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
     }
 
 

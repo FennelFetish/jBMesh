@@ -2,6 +2,7 @@ package meshlib.structure;
 
 import com.jme3.math.Vector3f;
 import java.util.List;
+import meshlib.data.Vec3Property;
 
 public class BMesh  {
     private final BMeshData<Vertex> vertexData;
@@ -9,16 +10,16 @@ public class BMesh  {
     private final BMeshData<Face> faceData;
     private final BMeshData<Loop> loopData;
 
-    private final BMeshData<Vertex>.Property propPosition;
+    private final Vec3Property propPosition;
 
 
     public BMesh() {
-        vertexData = new BMeshData<>("Vertex", Vertex.ACCESSOR);
-        edgeData   = new BMeshData<>("Edge", Edge.ACCESSOR);
-        faceData   = new BMeshData<>("Face", Face.ACCESSOR);
-        loopData   = new BMeshData<>("Loop", Loop.ACCESSOR);
+        vertexData = new BMeshData<>("Vertex", () -> new Vertex());
+        edgeData   = new BMeshData<>("Edge", () -> new Edge());
+        faceData   = new BMeshData<>("Face", () -> new Face());
+        loopData   = new BMeshData<>("Loop", () -> new Loop());
 
-        propPosition = vertexData.createProperty(BMeshProperties.Vertex.POSITION, BMeshData.PropertyType.Float, 3);
+        propPosition = vertexData.createProperty(BMeshProperty.Vertex.POSITION, BMeshData.PropertyType.Float, 3);
     }
 
 
@@ -89,14 +90,13 @@ public class BMesh  {
         if(faceVertices.length < 3)
             throw new IllegalArgumentException("A face needs at least 3 vertices");
 
-        Face face = faceData.add();
-
+        // TODO: Avoid allocating array
         Loop[] loops = new Loop[faceVertices.length];
         for(int i=0; i<faceVertices.length; ++i) {
             loops[i] = loopData.add();
-            loops[i].face = face;
         }
-        
+
+        Face face = faceData.add();
         face.loop = loops[0];
 
         for(int i=0; i<faceVertices.length; ++i) {
@@ -104,6 +104,7 @@ public class BMesh  {
             Edge edge = getOrCreateEdge(faceVertices[i], faceVertices[nextIndex]);
             edge.addLoop(loops[i]);
 
+            loops[i].face = face;
             loops[i].edge = edge;
             loops[i].vertex = faceVertices[i];
             loops[i].nextFaceLoop = loops[nextIndex];

@@ -3,7 +3,7 @@ package meshlib.lookup;
 import com.jme3.math.Vector3f;
 import meshlib.structure.BMesh;
 import meshlib.structure.BMeshData;
-import meshlib.structure.BMeshProperties;
+import meshlib.structure.BMeshProperty;
 import meshlib.structure.Vertex;
 
 public class SimpleVertexDeduplication implements VertexDeduplication {
@@ -12,7 +12,7 @@ public class SimpleVertexDeduplication implements VertexDeduplication {
 
 
     public SimpleVertexDeduplication(BMesh bmesh) {
-        propPosition = bmesh.vertexData().getProperty(BMeshProperties.Vertex.POSITION);
+        propPosition = bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
         setRange(0.01f);
     }
 

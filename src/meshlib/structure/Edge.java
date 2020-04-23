@@ -1,9 +1,7 @@
 package meshlib.structure;
 
 // BMEdge has no specific direction
-public class Edge {
-    private int index;
-
+public class Edge extends Element {
     // Target vertex (at end).
     // Needed? Can we use BMLoop's reference instead?
     // -> No, we need both vertices since an edge can exist without faces (no loop) and without adjacent edges (wireframe, single line, no nextEdge)
@@ -23,7 +21,18 @@ public class Edge {
     // Can be null
     public Loop loop;
 
-    private Edge() {}
+
+    Edge() {}
+
+
+    @Override
+    protected void releaseElement() {
+        vertex0 = null;
+        vertex1 = null;
+        v0NextEdge = null;
+        v1NextEdge = null;
+        loop = null;
+    }
 
 
     /*Edge(Vertex v0, Vertex v1) {
@@ -154,32 +163,4 @@ public class Edge {
     public boolean connects(Vertex v0, Vertex v1) {
         return (vertex0 == v0 && vertex1 == v1) || (vertex0 == v1 && vertex1 == v0);
     }
-
-
-    static final BMeshData.ElementAccessor<Edge> ACCESSOR = new BMeshData.ElementAccessor<Edge>() {
-        @Override
-        public Edge create() {
-            return new Edge();
-        }
-
-        @Override
-        public void release(Edge element) {
-            element.index = -1;
-            element.vertex0 = null;
-            element.vertex1 = null;
-            element.v0NextEdge = null;
-            element.v1NextEdge = null;
-            element.loop = null;
-        }
-
-        @Override
-        public int getIndex(Edge element) {
-            return element.index;
-        }
-
-        @Override
-        public void setIndex(Edge element, int index) {
-            element.index = index;
-        }
-    };
 }

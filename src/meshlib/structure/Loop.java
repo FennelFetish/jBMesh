@@ -4,9 +4,7 @@ package meshlib.structure;
 // b) Runs along a BMEdge       - iterate with 'nextEdgeLoop'
 
 // (stores per-face-vertex data, UV's, vertex-colors, etc)
-public class Loop {
-    private int index;
-
+public class Loop extends Element {
     public Face face;
 
     public Edge edge;
@@ -25,33 +23,15 @@ public class Loop {
     public Loop nextEdgeLoop = this;
 
 
-    private Loop() {}
+    Loop() {}
 
 
-    static final BMeshData.ElementAccessor<Loop> ACCESSOR = new BMeshData.ElementAccessor<Loop>() {
-        @Override
-        public Loop create() {
-            return new Loop();
-        }
-
-        @Override
-        public void release(Loop element) {
-            element.index = -1;
-            element.face = null;
-            element.edge = null;
-            element.vertex = null;
-            element.nextFaceLoop = null;
-            element.nextEdgeLoop = null;
-        }
-
-        @Override
-        public int getIndex(Loop element) {
-            return element.index;
-        }
-
-        @Override
-        public void setIndex(Loop element, int index) {
-            element.index = index;
-        }
-    };
+    @Override
+    protected void releaseElement() {
+        face = null;
+        edge = null;
+        vertex = null;
+        nextFaceLoop = null;
+        nextEdgeLoop = null;
+    }
 }

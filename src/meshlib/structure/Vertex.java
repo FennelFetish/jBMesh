@@ -1,13 +1,17 @@
 package meshlib.structure;
 
-public class Vertex {
-    private int index;
-
+public class Vertex extends Element {
     // Can be NULL
     public Edge edge;
 
 
-    private Vertex() {}
+    Vertex() {}
+
+
+    @Override
+    public void releaseElement() {
+        edge = null;
+    }
 
 
     /*public void setLocation(float x, float y, float z) {
@@ -78,28 +82,4 @@ public class Vertex {
     // a) Reference to Data in each Vertex      --> Memory consumption
     // b) Vertex.getLocation(BMesh, Vector3f)
     // c) BMesh.getLocation(Vertex, Vector3f)   --> all functions like this would have to go to BMesh, making it larger
-
-
-    static final BMeshData.ElementAccessor<Vertex> ACCESSOR = new BMeshData.ElementAccessor<Vertex>() {
-        @Override
-        public Vertex create() {
-            return new Vertex();
-        }
-
-        @Override
-        public void release(Vertex element) {
-            element.index = -1;
-            element.edge = null;
-        }
-
-        @Override
-        public int getIndex(Vertex element) {
-            return element.index;
-        }
-
-        @Override
-        public void setIndex(Vertex element, int index) {
-            element.index = index;
-        }
-    };
 }

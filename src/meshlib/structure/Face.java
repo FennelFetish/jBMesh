@@ -1,35 +1,48 @@
 package meshlib.structure;
 
-public class Face {
-    private int index;
+import java.util.Iterator;
 
+public class Face extends Element {
     // Never NULL
     public Loop loop;
 
 
-    private Face() {}
+    Face() {}
 
 
-    static final BMeshData.ElementAccessor<Face> ACCESSOR = new BMeshData.ElementAccessor<Face>() {
-        @Override
-        public Face create() {
-            return new Face();
+    @Override
+    protected void releaseElement() {
+        loop = null;
+    }
+
+
+    public Iterable<Vertex> vertices() {
+        return () -> new FaceVertexIterator(loop);
+    }
+
+
+    private static class FaceVertexIterator implements Iterator<Vertex> {
+        private final Loop startLoop;
+        private Loop currentLoop;
+        private boolean first = true;
+
+        public FaceVertexIterator(Loop loop) {
+            startLoop = loop;
+            this.currentLoop = loop;
         }
 
         @Override
-        public void release(Face element) {
-            element.index = -1;
-            element.loop = null;
+        public boolean hasNext() {
+            return currentLoop != startLoop || first;
         }
 
-        @Override
-        public int getIndex(Face element) {
-            return element.index;
-        }
 
         @Override
-        public void setIndex(Face element, int index) {
-            element.index = index;
+        public Vertex next() {
+            first = false;
+            Vertex vertex = currentLoop.vertex;
+            currentLoop = currentLoop.nextFaceLoop;
+            return vertex;
         }
-    };
+    }
 }
