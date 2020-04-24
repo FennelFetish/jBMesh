@@ -16,7 +16,7 @@ public abstract class Element {
     }
 
 
-    void release() {
+    final void release() {
         index = -1;
         releaseElement();
     }

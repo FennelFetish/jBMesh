@@ -16,35 +16,22 @@ public class Vertex extends Element {
     }
 
 
-    /*public void setLocation(float x, float y, float z) {
-        location.set(x, y, z);
-    }
-
-    public void setLocation(Vector3f loc) {
-        setLocation(loc.x, loc.y, loc.z);
-    }
-
-    
-    public Vector3f getLocation() {
-        return location.clone();
-    }
-
-    public void getLocation(Vector3f store) {
-        store.set(location);
-    }*/
-
-
     /**
      * Inserts Edge at end of disk cycle at this Vertex;
-     * @param edge
+     * @param edge A newly created Edge which is adjacent to this Vertex.
      */
-    void addEdge(Edge edge) {
+    public void addEdge(Edge edge) {
         if(this.edge == null) {
+            if(!edge.isAdjacentTo(this))
+                throw new IllegalArgumentException("Edge is not adjacent to vertex");
+
             this.edge = edge;
             return;
         }
 
         // Find last edge of disk cycle at this vertex
+        // TODO: Insert at beginning instead, because O(1)?
+        //       -> Doesn't work without "prev" references because we have to iterate and find the previous node anyway.
         Edge lastEdge;
         Edge nextEdge = this.edge;
         do {
@@ -73,15 +60,8 @@ public class Vertex extends Element {
             if(currentEdge.connects(this, other))
                 return currentEdge;
             currentEdge = currentEdge.getNextEdge(this);
-        } while(edge != this.edge);
+        } while(currentEdge != this.edge);
 
         return null;
     }
-
-
-    // Store data in arrays in a "Data" object, accessed via index.
-    // Options:
-    // a) Reference to Data in each Vertex      --> Memory consumption
-    // b) Vertex.getLocation(BMesh, Vector3f)
-    // c) BMesh.getLocation(Vertex, Vector3f)   --> all functions like this would have to go to BMesh, making it larger
 }

@@ -14,8 +14,8 @@ public class FloatProperty<E extends Element> extends BMeshProperty<float[], E> 
         return data[element.getIndex()];
     }
 
-    public void set(E element, float f) {
-        data[element.getIndex()] = f;
+    public void set(E element, float value) {
+        data[element.getIndex()] = value;
     }
 
     

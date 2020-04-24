@@ -1,5 +1,6 @@
 package meshlib.util;
 
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.util.BufferUtils;
@@ -19,7 +20,6 @@ public class BMeshVisualization {
         int[] indices = new int[faces.size() * 3];
         int index = 0;
         for(int i=0; i<faces.size(); ++i) {
-            System.out.println("add face");
             Face f = faces.get(i);
 
             int numVertices = 0;

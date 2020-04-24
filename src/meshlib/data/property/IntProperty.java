@@ -14,8 +14,8 @@ public class IntProperty<E extends Element> extends BMeshProperty<int[], E>{
         return data[element.getIndex()];
     }
 
-    public void set(E element, int i) {
-        data[element.getIndex()] = i;
+    public void set(E element, int value) {
+        data[element.getIndex()] = value;
     }
 
 

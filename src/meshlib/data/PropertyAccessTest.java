@@ -13,11 +13,12 @@ public class PropertyAccessTest {
     
     public PropertyAccessTest(BMesh bmesh) {
         this.bmesh = bmesh;
-        Vec3Property<Face> propFace = new Vec3Property<>("FaceVec", bmesh.faceData());
+        Vec3Property<Face> propFace = new Vec3Property<>("FaceVec");
+        bmesh.faceData().addProperty(propFace);
     }
 
 
-    public void shouldNotCompile() {
+   /* public void shouldNotCompile() {
         // Invalid element type
         //Vec3Property<Face> propFace2        = bmesh.vertexData().getProperty("FaceVec", Vec3Property.class);
         BMeshProperty<?, Face> propFace3    = bmesh.vertexData().getProperty("FaceVec");
@@ -28,7 +29,7 @@ public class PropertyAccessTest {
 
         Vec3Property<Face> propFace7        = Vec3Property.get("FaceVec", bmesh.vertexData());
         Vec3Property propFace8              = Vec3Property.get("FaceVec", bmesh.vertexData()); // !!!!
-    }
+    }*/
 
 
     public void shouldFailAtRuntime() {

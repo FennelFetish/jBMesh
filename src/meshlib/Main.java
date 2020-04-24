@@ -2,48 +2,25 @@ package meshlib;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
+import meshlib.conversion.DebugMeshBuilder;
 import meshlib.conversion.MeshConverter;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.ColorProperty;
-import meshlib.data.property.FloatProperty;
-import meshlib.data.property.IntProperty;
 import meshlib.structure.BMesh;
-import meshlib.structure.Edge;
-import meshlib.structure.Face;
-import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 import meshlib.util.BMeshVisualization;
 
-
 public class Main extends SimpleApplication {
-
-    @Override
-    public void simpleInitApp() {
-        Box box = new Box(1f, 1f, 1f);
-        BMesh bmesh = MeshConverter.convert(box);
-
-        /*PropertyAccessTest pa = new PropertyAccessTest(bmesh);
-        pa.shouldWork();
-        pa.shouldFailAtRuntime();*/
-
-        FloatProperty<Loop> prop1 = new FloatProperty<>("Floaty");
-        bmesh.loopData().addProperty(prop1);
-        bmesh.loopData().removeProperty(prop1);
-        System.out.println( prop1.get(bmesh.loopData().elements().get(0)) );
-        bmesh.loopData().addProperty(prop1);
-
-        IntProperty<Edge> prop2 = new IntProperty<>("Inty");
-        bmesh.edgeData().addProperty(prop2);
-
-        UserProperties.Vec2TupleProperty<Face> prop3 = new UserProperties.Vec2TupleProperty<>("Tuply");
-        bmesh.faceData().addProperty(prop3);
-        
+    private Mesh createMesh(Mesh in) {
+        BMesh bmesh = MeshConverter.convert(in);
         bmesh.compactData();
 
         ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
@@ -58,24 +35,39 @@ public class Main extends SimpleApplication {
             propVertexColor.set(v, color.r, color.g, color.b, color.a);
         }
 
-        Mesh mesh = BMeshVisualization.create(bmesh);
-
-        Geometry geom = new Geometry("Geom", mesh);
-
-        Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-        mat.setBoolean("UseVertexColor", true);
-        geom.setMaterial(mat);
-
-        rootNode.attachChild(geom);
-        rootNode.addLight(new AmbientLight(ColorRGBA.White));
-
-        flyCam.setMoveSpeed(10);
+        return BMeshVisualization.create(bmesh);
     }
+
+    
+    private Mesh createDebugMesh(Mesh in) {
+        BMesh bmesh = MeshConverter.convert(in);
+        bmesh.compactData();
+
+        DebugMeshBuilder debugMeshBuilder = new DebugMeshBuilder();
+        debugMeshBuilder.apply(bmesh);
+        return debugMeshBuilder.createMesh();
+    }
+    
 
     @Override
-    public void simpleUpdate(float tpf) {
-        //TODO: add update code
+    public void simpleInitApp() {
+        Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        mat.setBoolean("UseVertexColor", true);
+
+        Geometry geom = new Geometry("Geom", createDebugMesh(new Box(1f, 1f, 1f)));
+        geom.setMaterial(mat);
+        rootNode.attachChild(geom);
+        
+        rootNode.addLight(new AmbientLight(ColorRGBA.White.mult(0.7f)));
+        rootNode.addLight(new DirectionalLight(new Vector3f(-0.7f, -1, -0.9f).normalizeLocal(), ColorRGBA.White));
+
+        flyCam.setMoveSpeed(10);
+        cam.setFrustumPerspective(60, (float)cam.getWidth()/cam.getHeight(), 0.01f, 100f);
     }
+
+    
+    @Override
+    public void simpleUpdate(float tpf) {}
 
 
     private ColorRGBA hsb(float h, float s, float b) {
@@ -135,8 +127,11 @@ public class Main extends SimpleApplication {
     }
 
 
-
     public static void main(String[] args) {
+        /*PropertyAccessTest pa = new PropertyAccessTest(bmesh);
+        pa.shouldWork();
+        pa.shouldFailAtRuntime();*/
+
         AppSettings settings = new AppSettings(true);
         settings.setResolution(1280, 720);
 

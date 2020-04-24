@@ -28,11 +28,8 @@ public class BMeshData<T extends Element> {
     
     private final Map<String, BMeshProperty<?, T>> properties = new HashMap<>();
 
-    private final String name; // Debug
 
-
-    public BMeshData(String name, ElementFactory<T> factory) {
-        this.name = name;
+    public BMeshData(ElementFactory<T> factory) {
         this.factory = factory;
     }
 
@@ -51,7 +48,6 @@ public class BMeshData<T extends Element> {
         }
 
         final int newIndex = elements.size();
-        System.out.println(name + ": added element " + newIndex);
         if(newIndex >= arraySize) {
             int capacity = (int) Math.ceil(arraySize * GROW_FACTOR);
             ensureCapacity(capacity);
@@ -108,7 +104,7 @@ public class BMeshData<T extends Element> {
 
 
     private void resize(int size, int copyLength) {
-        System.out.println("resize '" + name + "' from " + arraySize + " to " + size);
+        System.out.println("resize from " + arraySize + " to " + size);
 
         for(BMeshProperty prop : properties.values()) {
             prop.realloc(size, copyLength);

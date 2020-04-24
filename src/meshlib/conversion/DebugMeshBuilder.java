@@ -1,0 +1,175 @@
+package meshlib.conversion;
+
+import com.jme3.math.Vector3f;
+import com.jme3.scene.Mesh;
+import com.jme3.scene.VertexBuffer;
+import java.util.ArrayList;
+import meshlib.data.BMeshProperty;
+import meshlib.data.property.Vec3Property;
+import meshlib.operator.FaceOps;
+import meshlib.structure.BMesh;
+import meshlib.structure.Face;
+import meshlib.structure.Loop;
+import meshlib.structure.Vertex;
+
+public class DebugMeshBuilder {
+    private static final float INNER_SCALE       = 0.85f;
+    private static final Vector3f COLOR_INNER    = new Vector3f(194, 185, 149).divideLocal(255);
+    private static final Vector3f COLOR_SRC      = new Vector3f(30, 30, 30).divideLocal(255);
+    private static final Vector3f COLOR_GREEN    = new Vector3f(0.0f, 0.5f, 0.0f);
+    private static final Vector3f COLOR_RED      = new Vector3f(0.8f, 0.0f, 0.0f);
+    private static final Vector3f COLOR_SELECTED = new Vector3f(0.0f, 1.0f, 1.0f);
+
+    private final ArrayList<Float> vertices  = new ArrayList<>();
+    private final ArrayList<Float> normals   = new ArrayList<>();
+    private final ArrayList<Float> colors    = new ArrayList<>();
+    private final ArrayList<Integer> indices = new ArrayList<>();
+
+
+    public DebugMeshBuilder() {}
+
+
+    public void clear() {
+        vertices.clear();
+        normals.clear();
+        colors.clear();
+        indices.clear();
+    }
+
+
+    private int addVertex(Vector3f v) {
+        int index = vertices.size() / 3;
+        vertices.add(v.x);
+        vertices.add(v.y);
+        vertices.add(v.z);
+        return index;
+    }
+
+
+    private void addNormal(Vector3f n) {
+        normals.add(n.x);
+        normals.add(n.y);
+        normals.add(n.z);
+    }
+
+    private void addNormal(Vector3f n, int count) {
+        for(int i=0; i<count; ++i)
+            addNormal(n);
+    }
+
+
+    private void addColor(Vector3f c) {
+        colors.add(c.x);
+        colors.add(c.y);
+        colors.add(c.z);
+        colors.add(0.95f); // alpha
+    }
+
+    private void addColor(Vector3f c, int count) {
+        for(int i=0; i<count; ++i)
+            addColor(c);
+    }
+
+
+    public Mesh createMesh() {
+        float[] vbuf = new float[vertices.size()];
+        int i = 0;
+        for(Float f : vertices)
+            vbuf[i++] = f;
+
+        float[] nbuf = new float[normals.size()];
+        i = 0;
+        for(Float f : normals)
+            nbuf[i++] = f;
+
+        float[] cbuf = new float[colors.size()];
+        i = 0;
+        for(Float f : colors)
+            cbuf[i++] = f;
+
+        int[] ibuf = new int[indices.size()];
+        i = 0;
+        for(Integer idx : indices)
+            ibuf[i++] = idx;
+
+        Mesh mesh = new Mesh();
+        mesh.setBuffer(VertexBuffer.Type.Position, 3, vbuf);
+        mesh.setBuffer(VertexBuffer.Type.Normal, 3, nbuf);
+        mesh.setBuffer(VertexBuffer.Type.Color, 4, cbuf);
+        mesh.setBuffer(VertexBuffer.Type.Index, 1, ibuf);
+
+        mesh.setMode(Mesh.Mode.Triangles);
+        mesh.updateBound();
+
+        return mesh;
+    }
+
+
+    public void apply(BMesh bmesh) {
+        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        final ArrayList<Vector3f> vertices = new ArrayList<>();
+        FaceOps faceOps = new FaceOps(bmesh);
+
+        for(Face face : bmesh.faces()) {
+            vertices.clear();
+            for(Vertex v : face.vertices())
+                vertices.add(propPosition.get(v));
+
+            final int size = vertices.size();
+            if(size != 3) {
+                System.out.println("Not a triangle");
+                continue;
+            }
+
+            final Vector3f normal   = faceOps.calcNormal(face);
+            final Vector3f centroid = faceOps.calcCentroid(face);
+
+            // Scale vertices
+            Vector3f[] innerVerts = new Vector3f[size];
+            for(int i=0; i<size; ++i)
+                innerVerts[i] = vertices.get(i).subtract(centroid).multLocal(INNER_SCALE).addLocal(centroid);
+
+            // Create "arrows"
+            Loop loop = face.loop;
+            for(int i=0; i<size; ++i) {
+                int i0 = addVertex(innerVerts[i]);
+                int i1 = addVertex(vertices.get(i));
+                int i2 = addVertex(vertices.get((i+1)%size));
+                int i3 = addVertex(innerVerts[(i+1)%size]);
+
+                addNormal(normal, 4);
+                addColor(COLOR_SRC, 2);
+
+                if(loop.nextEdgeLoop == loop)
+                    addColor(COLOR_RED, 2);
+                else
+                    addColor(COLOR_GREEN, 2);
+
+                indices.add(i0);
+                indices.add(i1);
+                indices.add(i3);
+
+                indices.add(i1);
+                indices.add(i2);
+                indices.add(i3);
+
+                loop = loop.nextFaceLoop;
+            }
+
+            // Add inner vertices
+            int[] innerIdx = new int[size];
+            for(int i=0; i<size; ++i) {
+                innerIdx[i] = addVertex(innerVerts[i]);
+                addNormal(normal);
+                addColor(COLOR_INNER);
+            }
+
+            // Fan-like triangulation for inner area
+            for(int i=2; i<size; ++i) {
+                indices.add(innerIdx[0]);
+                indices.add(innerIdx[i-1]);
+                indices.add(innerIdx[i]);
+            }
+        }
+    }
+}

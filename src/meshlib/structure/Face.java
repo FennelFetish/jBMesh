@@ -25,7 +25,7 @@ public class Face extends Element {
     private static class FaceVertexIterator implements Iterator<Vertex> {
         private final Loop startLoop;
         private Loop currentLoop;
-        private boolean first = true; // Get rid of this flag?
+        private boolean first = true; // Get rid of this flag? (emulate do-while)
 
         public FaceVertexIterator(Loop loop) {
             startLoop = loop;

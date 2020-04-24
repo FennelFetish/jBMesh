@@ -1,6 +1,7 @@
 package meshlib.structure;
 
 import com.jme3.math.Vector3f;
+import java.util.ArrayList;
 import java.util.List;
 import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
@@ -14,12 +15,14 @@ public class BMesh {
 
     private final Vec3Property<Vertex> propPosition = new Vec3Property<>(BMeshProperty.Vertex.POSITION);
 
+    private final transient ArrayList<Loop> tempLoops = new ArrayList<>(4);
+
 
     public BMesh() {
-        vertexData = new BMeshData<>("Vertex", () -> new Vertex());
-        edgeData   = new BMeshData<>("Edge", () -> new Edge());
-        faceData   = new BMeshData<>("Face", () -> new Face());
-        loopData   = new BMeshData<>("Loop", () -> new Loop());
+        vertexData = new BMeshData<>(() -> new Vertex());
+        edgeData   = new BMeshData<>(() -> new Edge());
+        faceData   = new BMeshData<>(() -> new Face());
+        loopData   = new BMeshData<>(() -> new Loop());
 
         vertexData.addProperty(propPosition);
     }
@@ -55,7 +58,6 @@ public class BMesh {
     }
 
 
-    // TODO: Make private so deduplication can work? Or leave deduplication up to the user?
     public Vertex createVertex() {
         return vertexData.add();
     }
@@ -63,7 +65,6 @@ public class BMesh {
     public Vertex createVertex(float x, float y, float z) {
         Vertex vert = createVertex();
         propPosition.set(vert, x, y, z);
-        //vert.setLocation(x, y, z); // TODO: Deduplication?
         return vert;
     }
 
@@ -72,17 +73,14 @@ public class BMesh {
     }
 
 
-    public Edge getOrCreateEdge(Vertex v0, Vertex v1) {
+    public Edge createEdge(Vertex v0, Vertex v1) {
         assert v0 != v1;
 
-        Edge edge = v0.getEdgeTo(v1);
-        if(edge == null) {
-            edge = edgeData.add();
-            edge.vertex0 = v0;
-            edge.vertex1 = v1;
-            v0.addEdge(edge);
-            v1.addEdge(edge);
-        }
+        Edge edge = edgeData.add();
+        edge.vertex0 = v0;
+        edge.vertex1 = v1;
+        v0.addEdge(edge);
+        v1.addEdge(edge);
 
         return edge;
     }
@@ -92,26 +90,31 @@ public class BMesh {
         if(faceVertices.length < 3)
             throw new IllegalArgumentException("A face needs at least 3 vertices");
 
-        // TODO: Avoid allocating array
-        Loop[] loops = new Loop[faceVertices.length];
+        tempLoops.ensureCapacity(faceVertices.length);
         for(int i=0; i<faceVertices.length; ++i) {
-            loops[i] = loopData.add();
+            tempLoops.add(loopData.add());
         }
 
         Face face = faceData.add();
-        face.loop = loops[0];
+        face.loop = tempLoops.get(0);
 
         for(int i=0; i<faceVertices.length; ++i) {
             int nextIndex = (i+1) % faceVertices.length;
-            Edge edge = getOrCreateEdge(faceVertices[i], faceVertices[nextIndex]);
-            edge.addLoop(loops[i]);
+            
+            Edge edge = faceVertices[i].getEdgeTo(faceVertices[nextIndex]);
+            if(edge == null)
+                edge = createEdge(faceVertices[i], faceVertices[nextIndex]);
 
-            loops[i].face = face;
-            loops[i].edge = edge;
-            loops[i].vertex = faceVertices[i];
-            loops[i].nextFaceLoop = loops[nextIndex];
+            Loop loop = tempLoops.get(i);
+            edge.addLoop(loop);
+
+            loop.face = face;
+            loop.edge = edge;
+            loop.vertex = faceVertices[i];
+            loop.nextFaceLoop = tempLoops.get(nextIndex);
         }
 
+        tempLoops.clear();
         return face;
     }
 
@@ -121,6 +124,8 @@ public class BMesh {
         edgeData.compact();
         faceData.compact();
         loopData.compact();
+
+        //tempLoops.trimToSize();
     }
 
 
