@@ -25,27 +25,34 @@ public class VertexTest {
         e1.vertex1 = v1;
 
         center.addEdge(e1);
-        testDiskCycle(center, e1);
+        testDiskCycleNext(center, e1);
+        testDiskCyclePrev(center, e1);
 
         Edge e2 = new Edge();
         e2.vertex0 = center;
         e2.vertex1 = v2;
 
         center.addEdge(e2);
-        testDiskCycle(center, e1, e2, e1);
+        testDiskCycleNext(center, e1, e2, e1);
+        testDiskCyclePrev(center, e1, e2, e1);
 
         Edge e3 = new Edge();
         e3.vertex0 = center;
         e3.vertex1 = v3;
 
         center.addEdge(e3);
-        testDiskCycle(center, e1, e2, e3, e1);
+        testDiskCycleNext(center, e1, e2, e3, e1);
+        testDiskCyclePrev(center, e1, e3, e2, e1);
 
         center.removeEdge(e2);
-        testDiskCycle(center, e1, e3, e1);
+        assertThat(e2.getNextEdge(center), is(e2));
+        assertThat(e2.getNextEdge(v2), is(e2));
+        testDiskCycleNext(center, e1, e3, e1);
+        testDiskCyclePrev(center, e1, e3, e1);
 
         center.addEdge(e2);
-        testDiskCycle(center, e1, e3, e2, e1);
+        testDiskCycleNext(center, e1, e3, e2, e1);
+        testDiskCyclePrev(center, e1, e2, e3, e1);
 
         // Test Vertex.getEdgeTo(Vertex)
         assertThat(center.getEdgeTo(v1), is(e1));
@@ -57,13 +64,25 @@ public class VertexTest {
     }
 
 
-    private static void testDiskCycle(Vertex vert, Edge... expectedEdges) {
+    private static void testDiskCycleNext(Vertex vert, Edge... expectedEdges) {
         Edge[] actual = new Edge[expectedEdges.length];
 
         Edge edge = vert.edge;
         for(int i=0; i<expectedEdges.length; ++i) {
             actual[i] = edge;
             edge = edge.getNextEdge(vert);
+        }
+
+        assertThat(actual, is(expectedEdges));
+    }
+
+    private static void testDiskCyclePrev(Vertex vert, Edge... expectedEdges) {
+        Edge[] actual = new Edge[expectedEdges.length];
+
+        Edge edge = vert.edge;
+        for(int i=0; i<expectedEdges.length; ++i) {
+            actual[i] = edge;
+            edge = edge.getPrevEdge(vert);
         }
 
         assertThat(actual, is(expectedEdges));

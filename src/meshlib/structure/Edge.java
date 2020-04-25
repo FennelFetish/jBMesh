@@ -75,6 +75,9 @@ public class Edge extends Element {
 
 
     // Iterate disk cycle
+    // TODO: find(Edge): Use iterators that also allow insertion/removal at position (with prev reference) -> better than a prev-reference because it also checks if edge exists in cycle
+    //                   But it introduces object allocation
+
     public Edge getNextEdge(Vertex contactPoint) {
         if(contactPoint == vertex0)
             return v0NextEdge;
@@ -82,6 +85,18 @@ public class Edge extends Element {
             return v1NextEdge;
 
         throw new IllegalArgumentException("Edge is not adjacent to Vertex");
+    }
+
+
+    public Edge getPrevEdge(Vertex contactPoint) {
+        Edge prev = this;
+        Edge current = getNextEdge(contactPoint);
+        while(current != this) {
+            prev = current;
+            current = current.getNextEdge(contactPoint);
+        }
+
+        return prev;
     }
 
 
@@ -93,6 +108,16 @@ public class Edge extends Element {
 
     public boolean isAdjacentTo(Vertex v) {
         return vertex0 == v || vertex1 == v;
+    }
+
+
+    public Vertex getCommonVertex(Edge other) {
+        if(vertex0 == other.vertex0 || vertex0 == other.vertex1)
+            return vertex0;
+        else if(vertex1 == other.vertex0 || vertex1 == other.vertex1)
+            return vertex1;
+
+        return null;
     }
 
 

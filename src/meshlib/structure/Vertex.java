@@ -21,13 +21,25 @@ public class Vertex extends Element {
      * @param edge A newly created Edge which is adjacent to this Vertex.
      */
     public void addEdge(Edge edge) {
+        // TODO: Check if edge is in disk cycle
+
+        assert edge.getNextEdge(this) == edge;
+
         if(this.edge == null) {
             if(!edge.isAdjacentTo(this))
                 throw new IllegalArgumentException("Edge is not adjacent to Vertex");
 
             this.edge = edge;
+            assert edge.getNextEdge(this) == edge;
             return;
         }
+
+        edge.setNextEdge(this, this.edge);
+        Edge prevEdge = this.edge.getPrevEdge(this);
+        prevEdge.setNextEdge(this, edge);
+
+
+        /*
 
         // Do this first so it will throw if edge is null or not adjacent
         edge.setNextEdge(this, this.edge);
@@ -49,14 +61,31 @@ public class Vertex extends Element {
         // TODO: Check/modify edge.v0NextEdge/v1NextEdge?
         // Why would parameter 'edge' already have a disk cycle at this vertex?
         // 'edge' must be a newly constructed object
+
+        */
     }
 
 
     public void removeEdge(Edge edge) {
+        // TODO: Check if edge is in disk cycle
+
         // Do this first so it will throw if edge is null or not adjacent
         final Edge nextEdge = edge.getNextEdge(this);
+        if(nextEdge == edge) {
+            // 'edge' was the only one here
+            this.edge = null;
+            return;
+        }
 
-        Edge prevEdge = this.edge;
+        final Edge prevEdge = edge.getPrevEdge(this);
+        prevEdge.setNextEdge(this, nextEdge);
+        edge.setNextEdge(this, edge);
+
+        if(this.edge == edge)
+            this.edge = nextEdge;
+
+
+        /*Edge prevEdge = this.edge;
         Edge current = this.edge.getNextEdge(this);
         while(current != this.edge) {
             if(current == edge) {
@@ -74,7 +103,7 @@ public class Vertex extends Element {
 
         // 'edge' was the only one here, prevEdge == current, loop didn't run
         this.edge = null;
-        edge.setNextEdge(this, edge);
+        edge.setNextEdge(this, edge);*/
     }
 
 

@@ -10,6 +10,7 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Torus;
 import com.jme3.system.AppSettings;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import meshlib.data.property.Vec3Property;
 import meshlib.operator.EdgeOps;
 import meshlib.structure.BMesh;
 import meshlib.structure.Edge;
+import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.BMeshVisualization;
 
@@ -54,14 +56,13 @@ public class Main extends SimpleApplication {
         List<Edge> edges = new ArrayList<>(bmesh.edges());
 
         for(Edge e : edges) {
-            try {
-                Vector3f center = edgeOps.calcCenter(e);
-                Vertex vert = bmesh.splitEdge(e);
-                propPosition.set(vert, center);
-            } catch(Exception ex) {
-                ex.printStackTrace();
-                //break;
-            }
+            Vector3f center = edgeOps.calcCenter(e);
+            Vertex vert = bmesh.splitEdge(e);
+            propPosition.set(vert, center);
+        }
+
+        for(Face f : bmesh.faces()) {
+            bmesh.invertFace(f);
         }
 
         bmesh.compactData();
@@ -79,8 +80,10 @@ public class Main extends SimpleApplication {
         //mat.getAdditionalRenderState().setWireframe(true);
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
 
+        //Mesh mesh = new Torus(16, 12, 1.2f, 2.5f);
         //Mesh mesh = new Torus(32, 24, 1.2f, 2.5f);
-        Mesh mesh = new Box(1, 1, 1);
+        //Mesh mesh = new Box(1, 1, 1);
+        Mesh mesh = new Sphere(32, 32, 2.0f);
         Geometry geom = new Geometry("Geom", createDebugMesh(mesh));
         geom.setMaterial(mat);
         rootNode.attachChild(geom);

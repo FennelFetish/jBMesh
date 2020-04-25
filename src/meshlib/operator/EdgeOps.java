@@ -7,6 +7,9 @@ import meshlib.structure.BMesh;
 import meshlib.structure.Edge;
 import meshlib.structure.Vertex;
 
+/**
+ * Functions that depend on properties.
+ */
 public class EdgeOps {
     private final BMesh bmesh;
     private final Vec3Property<Vertex> propPosition;

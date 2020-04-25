@@ -8,6 +8,9 @@ import meshlib.structure.Face;
 import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
+/**
+ * Functions that depend on properties.
+ */
 public class FaceOps {
     private final BMesh bmesh;
     private final Vec3Property<Vertex> propPosition;
@@ -50,5 +53,12 @@ public class FaceOps {
         }
 
         return centroid.divideLocal(numVertices);
+    }
+
+
+    public boolean arePlanar(Face face1, Face face2) {
+        Vector3f normal1 = calcNormal(face1);
+        Vector3f normal2 = calcNormal(face2);
+        return normal1.dot(normal2) > 0.999f;
     }
 }

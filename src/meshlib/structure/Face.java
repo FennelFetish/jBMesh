@@ -17,6 +17,19 @@ public class Face extends Element {
     }
 
 
+    // TODO: Can have multiple common edges!
+    public Edge getCommonEdge(Face face) {
+        for(Loop l1 : loops()) {
+            for(Loop l2 : face.loops()) {
+                if(l1.edge == l2.edge)
+                    return loop.edge;
+            }
+        }
+
+        return null;
+    }
+
+
     public Iterable<Loop> loops() {
         return () -> new FaceLoopIterator(loop);
     }

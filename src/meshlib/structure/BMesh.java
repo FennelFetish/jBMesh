@@ -92,6 +92,7 @@ public class BMesh {
             throw new IllegalArgumentException("A face needs at least 3 vertices");
 
         try {
+            assert tempLoops.isEmpty();
             tempLoops.ensureCapacity(faceVertices.length);
             for(int i=0; i<faceVertices.length; ++i) {
                 Objects.requireNonNull(faceVertices[i]);
@@ -167,18 +168,20 @@ public class BMesh {
      * @return A new Vertex (<i>vNew</i>) with default properties (no specific position).
      */
     public Vertex splitEdge(Edge edge) {
-        Vertex vertex = vertexData.create();
+        Vertex v0 = edge.vertex0;
+        Vertex v1 = edge.vertex1;
+        Vertex vNew = vertexData.create();
 
         Edge newEdge = edgeData.create();
-        newEdge.vertex0 = vertex;
-        newEdge.vertex1 = edge.vertex1;
+        newEdge.vertex0 = vNew;
+        newEdge.vertex1 = v1;
 
-        edge.vertex1.removeEdge(edge);
-        edge.vertex1.addEdge(newEdge);
-        edge.vertex1 = vertex;
+        v1.removeEdge(edge);
+        v1.addEdge(newEdge);
 
-        vertex.addEdge(edge);
-        vertex.addEdge(newEdge);
+        edge.vertex1 = vNew;
+        vNew.addEdge(edge);
+        vNew.addEdge(newEdge);
 
         for(Loop loop : edge.loops()) {
             Loop newLoop = loopData.create();
@@ -187,22 +190,80 @@ public class BMesh {
             newEdge.addLoop(newLoop);
 
             // Link newLoop to next or previous loop, matching winding order.
-            if(loop.vertex == edge.vertex0) {
-                newLoop.vertex = vertex;
+            if(loop.vertex == v0) {
+                newLoop.vertex = vNew;
                 newLoop.nextFaceLoop = loop.nextFaceLoop;
                 loop.nextFaceLoop = newLoop;
             }
             else {
-                assert loop.vertex == newEdge.vertex1;
+                assert loop.vertex == v1;
 
                 Loop prevLoop = loop.getPrevFaceLoop();
+                assert prevLoop.nextFaceLoop == loop;
+
                 prevLoop.nextFaceLoop = newLoop;
                 newLoop.nextFaceLoop = loop;
                 newLoop.vertex = loop.vertex;
-                loop.vertex = vertex;
+                loop.vertex = vNew;
             }
         }
 
-        return vertex;
+        return vNew;
+    }
+
+
+    /**
+     * Removes edge2 and their common Vertex.
+     * @param edge1
+     * @param edge2
+     */
+    public void joinEdge(Edge edge1, Edge edge2) {
+        Vertex vCommon = edge1.getCommonVertex(edge2);
+        if(vCommon == null)
+            throw new IllegalArgumentException("Edges are not adjacent");
+    }
+
+
+    /**
+     * Removes face2.
+     * @param face1
+     * @param face2
+     */
+    public void joinFace(Face face1, Face face2) {
+        // TODO: Can have multiple common edges!
+        Edge commonEdge = face1.getCommonEdge(face2);
+        if(commonEdge == null)
+            throw new IllegalArgumentException("Faces are not adjacent");
+
+        joinFace(face1, face2, commonEdge);
+    }
+
+    public void joinFace(Face face1, Face face2, Edge commonEdge) {
+        // Check if windind order for faces along commonEdge are different
+        // -> Invert face2's winding order if they're the same?
+        // Check if planar? -> No, up to the user
+        // Remove loops along commonEdge
+        // Connect loops of face1 to face2
+
+
+    }
+
+
+    public void invertFace(Face face) {
+        try {
+            assert tempLoops.isEmpty();
+            for(Loop loop : face.loops())
+                tempLoops.add(loop);
+
+            Loop prev = tempLoops.get(tempLoops.size()-1);
+            for(int i=0; i<tempLoops.size(); ++i) {
+                Loop current = tempLoops.get(i);
+                current.nextFaceLoop = prev;
+                prev = current;
+            }
+        }
+        finally {
+            tempLoops.clear();
+        }
     }
 }
