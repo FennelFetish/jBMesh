@@ -17,93 +17,66 @@ public class Vertex extends Element {
 
 
     /**
-     * Inserts Edge at end of disk cycle at this Vertex;
+     * Inserts Edge at end of disk cycle at this Vertex.
      * @param edge A newly created Edge which is adjacent to this Vertex.
      */
     public void addEdge(Edge edge) {
-        // TODO: Check if edge is in disk cycle
-
-        assert edge.getNextEdge(this) == edge;
+        // Edge cannot already belong to a disk cycle
+        // Will throw if edge is null or not adjacent
+        if(edge.getNextEdge(this) != edge)
+            throw new IllegalArgumentException("Edge already associated with a disk cycle for this Vertex");
 
         if(this.edge == null) {
-            if(!edge.isAdjacentTo(this))
-                throw new IllegalArgumentException("Edge is not adjacent to Vertex");
-
             this.edge = edge;
-            assert edge.getNextEdge(this) == edge;
             return;
         }
-
-        edge.setNextEdge(this, this.edge);
-        Edge prevEdge = this.edge.getPrevEdge(this);
-        prevEdge.setNextEdge(this, edge);
-
-
-        /*
-
-        // Do this first so it will throw if edge is null or not adjacent
-        edge.setNextEdge(this, this.edge);
 
         // Find last edge of disk cycle at this vertex
         // TODO: Insert at beginning instead, because O(1)?
         //       -> Doesn't work without "prev" references because we have to iterate and find the previous node anyway.
-        Edge lastEdge;
-        Edge current = this.edge;
-        do {
-            if(current == edge)
-                throw new IllegalArgumentException("Edge already exists in disk cycle for Vertex"); // Return false instead?
-
-            lastEdge = current;
-            current = current.getNextEdge(this);
-        } while(current != this.edge);
-        lastEdge.setNextEdge(this, edge);
-
-        // TODO: Check/modify edge.v0NextEdge/v1NextEdge?
-        // Why would parameter 'edge' already have a disk cycle at this vertex?
-        // 'edge' must be a newly constructed object
-
-        */
+        Edge prevEdge = this.edge.getPrevEdge(this);
+        prevEdge.setNextEdge(this, edge);
+        edge.setNextEdge(this, this.edge);
     }
-
+    
 
     public void removeEdge(Edge edge) {
-        // TODO: Check if edge is in disk cycle
-
         // Do this first so it will throw if edge is null or not adjacent
-        final Edge nextEdge = edge.getNextEdge(this);
-        if(nextEdge == edge) {
-            // 'edge' was the only one here
-            this.edge = null;
+        Edge nextEdge = edge.getNextEdge(this);
+
+        if(this.edge == edge) {
+            if(nextEdge == edge) {
+                // Edge was the only one in disk cycle
+                edge.setNextEdge(this, edge);
+                this.edge = null;
+            }
+            else {
+                Edge prev = edge.getPrevEdge(this); // Could continue search from 'nextEdge'
+                prev.setNextEdge(this, nextEdge);
+                edge.setNextEdge(this, edge);
+                this.edge = nextEdge;
+            }
+
             return;
         }
 
-        final Edge prevEdge = edge.getPrevEdge(this);
-        prevEdge.setNextEdge(this, nextEdge);
-        edge.setNextEdge(this, edge);
+        // Check for null so it will throw IllegalArgumentException and not NPE, regardless of this object's state
+        if(this.edge != null) {
+            Edge prevEdge = this.edge;
+            Edge current = this.edge.getNextEdge(this);
+            while(current != this.edge) {
+                if(current == edge) {
+                    prevEdge.setNextEdge(this, nextEdge);
+                    edge.setNextEdge(this, edge);
+                    return;
+                }
 
-        if(this.edge == edge)
-            this.edge = nextEdge;
-
-
-        /*Edge prevEdge = this.edge;
-        Edge current = this.edge.getNextEdge(this);
-        while(current != this.edge) {
-            if(current == edge) {
-                prevEdge.setNextEdge(this, nextEdge);
-                edge.setNextEdge(this, edge);
-                return;
+                prevEdge = current;
+                current = current.getNextEdge(this);
             }
-
-            prevEdge = current;
-            current = current.getNextEdge(this);
         }
 
-        if(this.edge != edge)
-            throw new IllegalArgumentException("Edge does not exists in disk cycle for Vertex"); // Return false instead?
-
-        // 'edge' was the only one here, prevEdge == current, loop didn't run
-        this.edge = null;
-        edge.setNextEdge(this, edge);*/
+        throw new IllegalArgumentException("Edge does not exists in disk cycle for Vertex");
     }
 
 

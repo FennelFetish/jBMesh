@@ -106,11 +106,17 @@ public class Edge extends Element {
     }
 
 
+    /**
+     * Checks whether this Edge is connected to Vertex <i>v</i>.
+     * @param v Vertex
+     * @return True if this Edge is adjacent to the supplied Vertex. False otherwise, or if the supplied Vertex is <i>null</i>.
+     */
     public boolean isAdjacentTo(Vertex v) {
-        return vertex0 == v || vertex1 == v;
+        return (v != null) && (vertex0 == v || vertex1 == v);
     }
 
 
+    // TODO: It's possible that both vertices are the same - equals() ?
     public Vertex getCommonVertex(Edge other) {
         if(vertex0 == other.vertex0 || vertex0 == other.vertex1)
             return vertex0;

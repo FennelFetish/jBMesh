@@ -1,5 +1,6 @@
 package meshlib.structure;
 
+import meshlib.TestUtil;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -25,12 +26,9 @@ public class BMeshTest {
         assertThat(edge1.getPrevEdge(v0), is(edge1));
         assertThat(edge1.getPrevEdge(v1), is(edge1));
 
-        try {
+        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
             edge1.getNextEdge(v2);
-            assert false;
-        }
-        catch(IllegalArgumentException ex) {}
-        catch(Exception ex) { assert false; }
+        });
 
         // Add second Edge
         Edge edge2 = bmesh.createEdge(v1, v2);
@@ -43,17 +41,24 @@ public class BMeshTest {
         assertThat(edge1.getPrevEdge(v0), is(edge1));
         assertThat(edge1.getPrevEdge(v1), is(edge2));
 
+        assertThat(edge1.getNextEdge(v1).getNextEdge(v1), is(edge1));
+        assertThat(edge1.getPrevEdge(v1).getPrevEdge(v1), is(edge1));
+        assertThat(edge1.getNextEdge(v1).getPrevEdge(v1), is(edge1));
+        assertThat(edge1.getPrevEdge(v1).getNextEdge(v1), is(edge1));
+
         assertThat(edge2.getNextEdge(v1), is(edge1));
         assertThat(edge2.getNextEdge(v2), is(edge2));
         assertThat(edge2.getPrevEdge(v1), is(edge1));
         assertThat(edge2.getPrevEdge(v2), is(edge2));
 
-        try {
+        assertThat(edge2.getNextEdge(v1).getNextEdge(v1), is(edge2));
+        assertThat(edge2.getPrevEdge(v1).getPrevEdge(v1), is(edge2));
+        assertThat(edge2.getNextEdge(v1).getPrevEdge(v1), is(edge2));
+        assertThat(edge2.getPrevEdge(v1).getNextEdge(v1), is(edge2));
+
+        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
             edge2.getNextEdge(v0);
-            assert false;
-        }
-        catch(IllegalArgumentException ex) {}
-        catch(Exception ex) { assert false; }
+        });
     }
 
 

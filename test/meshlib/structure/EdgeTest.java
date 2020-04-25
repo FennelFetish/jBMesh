@@ -1,5 +1,6 @@
 package meshlib.structure;
 
+import meshlib.TestUtil;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -33,19 +34,13 @@ public class EdgeTest {
         edge.vertex0 = v0;
         edge.vertex1 = v1;
 
-        try {
+        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
             edge.getNextEdge(v2);
-            assert false;
-        }
-        catch(IllegalArgumentException ex) {}
-        catch(Exception ex) { assert false; }
+        });
 
-        try {
+        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
             v2.addEdge(edge);
-            assert false;
-        }
-        catch(IllegalArgumentException ex) {}
-        catch(Exception ex) { assert false; }
+        });
     }
 
 
@@ -78,20 +73,28 @@ public class EdgeTest {
 
 
     @Test
-    public void testConnects() {
+    public void testAdjacency() {
         Vertex v0 = new Vertex();
         Vertex v1 = new Vertex();
         Vertex v2 = new Vertex();
         Vertex v3 = new Vertex();
 
-        Edge e1 = new Edge();
-        e1.vertex0 = v0;
-        e1.vertex1 = v1;
+        Edge edge = new Edge();
+        assertFalse(edge.isAdjacentTo(v0));
+        assertFalse(edge.isAdjacentTo(null));
 
-        assertTrue(e1.connects(v0, v1));
-        assertTrue(e1.connects(v1, v0));
-        assertFalse(e1.connects(v0, v2));
-        assertFalse(e1.connects(v2, v0));
-        assertFalse(e1.connects(v2, v3));
+        edge.vertex0 = v0;
+        edge.vertex1 = v1;
+
+        assertTrue(edge.connects(v0, v1));
+        assertTrue(edge.connects(v1, v0));
+        assertFalse(edge.connects(v0, v2));
+        assertFalse(edge.connects(v2, v0));
+        assertFalse(edge.connects(v2, v3));
+
+        assertTrue(edge.isAdjacentTo(v0));
+        assertTrue(edge.isAdjacentTo(v1));
+        assertFalse(edge.isAdjacentTo(v2));
+        assertFalse(edge.isAdjacentTo(null));
     }
 }

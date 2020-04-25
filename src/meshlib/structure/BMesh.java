@@ -231,7 +231,7 @@ public class BMesh {
      */
     public void joinFace(Face face1, Face face2) {
         // TODO: Can have multiple common edges!
-        Edge commonEdge = face1.getCommonEdge(face2);
+        Edge commonEdge = face1.getAnyCommonEdge(face2);
         if(commonEdge == null)
             throw new IllegalArgumentException("Faces are not adjacent");
 
