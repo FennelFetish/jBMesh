@@ -1,11 +1,18 @@
 package meshlib.data;
 
-public abstract class BMeshProperty<TArray, E extends Element> {
+public abstract class BMeshProperty<E extends Element, TArray> {
     public static final class Vertex {
         private Vertex() {}
 
         public static final String POSITION = "VertexPosition";
         public static final String COLOR    = "VertexColor";
+    }
+
+    public static final class Face {
+        private Face() {}
+
+        public static final String INDICES_3 = "FaceIndicesTriangle";
+        public static final String INDICES_4 = "FaceIndicesQuad";
     }
 
 
@@ -29,8 +36,8 @@ public abstract class BMeshProperty<TArray, E extends Element> {
 
 
     @SuppressWarnings("unchecked")
-    protected static <TArray, E extends Element> BMeshProperty<TArray, E> getProperty(String name, BMeshData<E> meshData, Class<TArray> arrayType) {
-        return (BMeshProperty<TArray, E>) meshData.getProperty(name);
+    protected static <E extends Element, TArray> BMeshProperty<E, TArray> getProperty(String name, BMeshData<E> meshData, Class<TArray> arrayType) {
+        return (BMeshProperty<E, TArray>) meshData.getProperty(name);
     }
 
 
@@ -44,7 +51,7 @@ public abstract class BMeshProperty<TArray, E extends Element> {
 
 
     /**
-     * Call compact first before passing to OpenGL.
+     * Call BMeshData.compact() first before passing the array to OpenGL.
      * @return Underlying array.
      */
     public TArray array() {

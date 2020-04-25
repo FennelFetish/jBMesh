@@ -17,19 +17,19 @@ public class Face extends Element {
     }
 
 
-    public Iterable<Vertex> vertices() {
-        return () -> new FaceVertexIterator(loop);
+    public Iterable<Loop> loops() {
+        return () -> new FaceLoopIterator(loop);
     }
 
 
-    private static class FaceVertexIterator implements Iterator<Vertex> {
+    private static class FaceLoopIterator implements Iterator<Loop> {
         private final Loop startLoop;
         private Loop currentLoop;
         private boolean first = true; // Get rid of this flag? (emulate do-while)
 
-        public FaceVertexIterator(Loop loop) {
+        public FaceLoopIterator(Loop loop) {
             startLoop = loop;
-            this.currentLoop = loop;
+            currentLoop = loop;
         }
 
         @Override
@@ -38,11 +38,11 @@ public class Face extends Element {
         }
 
         @Override
-        public Vertex next() {
+        public Loop next() {
             first = false;
-            Vertex vertex = currentLoop.vertex;
+            Loop loop = currentLoop;
             currentLoop = currentLoop.nextFaceLoop;
-            return vertex;
+            return loop;
         }
     }
 }

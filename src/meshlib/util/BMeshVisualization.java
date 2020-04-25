@@ -1,6 +1,5 @@
 package meshlib.util;
 
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.util.BufferUtils;
@@ -10,6 +9,7 @@ import meshlib.data.property.ColorProperty;
 import meshlib.data.property.Vec3Property;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
+import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
 public class BMeshVisualization {
@@ -23,9 +23,9 @@ public class BMeshVisualization {
             Face f = faces.get(i);
 
             int numVertices = 0;
-            for(Vertex vertex : f.vertices()) {
+            for(Loop loop : f.loops()) {
                 numVertices++;
-                indices[index++] = vertex.getIndex();
+                indices[index++] = loop.vertex.getIndex();
             }
 
             if(numVertices != 3) {

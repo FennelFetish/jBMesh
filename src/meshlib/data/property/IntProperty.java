@@ -4,7 +4,7 @@ import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class IntProperty<E extends Element> extends BMeshProperty<int[], E>{
+public class IntProperty<E extends Element> extends BMeshProperty<E, int[]>{
     public IntProperty(String name) {
         super(name);
     }

@@ -4,17 +4,24 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
+import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Torus;
 import com.jme3.system.AppSettings;
+import java.util.ArrayList;
+import java.util.List;
 import meshlib.conversion.DebugMeshBuilder;
 import meshlib.conversion.MeshConverter;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.ColorProperty;
+import meshlib.data.property.Vec3Property;
+import meshlib.operator.EdgeOps;
 import meshlib.structure.BMesh;
+import meshlib.structure.Edge;
 import meshlib.structure.Vertex;
 import meshlib.util.BMeshVisualization;
 
@@ -41,6 +48,22 @@ public class Main extends SimpleApplication {
     
     private Mesh createDebugMesh(Mesh in) {
         BMesh bmesh = MeshConverter.convert(in);
+
+        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        EdgeOps edgeOps = new EdgeOps(bmesh);
+        List<Edge> edges = new ArrayList<>(bmesh.edges());
+
+        for(Edge e : edges) {
+            try {
+                Vector3f center = edgeOps.calcCenter(e);
+                Vertex vert = bmesh.splitEdge(e);
+                propPosition.set(vert, center);
+            } catch(Exception ex) {
+                ex.printStackTrace();
+                //break;
+            }
+        }
+
         bmesh.compactData();
 
         DebugMeshBuilder debugMeshBuilder = new DebugMeshBuilder();
@@ -53,8 +76,12 @@ public class Main extends SimpleApplication {
     public void simpleInitApp() {
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.setBoolean("UseVertexColor", true);
+        //mat.getAdditionalRenderState().setWireframe(true);
+        mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
 
-        Geometry geom = new Geometry("Geom", createDebugMesh(new Box(1f, 1f, 1f)));
+        //Mesh mesh = new Torus(32, 24, 1.2f, 2.5f);
+        Mesh mesh = new Box(1, 1, 1);
+        Geometry geom = new Geometry("Geom", createDebugMesh(mesh));
         geom.setMaterial(mat);
         rootNode.attachChild(geom);
         

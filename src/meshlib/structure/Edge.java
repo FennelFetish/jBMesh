@@ -2,6 +2,8 @@ package meshlib.structure;
 
 // BMEdge has no specific direction
 
+import java.util.Iterator;
+import java.util.Objects;
 import meshlib.data.Element;
 
 public class Edge extends Element {
@@ -37,29 +39,38 @@ public class Edge extends Element {
     }
     
 
+    /**
+     * Insert Loop at end of radial cycle of this edge.
+     * @param loop A newly created Loop which is adjacent to this Edge.
+     */
     public void addLoop(Loop loop) {
+        assert loop.edge == this;
+
         if(this.loop == null) {
             this.loop = loop;
             return;
         }
 
+        // Do this first so it will throw if loop is null
+        loop.nextEdgeLoop = this.loop;
+
         // Insert loop at end of linked list
         Loop lastLoop = this.loop;
         while(lastLoop.nextEdgeLoop != this.loop)
             lastLoop = lastLoop.nextEdgeLoop;
-
-        loop.nextEdgeLoop = this.loop;
         lastLoop.nextEdgeLoop = loop;
     }
 
 
     public void setNextEdge(Vertex contactPoint, Edge edge) {
+        Objects.requireNonNull(edge);
+
         if(contactPoint == vertex0)
             v0NextEdge = edge;
         else if(contactPoint == vertex1)
             v1NextEdge = edge;
         else
-            throw new IllegalArgumentException("Edge is not adjacent to contact point");
+            throw new IllegalArgumentException("Edge is not adjacent to Vertex");
     }
 
 
@@ -70,7 +81,7 @@ public class Edge extends Element {
         else if(contactPoint == vertex1)
             return v1NextEdge;
 
-        throw new IllegalArgumentException("Edge is not adjacent to contact point");
+        throw new IllegalArgumentException("Edge is not adjacent to Vertex");
     }
 
 
@@ -82,5 +93,36 @@ public class Edge extends Element {
 
     public boolean isAdjacentTo(Vertex v) {
         return vertex0 == v || vertex1 == v;
+    }
+
+
+    public Iterable<Loop> loops() {
+        return () -> new EdgeLoopIterator(loop);
+    }
+
+
+    private static class EdgeLoopIterator implements Iterator<Loop> {
+        private final Loop startLoop;
+        private Loop currentLoop;
+        private boolean first;
+
+        public EdgeLoopIterator(Loop loop) {
+            startLoop = loop;
+            currentLoop = loop;
+            first = (loop != null);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currentLoop != startLoop || first;
+        }
+
+        @Override
+        public Loop next() {
+            first = false;
+            Loop loop = currentLoop;
+            currentLoop = currentLoop.nextEdgeLoop;
+            return loop;
+        }
     }
 }

@@ -1,12 +1,13 @@
 package meshlib;
 
 import com.jme3.math.Vector2f;
+import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
 public class UserProperties {
     // Example user-defined property
-    public static class LongProperty<E extends Element> extends BMeshProperty<long[], E> {
+    public static class LongProperty<E extends Element> extends BMeshProperty<E, long[]> {
         public LongProperty(String name) {
             super(name);
         }
@@ -23,11 +24,15 @@ public class UserProperties {
         public void set(E element, long l) {
             data[element.getIndex()] = l;
         }
+
+        public static <E extends Element> LongProperty<E> get(String name, BMeshData<E> meshData) {
+            return (LongProperty<E>) getProperty(name, meshData, long[].class);
+        }
     }
 
 
     // Example of property for arbitrary objects
-    public static class Vec2TupleProperty<E extends Element> extends BMeshProperty<Vector2f[], E> {
+    public static class Vec2TupleProperty<E extends Element> extends BMeshProperty<E, Vector2f[]> {
         public Vec2TupleProperty(String name) {
             super(name, 2);
         }

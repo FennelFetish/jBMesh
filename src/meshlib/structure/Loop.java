@@ -17,6 +17,7 @@ public class Loop extends Element {
     // Can also store in this loop whether the vertex was merged/remapped during conversion
 
     // Loop Cycle: Loop around face (iterate to list vertices of a face)
+    // Shouldn't be null
     public Loop nextFaceLoop;
     // prev?
 
@@ -35,5 +36,13 @@ public class Loop extends Element {
         vertex = null;
         nextFaceLoop = null;
         nextEdgeLoop = null;
+    }
+
+
+    public Loop getPrevFaceLoop() {
+        Loop prevLoop = nextFaceLoop;
+        while(prevLoop.nextFaceLoop != this)
+            prevLoop = prevLoop.nextFaceLoop;
+        return prevLoop;
     }
 }

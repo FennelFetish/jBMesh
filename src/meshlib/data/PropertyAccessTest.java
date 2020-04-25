@@ -21,7 +21,7 @@ public class PropertyAccessTest {
    /* public void shouldNotCompile() {
         // Invalid element type
         //Vec3Property<Face> propFace2        = bmesh.vertexData().getProperty("FaceVec", Vec3Property.class);
-        BMeshProperty<?, Face> propFace3    = bmesh.vertexData().getProperty("FaceVec");
+        BMeshProperty<Face, ?> propFace3    = bmesh.vertexData().getProperty("FaceVec");
         Vec3Property<Face> propFace4        = bmesh.vertexData().getProperty("FaceVec");
         
         Vec3Property<Face> propFace5        = (Vec3Property) bmesh.vertexData().getProperty("FaceVec");  // !!!! ok issues warning

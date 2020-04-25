@@ -3,6 +3,7 @@ package meshlib.structure;
 import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
@@ -59,7 +60,7 @@ public class BMesh {
 
 
     public Vertex createVertex() {
-        return vertexData.add();
+        return vertexData.create();
     }
 
     public Vertex createVertex(float x, float y, float z) {
@@ -76,7 +77,7 @@ public class BMesh {
     public Edge createEdge(Vertex v0, Vertex v1) {
         assert v0 != v1;
 
-        Edge edge = edgeData.add();
+        Edge edge = edgeData.create();
         edge.vertex0 = v0;
         edge.vertex1 = v1;
         v0.addEdge(edge);
@@ -90,32 +91,36 @@ public class BMesh {
         if(faceVertices.length < 3)
             throw new IllegalArgumentException("A face needs at least 3 vertices");
 
-        tempLoops.ensureCapacity(faceVertices.length);
-        for(int i=0; i<faceVertices.length; ++i) {
-            tempLoops.add(loopData.add());
-        }
+        try {
+            tempLoops.ensureCapacity(faceVertices.length);
+            for(int i=0; i<faceVertices.length; ++i) {
+                Objects.requireNonNull(faceVertices[i]);
+                tempLoops.add(loopData.create());
+            }
 
-        Face face = faceData.add();
-        face.loop = tempLoops.get(0);
+            Face face = faceData.create();
+            face.loop = tempLoops.get(0);
 
-        for(int i=0; i<faceVertices.length; ++i) {
-            int nextIndex = (i+1) % faceVertices.length;
+            for(int i=0; i<faceVertices.length; ++i) {
+                int nextIndex = (i+1) % faceVertices.length;
+
+                Edge edge = faceVertices[i].getEdgeTo(faceVertices[nextIndex]);
+                if(edge == null)
+                    edge = createEdge(faceVertices[i], faceVertices[nextIndex]);
+
+                Loop loop = tempLoops.get(i);
+                loop.face = face;
+                loop.edge = edge;
+                loop.vertex = faceVertices[i];
+                loop.nextFaceLoop = tempLoops.get(nextIndex);
+                edge.addLoop(loop);
+            }
             
-            Edge edge = faceVertices[i].getEdgeTo(faceVertices[nextIndex]);
-            if(edge == null)
-                edge = createEdge(faceVertices[i], faceVertices[nextIndex]);
-
-            Loop loop = tempLoops.get(i);
-            edge.addLoop(loop);
-
-            loop.face = face;
-            loop.edge = edge;
-            loop.vertex = faceVertices[i];
-            loop.nextFaceLoop = tempLoops.get(nextIndex);
+            return face;
         }
-
-        tempLoops.clear();
-        return face;
+        finally {
+            tempLoops.clear();
+        }
     }
 
 
@@ -140,4 +145,64 @@ public class BMesh {
     // extrudeEdgeQuad      -> new face
     // extrudeEdgeTriangle  -> new triangle-face from edge with 1 additional vertex
     // extrudeFace          -> new volume
+
+
+    /**
+     * Splits the Edge into two:
+     * <ul>
+     * <li>Creates a new Edge (from <i>vNew</i> to <i>v1</i>).</li>
+     * <li>Reference <i>edge.vertex1</i> changes to <i>vNew</i>.</li>
+     * <li>Updates disk cycle accordingly.</li>
+     * <li>Adds one additional Loop to all adjacent Faces, increasing the number of sides,<br>
+     *     and adds these Loops to the radial cycle of the new Edge.</li>
+     * </ul>
+     * <pre>
+     *                   edge
+     * Before: (v0)================(v1)
+     * After:  (v0)=====(vNew)-----(v1)
+     *             edge
+     * </pre>
+     *
+     * @param edge
+     * @return A new Vertex (<i>vNew</i>) with default properties (no specific position).
+     */
+    public Vertex splitEdge(Edge edge) {
+        Vertex vertex = vertexData.create();
+
+        Edge newEdge = edgeData.create();
+        newEdge.vertex0 = vertex;
+        newEdge.vertex1 = edge.vertex1;
+
+        edge.vertex1.removeEdge(edge);
+        edge.vertex1.addEdge(newEdge);
+        edge.vertex1 = vertex;
+
+        vertex.addEdge(edge);
+        vertex.addEdge(newEdge);
+
+        for(Loop loop : edge.loops()) {
+            Loop newLoop = loopData.create();
+            newLoop.edge = newEdge;
+            newLoop.face = loop.face;
+            newEdge.addLoop(newLoop);
+
+            // Link newLoop to next or previous loop, matching winding order.
+            if(loop.vertex == edge.vertex0) {
+                newLoop.vertex = vertex;
+                newLoop.nextFaceLoop = loop.nextFaceLoop;
+                loop.nextFaceLoop = newLoop;
+            }
+            else {
+                assert loop.vertex == newEdge.vertex1;
+
+                Loop prevLoop = loop.getPrevFaceLoop();
+                prevLoop.nextFaceLoop = newLoop;
+                newLoop.nextFaceLoop = loop;
+                newLoop.vertex = loop.vertex;
+                loop.vertex = vertex;
+            }
+        }
+
+        return vertex;
+    }
 }

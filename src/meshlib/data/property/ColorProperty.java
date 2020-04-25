@@ -5,7 +5,7 @@ import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class ColorProperty<E extends Element> extends BMeshProperty<float[], E> {
+public class ColorProperty<E extends Element> extends BMeshProperty<E, float[]> {
     public ColorProperty(String name) {
         super(name, 4);
     }

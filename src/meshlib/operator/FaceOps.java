@@ -5,6 +5,7 @@ import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
+import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
 public class FaceOps {
@@ -20,7 +21,7 @@ public class FaceOps {
 
     public int calcVertexCount(Face face) {
         int count = 0;
-        for(Vertex v : face.vertices())
+        for(Loop loop : face.loops())
             count++;
         return count;
     }
@@ -42,8 +43,8 @@ public class FaceOps {
         Vector3f centroid = new Vector3f();
         Vector3f p = new Vector3f();
 
-        for(Vertex v : face.vertices()) {
-            propPosition.get(v, p);
+        for(Loop loop : face.loops()) {
+            propPosition.get(loop.vertex, p);
             centroid.addLocal(p);
             numVertices++;
         }

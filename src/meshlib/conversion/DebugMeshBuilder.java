@@ -20,6 +20,14 @@ public class DebugMeshBuilder {
     private static final Vector3f COLOR_RED      = new Vector3f(0.8f, 0.0f, 0.0f);
     private static final Vector3f COLOR_SELECTED = new Vector3f(0.0f, 1.0f, 1.0f);
 
+    private static final Vector3f[] COLOR_INNER_ARR = new Vector3f[6];
+    static {
+        for(int i=0; i<COLOR_INNER_ARR.length; ++i) {
+            float c = 0.5f + (0.5f*i/COLOR_INNER_ARR.length);
+            COLOR_INNER_ARR[i] = COLOR_INNER.mult(c);
+        }
+    }
+
     private final ArrayList<Float> vertices  = new ArrayList<>();
     private final ArrayList<Float> normals   = new ArrayList<>();
     private final ArrayList<Float> colors    = new ArrayList<>();
@@ -112,15 +120,10 @@ public class DebugMeshBuilder {
 
         for(Face face : bmesh.faces()) {
             vertices.clear();
-            for(Vertex v : face.vertices())
-                vertices.add(propPosition.get(v));
+            for(Loop loop : face.loops())
+                vertices.add(propPosition.get(loop.vertex));
 
             final int size = vertices.size();
-            if(size != 3) {
-                System.out.println("Not a triangle");
-                continue;
-            }
-
             final Vector3f normal   = faceOps.calcNormal(face);
             final Vector3f centroid = faceOps.calcCentroid(face);
 
@@ -161,6 +164,7 @@ public class DebugMeshBuilder {
             for(int i=0; i<size; ++i) {
                 innerIdx[i] = addVertex(innerVerts[i]);
                 addNormal(normal);
+                //addColor(COLOR_INNER_ARR[i]);
                 addColor(COLOR_INNER);
             }
 
