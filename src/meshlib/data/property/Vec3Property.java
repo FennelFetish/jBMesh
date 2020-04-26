@@ -61,6 +61,21 @@ public class Vec3Property<E extends Element> extends BMeshProperty<E, float[]> {
     }
 
 
+    public void add(E element, Vector3f store) {
+        int i = indexOf(element);
+        store.x += data[i];
+        store.y += data[i+1];
+        store.z += data[i+2];
+    }
+
+    public void subtract(E element, Vector3f store) {
+        int i = indexOf(element);
+        store.x -= data[i];
+        store.y -= data[i+1];
+        store.z -= data[i+2];
+    }
+
+
     @Override
     protected float[] alloc(int size) {
         return new float[size];

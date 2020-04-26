@@ -1,5 +1,6 @@
 package meshlib.structure;
 
+import java.util.Iterator;
 import meshlib.data.Element;
 
 public class Vertex extends Element {
@@ -92,5 +93,34 @@ public class Vertex extends Element {
         } while(currentEdge != this.edge);
 
         return null;
+    }
+
+
+    public Iterable<Edge> edges() {
+        return () -> new VertexEdgeIterator();
+    }
+
+
+    private class VertexEdgeIterator implements Iterator<Edge> {
+        private Edge current;
+        private boolean first;
+
+        public VertexEdgeIterator() {
+            current = Vertex.this.edge;
+            first = (current != null);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return (current != Vertex.this.edge) || first;
+        }
+
+        @Override
+        public Edge next() {
+            first = false;
+            Edge edge = current;
+            current = current.getNextEdge(Vertex.this);
+            return edge;
+        }
     }
 }

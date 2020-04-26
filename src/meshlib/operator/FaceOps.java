@@ -22,41 +22,60 @@ public class FaceOps {
     }
 
 
-    public int calcVertexCount(Face face) {
-        int count = 0;
-        for(Loop loop : face.loops())
-            count++;
-        return count;
+    public Vector3f calcNormal(Face face) {
+        return calcNormal(face, new Vector3f());
     }
 
+    public Vector3f calcNormal(Face face, Vector3f store) {
+        Loop l1 = face.loop;
+        Loop l2 = l1.nextFaceLoop; // center
 
-    public Vector3f calcNormal(Face face) {
-        Vector3f v0 = propPosition.get(face.loop.vertex);
-        Vector3f v1 = propPosition.get(face.loop.nextFaceLoop.vertex);
-        Vector3f v2 = propPosition.get(face.loop.nextFaceLoop.nextFaceLoop.vertex);
+        Vector3f edge1 = new Vector3f(); // l1 -> l2
+        Vector3f edge2 = store;          // l3 -> l2
 
-        v0.subtractLocal(v1);
-        v2.subtractLocal(v1);
-        return v2.crossLocal(v0).normalizeLocal();
+        // Find a corner where adjacent edges are not collinear
+        do {
+            Loop l3 = l2.nextFaceLoop;
+
+            propPosition.get(l2.vertex, edge2);
+            edge1.set(edge2);
+
+            propPosition.subtract(l1.vertex, edge1);
+            propPosition.subtract(l3.vertex, edge2);
+            edge1.normalizeLocal();
+            edge2.normalizeLocal();
+
+            // Use abs() to catch not only straight continuations
+            // but also degenerate corners where edges are collinear in opposite directions
+            if(Math.abs(edge1.dot(edge2)) < 0.999f)
+                return edge2.crossLocal(edge1);
+
+            l1 = l2;
+            l2 = l3;
+        } while(l1 != face.loop);
+
+        return store.zero();
     }
 
 
     public Vector3f calcCentroid(Face face) {
+        return calcCentroid(face, new Vector3f());
+    }
+
+    public Vector3f calcCentroid(Face face, Vector3f store) {
         int numVertices = 0;
-        Vector3f centroid = new Vector3f();
-        Vector3f p = new Vector3f();
+        store.zero();
 
         for(Loop loop : face.loops()) {
-            propPosition.get(loop.vertex, p);
-            centroid.addLocal(p);
+            propPosition.add(loop.vertex, store);
             numVertices++;
         }
 
-        return centroid.divideLocal(numVertices);
+        return store.divideLocal(numVertices);
     }
 
 
-    public boolean arePlanar(Face face1, Face face2) {
+    public boolean coplanar(Face face1, Face face2) {
         Vector3f normal1 = calcNormal(face1);
         Vector3f normal2 = calcNormal(face2);
         return normal1.dot(normal2) > 0.999f;

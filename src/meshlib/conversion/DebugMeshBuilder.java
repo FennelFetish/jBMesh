@@ -17,7 +17,9 @@ public class DebugMeshBuilder {
     private static final Vector3f COLOR_INNER    = new Vector3f(194, 185, 149).divideLocal(255);
     private static final Vector3f COLOR_SRC      = new Vector3f(30, 30, 30).divideLocal(255);
     private static final Vector3f COLOR_GREEN    = new Vector3f(0.0f, 0.5f, 0.0f);
+    private static final Vector3f COLOR_GREEN_FIRSTLOOP = new Vector3f(0.0f, 1.0f, 0.7f);
     private static final Vector3f COLOR_RED      = new Vector3f(0.8f, 0.0f, 0.0f);
+    private static final Vector3f COLOR_RED_FIRSTLOOP = new Vector3f(1.0f, 0.0f, 0.7f);
     private static final Vector3f COLOR_SELECTED = new Vector3f(0.0f, 1.0f, 1.0f);
 
     private static final Vector3f[] COLOR_INNER_ARR = new Vector3f[6];
@@ -144,9 +146,9 @@ public class DebugMeshBuilder {
                 addColor(COLOR_SRC, 2);
 
                 if(loop.nextEdgeLoop == loop)
-                    addColor(COLOR_RED, 2);
+                    addColor(i==0 ? COLOR_RED_FIRSTLOOP : COLOR_RED, 2);
                 else
-                    addColor(COLOR_GREEN, 2);
+                    addColor(i==0 ? COLOR_GREEN_FIRSTLOOP : COLOR_GREEN, 2);
 
                 indices.add(i0);
                 indices.add(i1);
@@ -169,11 +171,50 @@ public class DebugMeshBuilder {
             }
 
             // Fan-like triangulation for inner area
+            // TODO: This creates superfluous triangles for collinear edges?
             for(int i=2; i<size; ++i) {
                 indices.add(innerIdx[0]);
                 indices.add(innerIdx[i-1]);
                 indices.add(innerIdx[i]);
             }
         }
+    }
+
+
+    public static Mesh createNormals(BMesh bmesh, float length) {
+        FaceOps faceOps = new FaceOps(bmesh);
+
+        float[] vbuf = new float[bmesh.faces().size() * 6];
+        int iv = 0;
+
+        int[] ibuf = new int[bmesh.faces().size() * 2];
+        int ii = 0;
+
+        for(Face face : bmesh.faces()) {
+            Vector3f centroid = faceOps.calcCentroid(face);
+            vbuf[iv++] = centroid.x;
+            vbuf[iv++] = centroid.y;
+            vbuf[iv++] = centroid.z;
+
+            Vector3f normal = faceOps.calcNormal(face);
+            normal.multLocal(length);
+            normal.addLocal(centroid);
+
+            vbuf[iv++] = normal.x;
+            vbuf[iv++] = normal.y;
+            vbuf[iv++] = normal.z;
+
+            ibuf[ii] = ii++;
+            ibuf[ii] = ii++;
+        }
+
+        Mesh mesh = new Mesh();
+        mesh.setBuffer(VertexBuffer.Type.Position, 3, vbuf);
+        mesh.setBuffer(VertexBuffer.Type.Index, 2, ibuf);
+
+        mesh.setMode(Mesh.Mode.Lines);
+        mesh.updateBound();
+
+        return mesh;
     }
 }

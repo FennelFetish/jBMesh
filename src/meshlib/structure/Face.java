@@ -17,6 +17,17 @@ public class Face extends Element {
     }
 
 
+    public int getVertexCount(Face face) {
+        int count = 0;
+        Loop current = loop;
+        do {
+            current = current.nextFaceLoop;
+            count++;
+        } while(current != loop);
+        return count;
+    }
+
+
     // TODO: Can have multiple common edges!
     public Edge getAnyCommonEdge(Face face) {
         for(Loop l1 : loops()) {

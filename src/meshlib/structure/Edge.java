@@ -1,17 +1,19 @@
 package meshlib.structure;
 
-// BMEdge has no specific direction
-
 import java.util.Iterator;
 import java.util.Objects;
 import meshlib.data.Element;
 
+/**
+ * Has no specific direction.
+ */
 public class Edge extends Element {
     // Target vertex (at end).
     // Needed? Can we use BMLoop's reference instead?
     // -> No, we need both vertices since an edge can exist without faces (no loop) and without adjacent edges (wireframe, single line, no nextEdge)
     public Vertex vertex0;
     public Vertex vertex1;
+    // Make those private? Add setter that checks for null?
 
     // Disk cycle at start vertex.
     //Needed? Can we go through BMLoop instead? -> No, wireframe doesn't have loops
@@ -101,6 +103,9 @@ public class Edge extends Element {
 
 
     public boolean connects(Vertex v0, Vertex v1) {
+        if(v0 == null || v1 == null)
+            return false;
+        
         return (vertex0 == v0 && vertex1 == v1)
             || (vertex0 == v1 && vertex1 == v0);
     }

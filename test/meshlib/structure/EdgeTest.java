@@ -80,12 +80,17 @@ public class EdgeTest {
         Vertex v3 = new Vertex();
 
         Edge edge = new Edge();
+        assertFalse(edge.connects(null, null));
+        assertFalse(edge.connects(v0, null));
         assertFalse(edge.isAdjacentTo(v0));
         assertFalse(edge.isAdjacentTo(null));
 
         edge.vertex0 = v0;
-        edge.vertex1 = v1;
+        assertFalse(edge.connects(v0, null));
+        assertFalse(edge.connects(null, v0));
+        assertTrue(edge.isAdjacentTo(v0));
 
+        edge.vertex1 = v1;
         assertTrue(edge.connects(v0, v1));
         assertTrue(edge.connects(v1, v0));
         assertFalse(edge.connects(v0, v2));

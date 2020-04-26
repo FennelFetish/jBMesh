@@ -48,9 +48,7 @@ public class Main extends SimpleApplication {
     }
 
     
-    private Mesh createDebugMesh(Mesh in) {
-        BMesh bmesh = MeshConverter.convert(in);
-
+    private Mesh createDebugMesh(BMesh bmesh) {
         Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
         EdgeOps edgeOps = new EdgeOps(bmesh);
         List<Edge> edges = new ArrayList<>(bmesh.edges());
@@ -61,9 +59,17 @@ public class Main extends SimpleApplication {
             propPosition.set(vert, center);
         }
 
-        for(Face f : bmesh.faces()) {
+        /*edges.clear();
+        edges.addAll(bmesh.edges());
+        for(Edge e : edges) {
+            Vector3f center = edgeOps.calcCenter(e);
+            Vertex vert = bmesh.splitEdge(e);
+            propPosition.set(vert, center);
+        }*/
+
+        /*for(Face f : bmesh.faces()) {
             bmesh.invertFace(f);
-        }
+        }*/
 
         bmesh.compactData();
 
@@ -80,14 +86,22 @@ public class Main extends SimpleApplication {
         //mat.getAdditionalRenderState().setWireframe(true);
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
 
-        //Mesh mesh = new Torus(16, 12, 1.2f, 2.5f);
-        //Mesh mesh = new Torus(32, 24, 1.2f, 2.5f);
-        //Mesh mesh = new Box(1, 1, 1);
-        Mesh mesh = new Sphere(32, 32, 2.0f);
-        Geometry geom = new Geometry("Geom", createDebugMesh(mesh));
+        //Mesh in = new Torus(16, 12, 1.2f, 2.5f);
+        Mesh in = new Torus(32, 24, 1.2f, 2.5f);
+        //Mesh in = new Sphere(32, 32, 3.0f);
+        //Mesh in = new Box(1, 1, 1);
+
+        BMesh bmesh = MeshConverter.convert(in);
+        Geometry geom = new Geometry("Geom", createDebugMesh(bmesh));
         geom.setMaterial(mat);
         rootNode.attachChild(geom);
-        
+
+        Material matNormals = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        matNormals.setColor("Color", ColorRGBA.Blue);
+        Geometry geomNormals = new Geometry("GeomNormals", DebugMeshBuilder.createNormals(bmesh, 0.3f));
+        geomNormals.setMaterial(matNormals);
+        rootNode.attachChild(geomNormals);
+
         rootNode.addLight(new AmbientLight(ColorRGBA.White.mult(0.7f)));
         rootNode.addLight(new DirectionalLight(new Vector3f(-0.7f, -1, -0.9f).normalizeLocal(), ColorRGBA.White));
 

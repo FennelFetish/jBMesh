@@ -59,6 +59,29 @@ public class BMesh {
     }
 
 
+    public void compactData() {
+        vertexData.compact();
+        edgeData.compact();
+        faceData.compact();
+        loopData.compact();
+
+        //tempLoops.trimToSize();
+    }
+
+
+    // Euler operations:
+    // Split Edge, create Vertex    Vertex splitEdge(Edge)
+    // Join Edge, remove Vertex     Edge(void?) joinEdge(Edge 1, Edge 2)
+    // Split Face, create Edge      Edge splitFace(Vertex 1, Vertex 2, Face?)
+    // Join Face, remove Edge       Face(void?) joinFace(Face 1, Face 2)
+    // Invert face                  void invert(Face)
+
+    // extrudeVertex        -> new edge
+    // extrudeEdgeQuad      -> new face
+    // extrudeEdgeTriangle  -> new triangle-face from edge with 1 additional vertex
+    // extrudeFace          -> new volume
+
+
     public Vertex createVertex() {
         return vertexData.create();
     }
@@ -84,6 +107,14 @@ public class BMesh {
         v1.addEdge(edge);
 
         return edge;
+    }
+
+
+    public void removeEdge(Edge edge) {
+        // Remove adjacent faces?
+        // Remove adjacent vertices if they're not connected to anything else?
+
+        edgeData.destroy(edge);
     }
 
 
@@ -125,29 +156,6 @@ public class BMesh {
     }
 
 
-    public void compactData() {
-        vertexData.compact();
-        edgeData.compact();
-        faceData.compact();
-        loopData.compact();
-
-        //tempLoops.trimToSize();
-    }
-
-
-    // Euler operations:
-    // Split Edge, create Vertex    Vertex splitEdge(Edge)
-    // Join Edge, remove Vertex     Edge(void?) joinEdge(Edge 1, Edge 2)
-    // Split Face, create Edge      Edge splitFace(Vertex 1, Vertex 2, Face?)
-    // Join Face, remove Edge       Face(void?) joinFace(Face 1, Face 2)
-    // Invert face                  void invert(Face)
-
-    // extrudeVertex        -> new edge
-    // extrudeEdgeQuad      -> new face
-    // extrudeEdgeTriangle  -> new triangle-face from edge with 1 additional vertex
-    // extrudeFace          -> new volume
-
-
     /**
      * Splits the Edge into two:
      * <ul>
@@ -168,6 +176,7 @@ public class BMesh {
      * @return A new Vertex (<i>vNew</i>) with default properties (no specific position).
      */
     public Vertex splitEdge(Edge edge) {
+        // Throws early if edge is null
         Vertex v0 = edge.vertex0;
         Vertex v1 = edge.vertex1;
         Vertex vNew = vertexData.create();
