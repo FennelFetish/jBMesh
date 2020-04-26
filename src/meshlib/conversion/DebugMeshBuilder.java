@@ -187,6 +187,9 @@ public class DebugMeshBuilder {
         float[] vbuf = new float[bmesh.faces().size() * 6];
         int iv = 0;
 
+        float[] cbuf = new float[bmesh.faces().size() * 8];
+        int ic = 0;
+
         int[] ibuf = new int[bmesh.faces().size() * 2];
         int ii = 0;
 
@@ -197,6 +200,15 @@ public class DebugMeshBuilder {
             vbuf[iv++] = centroid.z;
 
             Vector3f normal = faceOps.calcNormal(face);
+            cbuf[ic++] = normal.x;
+            cbuf[ic++] = normal.y;
+            cbuf[ic++] = normal.z;
+            cbuf[ic++] = 1.0f;
+            cbuf[ic++] = normal.x;
+            cbuf[ic++] = normal.y;
+            cbuf[ic++] = normal.z;
+            cbuf[ic++] = 1.0f;
+
             normal.multLocal(length);
             normal.addLocal(centroid);
 
@@ -210,6 +222,7 @@ public class DebugMeshBuilder {
 
         Mesh mesh = new Mesh();
         mesh.setBuffer(VertexBuffer.Type.Position, 3, vbuf);
+        mesh.setBuffer(VertexBuffer.Type.Color, 4, cbuf);
         mesh.setBuffer(VertexBuffer.Type.Index, 2, ibuf);
 
         mesh.setMode(Mesh.Mode.Lines);
