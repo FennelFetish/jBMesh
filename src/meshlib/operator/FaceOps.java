@@ -26,35 +26,28 @@ public class FaceOps {
         return calcNormal(face, new Vector3f());
     }
 
+    // Newell's Method: https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
     public Vector3f calcNormal(Face face, Vector3f store) {
-        Loop l1 = face.loop;
-        Loop l2 = l1.nextFaceLoop; // center
+        Loop current = face.loop;
+        Loop next = current.nextFaceLoop;
 
-        Vector3f edge1 = new Vector3f(); // l1 -> l2
-        Vector3f edge2 = store;          // l3 -> l2
+        store.zero();
+        Vector3f vCurrent = new Vector3f();
+        Vector3f vNext = new Vector3f();
 
-        // Find a corner where adjacent edges are not collinear
         do {
-            Loop l3 = l2.nextFaceLoop;
+            propPosition.get(current.vertex, vCurrent);
+            propPosition.get(next.vertex, vNext);
 
-            propPosition.get(l2.vertex, edge2);
-            edge1.set(edge2);
+            store.x += (vCurrent.y - vNext.y) * (vCurrent.z + vNext.z);
+            store.y += (vCurrent.z - vNext.z) * (vCurrent.x + vNext.x);
+            store.z += (vCurrent.x - vNext.x) * (vCurrent.y + vNext.y);
 
-            propPosition.subtract(l1.vertex, edge1);
-            propPosition.subtract(l3.vertex, edge2);
-            edge1.normalizeLocal();
-            edge2.normalizeLocal();
+            current = next;
+            next = next.nextFaceLoop;
+        } while(current != face.loop);
 
-            // Use abs() to catch not only straight continuations
-            // but also degenerate corners where edges are collinear in opposite directions
-            if(Math.abs(edge1.dot(edge2)) < 0.999f)
-                return edge2.crossLocal(edge1);
-
-            l1 = l2;
-            l2 = l3;
-        } while(l1 != face.loop);
-
-        return store.zero();
+        return store.normalizeLocal();
     }
 
 
