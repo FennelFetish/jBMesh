@@ -45,8 +45,8 @@ public class TriangleExtractor {
     public final void setMesh(Mesh mesh) {
         meshMode = mesh.getMode();
 
-        VertexBuffer vbPos = mesh.getBuffer(VertexBuffer.Type.Position);
-        positionBuffer = BufferUtils.getFloatArray((FloatBuffer) vbPos.getData());
+        FloatBuffer fbPos = mesh.getFloatBuffer(VertexBuffer.Type.Position);
+        positionBuffer = BufferUtils.getFloatArray(fbPos);
 
         VertexBuffer vbIdx = mesh.getBuffer(VertexBuffer.Type.Index);
         switch(vbIdx.getFormat()) {
@@ -64,7 +64,6 @@ public class TriangleExtractor {
                 break;
             }
         }
-        
     }
 
 
@@ -112,6 +111,18 @@ public class TriangleExtractor {
         }
     }
 
+
+    public int getIndex(int index) {
+        return indexBuffer[index];
+    }
+
+    public int getNumIndices() {
+        return indexBuffer.length;
+    }
+
+    public int getNumVertices() {
+        return positionBuffer.length / 3;
+    }
 
     public void getVertex(int index, Vector3f store) {
         int offset = index * 3;

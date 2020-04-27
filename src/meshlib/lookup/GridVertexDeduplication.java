@@ -10,6 +10,7 @@ import meshlib.structure.Vertex;
 import meshlib.util.HashGrid;
 
 public class GridVertexDeduplication implements VertexDeduplication {
+
     // TODO: The mean of accumulated vertices will move - which location to use? What if the mean leaves a cell? Don't care?
     /*private static final class VertexAccumulator {
         public final Vertex vertex;
@@ -19,6 +20,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
             this.vertex = vertex;
         }
     }*/
+
 
     
     private static final class Cell {
@@ -41,7 +43,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     };
 
 
-    private final Vec3Property propPosition;
+    private final Vec3Property<Vertex> propPosition;
     private final HashGrid<Cell> grid;
     private final float epsilonSquared;
 
@@ -53,33 +55,44 @@ public class GridVertexDeduplication implements VertexDeduplication {
     public GridVertexDeduplication(BMesh bmesh, float epsilon) {
         grid = new HashGrid<>(epsilon);
         epsilonSquared = epsilon * epsilon;
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
     }
 
 
     @Override
     public Vertex getOrCreateVertex(BMesh mesh, Vector3f location) {
         HashGrid.Index gridIndex = grid.getIndexForCoords(location);
-        Cell cell = grid.get(gridIndex);
-        if(cell == null) {
-            Vertex vertex = mesh.createVertex(location);
-            cell = new Cell();
-            cell.vertices.add(vertex);
-            grid.getAndSet(gridIndex, cell);
-            return vertex;
+        Cell centerCell = grid.get(gridIndex);
+
+        if(centerCell != null) {
+            Vertex vertex = searchVertex(centerCell, location);
+            if(vertex != null)
+                return vertex;
         }
 
-        Vertex vertex = searchVertex(cell, location);
+        Vertex vertex = searchVertexWalk(gridIndex, location);
         if(vertex != null)
             return vertex;
 
+        if(centerCell == null) {
+            centerCell = new Cell();
+            grid.set(gridIndex, centerCell);
+        }
+
+        vertex = mesh.createVertex(location);
+        centerCell.vertices.add(vertex);
+        return vertex;
+    }
+
+
+    private Vertex searchVertexWalk(HashGrid.Index gridIndex, Vector3f location) {
         for(int[] dir : WALK_DIRECTION) {
             HashGrid.Index walkIndex = gridIndex.walk(dir[0], dir[1], dir[2]);
-            cell = grid.get(walkIndex);
+            Cell cell = grid.get(walkIndex);
             if(cell == null)
                 continue;
 
-            vertex = searchVertex(cell, location);
+            Vertex vertex = searchVertex(cell, location);
             if(vertex != null)
                 return vertex;
         }
@@ -94,8 +107,9 @@ public class GridVertexDeduplication implements VertexDeduplication {
             propPosition.get(vertex, currentLocation);
             
             float dist = currentLocation.distanceSquared(location);
-            if(dist <= epsilonSquared)
+            if(dist <= epsilonSquared) {
                 return vertex;
+            }
         }
 
         return null;

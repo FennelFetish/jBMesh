@@ -8,7 +8,7 @@ import java.util.Map;
 public class HashGrid<T> {
     public static final float DEFAULT_CELLSIZE = 0.01f;
 
-    private final float cellSize;
+    private final float coordScale;
     private final Map<Long, T> grid = new HashMap<>();
 
 
@@ -17,7 +17,7 @@ public class HashGrid<T> {
     }
 
     public HashGrid(float cellSize) {
-        this.cellSize = cellSize;
+        this.coordScale = 1f / cellSize;
     }
 
 
@@ -26,7 +26,7 @@ public class HashGrid<T> {
     }
 
     public Index getIndexForCoords(float x, float y, float z) {
-        return new Index(x*cellSize, y*cellSize, z*cellSize);
+        return new Index(x*coordScale, y*coordScale, z*coordScale);
     }
 
 
@@ -34,13 +34,16 @@ public class HashGrid<T> {
         return grid.get(cellPos.key);
     }
 
-
     public T getAndSet(Index cellPos, T value) {
         if(value == null)
             return grid.remove(cellPos.key);
         else {
             return grid.put(cellPos.key, value);
         }
+    }
+
+    public void set(Index cellPos, T value) {
+        getAndSet(cellPos, value);
     }
 
 

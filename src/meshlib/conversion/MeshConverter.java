@@ -2,33 +2,66 @@ package meshlib.conversion;
 
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
-import com.jme3.scene.VertexBuffer;
 import meshlib.lookup.GridVertexDeduplication;
 import meshlib.lookup.SimpleVertexDeduplication;
+import meshlib.lookup.SortedVertexDeduplication;
 import meshlib.lookup.VertexDeduplication;
 import meshlib.structure.BMesh;
 import meshlib.structure.Vertex;
 
-
+// https://www.researchgate.net/publication/4070748_Efficient_topology_construction_from_triangle_soup
+// Instead:
+// - Add all vertices to VertexDeduplication first
+// - That will create mapping
 public class MeshConverter {
-    // Deduplicates each vertex once per referencing index
-    public static BMesh convert(Mesh mesh) {
-        BMesh convertedMesh = new BMesh();
-        VertexDeduplication dedup = new SimpleVertexDeduplication(convertedMesh);
+    private static final float RANGE = 0.01f;
 
-        TriangleExtractor triangleExtractor = new TriangleExtractor(mesh);
+    
+    public static BMesh convertSimple(Mesh mesh) {
+        BMesh bmesh = new BMesh();
+        return convert(bmesh, mesh, new SimpleVertexDeduplication(bmesh, RANGE));
+    }
+
+    public static BMesh convertGrid(Mesh mesh) {
+        BMesh bmesh = new BMesh();
+        return convert(bmesh, mesh, new GridVertexDeduplication(bmesh, RANGE));
+    }
+
+
+    public static BMesh convertSimpleMapped(Mesh mesh) {
+        BMesh bmesh = new BMesh();
+        return convertMapped(bmesh, mesh, new SimpleVertexDeduplication(bmesh, RANGE));
+    }
+
+
+    public static BMesh convertGridMapped(Mesh mesh) {
+        BMesh bmesh = new BMesh();
+        return convertMapped(bmesh, mesh, new GridVertexDeduplication(bmesh, RANGE));
+    }
+
+
+    private static BMesh convert(BMesh bmesh, Mesh inputMesh, VertexDeduplication dedup) {
+        TriangleExtractor triangleExtractor = new TriangleExtractor(inputMesh);
+
+        bmesh.vertices().ensureCapacity(triangleExtractor.getNumIndices());
+        bmesh.edges().ensureCapacity(triangleExtractor.getNumIndices());
+        bmesh.faces().ensureCapacity(triangleExtractor.getNumIndices() / 3);
+        bmesh.loops().ensureCapacity(triangleExtractor.getNumIndices());
+
         triangleExtractor.process(triangleExtractor.new TriangleLocationVisitor() {
             @Override
             public void visitTriangle(Vector3f p0, Vector3f p1, Vector3f p2) {
-                Vertex v0 = dedup.getOrCreateVertex(convertedMesh, p0);
-                Vertex v1 = dedup.getOrCreateVertex(convertedMesh, p1);
-                Vertex v2 = dedup.getOrCreateVertex(convertedMesh, p2);
-                // TODO: Check for degenerate triangles
-                convertedMesh.createFace(v0, v1, v2);
+                Vertex v0 = dedup.getOrCreateVertex(bmesh, p0);
+                Vertex v1 = dedup.getOrCreateVertex(bmesh, p1);
+                Vertex v2 = dedup.getOrCreateVertex(bmesh, p2);
+                
+                // Check for degenerate triangles
+                if(v0 != v1 && v0 != v2 && v1 != v2)
+                    bmesh.createFace(v0, v1, v2);
             }
         });
 
-        return convertedMesh;
+        return bmesh;
     }
 
 
@@ -37,23 +70,69 @@ public class MeshConverter {
      * @param mesh
      * @return
      */
-    public static BMesh convert2(Mesh mesh) {
-        final int numIndices = mesh.getBuffer(VertexBuffer.Type.Index).getNumElements();
-        Vertex[] indexMap = new Vertex[numIndices];
+    private static BMesh convertMapped(BMesh bmesh, Mesh inputMesh, VertexDeduplication dedup) {
+        TriangleExtractor triangleExtractor = new TriangleExtractor(inputMesh);
 
-        BMesh bmesh = new BMesh();
-        TriangleExtractor triangleExtractor = new TriangleExtractor(mesh);
-        VertexDeduplication dedup = new GridVertexDeduplication(bmesh);
+        bmesh.vertices().ensureCapacity(triangleExtractor.getNumIndices());
+        bmesh.edges().ensureCapacity(triangleExtractor.getNumIndices());
+        bmesh.faces().ensureCapacity(triangleExtractor.getNumIndices() / 3);
+        bmesh.loops().ensureCapacity(triangleExtractor.getNumIndices());
+
+        Vertex[] indexMap = new Vertex[triangleExtractor.getNumIndices()];
         Vector3f location = new Vector3f();
 
-        for(int i=0; i<numIndices; ++i) {
-            triangleExtractor.getVertex(i, location);
-            indexMap[i] = dedup.getOrCreateVertex(bmesh, location);
+        for(int i=0; i<indexMap.length; ++i) {
+            int vertexIndex = triangleExtractor.getIndex(i);
+            triangleExtractor.getVertex(vertexIndex, location);
+            indexMap[vertexIndex] = dedup.getOrCreateVertex(bmesh, location);
         }
-        
+
+        //System.out.println("Reduced vertex count from " + triangleExtractor.getNumVertices() + " to " + bmesh.vertices().size());
+
         triangleExtractor.process((int i0, int i1, int i2) -> {
-            // TODO: Check for degenerate triangles
-            bmesh.createFace(indexMap[i0], indexMap[i1], indexMap[i2]);
+            // Check for degenerate triangles
+            if(indexMap[i0] != indexMap[i1] && indexMap[i0] != indexMap[i2] && indexMap[i1] != indexMap[i2])
+                bmesh.createFace(indexMap[i0], indexMap[i1], indexMap[i2]);
+        });
+
+        return bmesh;
+    }
+
+
+    public static BMesh convertSortMapped(Mesh inputMesh) {
+        TriangleExtractor triangleExtractor = new TriangleExtractor(inputMesh);
+
+        BMesh bmesh = new BMesh();
+        bmesh.vertices().ensureCapacity(triangleExtractor.getNumIndices());
+        bmesh.edges().ensureCapacity(triangleExtractor.getNumIndices());
+        bmesh.faces().ensureCapacity(triangleExtractor.getNumIndices() / 3);
+        bmesh.loops().ensureCapacity(triangleExtractor.getNumIndices());
+
+        SortedVertexDeduplication dedup = new SortedVertexDeduplication(bmesh, RANGE);
+        Vector3f location = new Vector3f();
+        for(int i=0; i<triangleExtractor.getNumIndices(); ++i) {
+            int vertexIndex = triangleExtractor.getIndex(i);
+            triangleExtractor.getVertex(vertexIndex, location);
+            dedup.add(vertexIndex, location);
+        }
+
+        int numLocations = dedup.map();
+        //System.out.println("Reduced vertex count from " + triangleExtractor.getNumVertices() + " to " + bmesh.vertices().size() + " (#locations: " + numLocations + ")");
+
+        triangleExtractor.process((int i0, int i1, int i2) -> {
+            Vertex v0 = dedup.getVertex(i0);
+            Vertex v1 = dedup.getVertex(i1);
+            Vertex v2 = dedup.getVertex(i2);
+
+            // Check for existing faces - WRONG!
+            //if(v0.getEdgeTo(v1) != null && v1.getEdgeTo(v2) != null && v2.getEdgeTo(v0) != null) {
+                // Need to check for existing loops.....
+            //    return;
+            //}
+
+            // Check for degenerate triangles
+            if(v0 != v1 && v0 != v2 && v1 != v2)
+                bmesh.createFace(v0, v1, v2);
         });
 
         return bmesh;
