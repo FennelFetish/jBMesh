@@ -116,7 +116,7 @@ public class DebugMeshBuilder {
 
 
     public void apply(BMesh bmesh) {
-        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
         final ArrayList<Vector3f> vertices = new ArrayList<>();
         FaceOps faceOps = new FaceOps(bmesh);
 

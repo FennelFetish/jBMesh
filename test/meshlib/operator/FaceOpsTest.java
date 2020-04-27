@@ -15,8 +15,8 @@ public class FaceOpsTest {
         FaceOps faceOps = new FaceOps(bmesh);
 
         /**
+         * Concave:
          *       v3
-         *
          *
          *       v1
          * v0          v2

@@ -4,7 +4,6 @@ import java.nio.Buffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -12,15 +11,37 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class BMeshData<E extends Element> {
+// Implement Collection<E>?
+public class BMeshData<E extends Element> implements Iterable<E> {
     public static interface ElementFactory<T> {
         T createElement();
+    }
+
+    
+    private class ElementIterator implements Iterator<E> {
+        private int index = -1;
+
+        private ElementIterator() {
+            // Skip to next living element
+            while(++index < elements.size() && elements.get(index).getIndex() < 0) {}
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < elements.size();
+        }
+
+        @Override
+        public E next() {
+            E element = elements.get(index);
+            while(++index < elements.size() && elements.get(index).getIndex() < 0) {} 
+            return element;
+        }
     }
 
 
     private final ElementFactory<E> factory;
     private final ArrayList<E> elements = new ArrayList<>();
-    private final List<E> readonlyElements = Collections.unmodifiableList(elements);
     private final Deque<Integer> freeList = new ArrayDeque<>(); // PriorityQueue?
 
     private static final int INITIAL_ARRAY_SIZE = 32;
@@ -36,37 +57,54 @@ public class BMeshData<E extends Element> {
     }
 
 
-    public List<E> elements() {
+    /**
+     * elements().size() won't return actual number of alive elements!
+     * @return
+     */
+    /*public List<E> elements() {
         return readonlyElements;
+    }*/
+
+    @Override
+    public Iterator<E> iterator() {
+        return new ElementIterator();
+    }
+
+    public int size() {
+        return numElementsAlive;
     }
 
 
     public E create() {
-        if(!freeList.isEmpty()) {
+        E element;
+        
+        if(freeList.isEmpty()) {
+            final int newIndex = elements.size();
+            if(newIndex >= arraySize) {
+                int capacity = (int) Math.ceil(arraySize * GROW_FACTOR);
+                ensureCapacity(capacity);
+            }
+
+            element = factory.createElement();
+            element.setIndex(newIndex);
+            elements.add(element);
+        }
+        else {
             int index = freeList.poll();
-            E element = elements.get(index);
+            element = elements.get(index);
             element.setIndex(index);
-            return element;
         }
-
-        final int newIndex = elements.size();
-        if(newIndex >= arraySize) {
-            int capacity = (int) Math.ceil(arraySize * GROW_FACTOR);
-            ensureCapacity(capacity);
-        }
-
-        E element = factory.createElement();
-        element.setIndex(newIndex);
-        elements.add(element);
 
         numElementsAlive++;
         return element;
     }
 
     public void destroy(E element) {
-        element.release();
+        if(element.getIndex() < 0)
+            return;
 
         freeList.add(element.getIndex());
+        element.release();
         numElementsAlive--;
     }
 
@@ -106,8 +144,6 @@ public class BMeshData<E extends Element> {
 
 
     private void resize(int size, int copyLength) {
-        System.out.println("resize from " + arraySize + " to " + size);
-
         for(BMeshProperty prop : properties.values()) {
             prop.realloc(size, copyLength);
         }
@@ -116,7 +152,7 @@ public class BMeshData<E extends Element> {
     }
 
 
-    public void compact() {
+    public void compactData() {
         if(arraySize == numElementsAlive)
             return;
 
@@ -151,7 +187,7 @@ public class BMeshData<E extends Element> {
     }
 
 
-    public void compactWithoutResize() {
+    public void compactDataWithoutResize() {
         // ...
 
         // Or make a compact() and trim() method?
@@ -273,5 +309,12 @@ public class BMeshData<E extends Element> {
 
     public void equals(E element1, E element2) {
         // Compare all properties
+    }
+
+
+    public void copyProperties(E from, E to) {
+        for(BMeshProperty<E, ?> prop : properties.values()) {
+            prop.copy(from, to);
+        }
     }
 }

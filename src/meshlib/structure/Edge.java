@@ -64,6 +64,45 @@ public class Edge extends Element {
     }
 
 
+    public void removeLoop(Loop loop) {
+        // Throw NPE if loop is null
+        if(loop.edge != this) {
+            throw new IllegalArgumentException("Loop is not adjacent to Edge");
+        }
+
+        if(this.loop == loop) {
+            if(loop.nextEdgeLoop == loop) {
+                // Loop was the only one here
+                this.loop = null;
+            } else {
+                Loop prev = loop.getPrevEdgeLoop();
+                prev.nextEdgeLoop = loop.nextEdgeLoop;
+                this.loop = loop.nextEdgeLoop;
+                loop.nextEdgeLoop = loop;
+            }
+
+            return;
+        }
+        
+        if(this.loop != null) {
+            Loop prev = this.loop;
+            Loop current = prev.nextEdgeLoop;
+            while(current != this.loop) {
+                if(current == loop) {
+                    prev.nextEdgeLoop = current.nextEdgeLoop;
+                    loop.nextEdgeLoop = loop;
+                    return;
+                }
+
+                prev = current;
+                current = current.nextEdgeLoop;
+            }
+        }
+
+        throw new IllegalArgumentException("Loop does not exist in radial cycle of Edge");
+    }
+
+
     public void setNextEdge(Vertex contactPoint, Edge edge) {
         Objects.requireNonNull(edge);
 

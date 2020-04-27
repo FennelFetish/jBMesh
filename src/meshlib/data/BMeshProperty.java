@@ -50,6 +50,13 @@ public abstract class BMeshProperty<E extends Element, TArray> {
     }
 
 
+    public void copy(E from, E to) {
+        int iFrom = indexOf(from);
+        int iTo = indexOf(to);
+        System.arraycopy(data, iFrom, data, iTo, numComponents);
+    }
+
+
     /**
      * Call BMeshData.compact() first before passing the array to OpenGL.
      * @return Underlying array.
@@ -67,8 +74,6 @@ public abstract class BMeshProperty<E extends Element, TArray> {
      * @return The old data array.
      */
     final TArray allocReplace(int size) {
-        System.out.println("allocData '" + name + "': " + (size*numComponents));
-        
         TArray oldArray = data;
         data = alloc(size * numComponents);
         return oldArray;

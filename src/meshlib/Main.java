@@ -22,22 +22,27 @@ import meshlib.data.BMeshProperty;
 import meshlib.data.property.ColorProperty;
 import meshlib.data.property.Vec3Property;
 import meshlib.operator.EdgeOps;
+import meshlib.operator.ExtrudeFace;
+import meshlib.operator.FaceOps;
 import meshlib.structure.BMesh;
 import meshlib.structure.Edge;
 import meshlib.structure.Face;
+import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 import meshlib.util.BMeshVisualization;
+
 
 public class Main extends SimpleApplication {
     @Override
     public void simpleInitApp() {
-        //Mesh in = new Torus(16, 12, 1.2f, 2.5f);
-        //Mesh in = new Torus(32, 24, 1.2f, 2.5f);
-        Mesh in = new Sphere(32, 32, 3.0f);
+        //Mesh in = new Torus(128, 128, 2.0f, 4.0f);
+        Mesh in = new Torus(32, 24, 1.2f, 2.5f);
+        //Mesh in = new Sphere(32, 32, 5.0f);
         //Mesh in = new Box(1, 1, 1);
 
-        BMesh bmesh = MeshConverter.convert(in);
+        BMesh bmesh = MeshConverter.convertGridMapped(in);
         processMesh(bmesh);
+        bmesh.compactData();
         rootNode.attachChild(createDebugMesh(bmesh));
         //rootNode.attachChild(createMesh(bmesh));
 
@@ -51,39 +56,89 @@ public class Main extends SimpleApplication {
 
 
     private void processMesh(BMesh bmesh) {
-        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
         EdgeOps edgeOps = new EdgeOps(bmesh);
-        List<Edge> edges = new ArrayList<>(bmesh.edges());
+        
+        List<Edge> edges = new ArrayList<>();
+        /*for(Edge e : bmesh.edges())
+            edges.add(e);
 
         for(Edge e : edges) {
             Vector3f center = edgeOps.calcCenter(e);
             Vertex vert = bmesh.splitEdge(e);
             propPosition.set(vert, center);
-        }
+        }*/
 
-        edges.clear();
-        edges.addAll(bmesh.edges());
+        /*edges.clear();
+        for(Edge e : bmesh.edges())
+            edges.add(e);
+
         for(Edge e : edges) {
             Vector3f center = edgeOps.calcCenter(e);
             Vertex vert = bmesh.splitEdge(e);
             propPosition.set(vert, center);
-        }
+        }*/
 
         /*for(Face f : bmesh.faces()) {
             bmesh.invertFace(f);
             //bmesh.invertFace(f);
         }*/
+
+        FaceOps faceOps = new FaceOps(bmesh);
+        List<Face> faces = new ArrayList<>();
+        for(Face f : bmesh.faces())
+            faces.add(f);
+
+        ExtrudeFace extr = new ExtrudeFace(bmesh);
+        for(Face f : faces) {
+            extr.extrude(f);
+            extr.copyVertexProperties();
+            
+            Vector3f centroid = faceOps.calcCentroid(f);
+            Vector3f normal = faceOps.calcNormal(f).multLocal(0.2f);
+
+            for(Loop loop : f.loops()) {
+                Vector3f p = propPosition.get(loop.vertex);
+                p.subtractLocal(centroid);
+                p.multLocal(0.7f);
+                p.addLocal(centroid);
+                p.addLocal(normal);
+                propPosition.set(loop.vertex, p);
+            }
+
+            for(Face fRes : extr.getResultFaces()) {
+                edges.clear();
+                for(Loop l : fRes.loops())
+                    edges.add(l.edge);
+
+                for(Edge e : edges) {
+                    Vector3f center = edgeOps.calcCenter(e);
+                    Vertex vert  = bmesh.splitEdge(e);
+                    propPosition.set(vert, center);
+                }
+
+                /*centroid = faceOps.calcCentroid(fRes);
+                normal = faceOps.calcNormal(fRes).multLocal(0.1f);
+
+                for(Loop loop : fRes.loops()) {
+                    Vector3f p = propPosition.get(loop.vertex);
+                    p.subtractLocal(centroid);
+                    p.multLocal(0.95f);
+                    p.addLocal(centroid);
+                    p.addLocal(normal);
+                    propPosition.set(loop.vertex, p);
+                }*/
+            }
+        }
     }
 
 
     private Geometry createMesh(BMesh bmesh) {
-        bmesh.compactData();
-
         ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
-        bmesh.vertexData().addProperty(propVertexColor);
+        bmesh.vertices().addProperty(propVertexColor);
 
         for(Vertex v : bmesh.vertices()) {
-            ColorRGBA color = hsb((float)Math.random(), 0.7f, 1.0f);
+            ColorRGBA color = hsb((float)Math.random(), 0.8f, 0.8f);
             propVertexColor.set(v, color.r, color.g, color.b, color.a);
         }
 
@@ -97,7 +152,6 @@ public class Main extends SimpleApplication {
 
     
     private Node createDebugMesh(BMesh bmesh) {
-        bmesh.compactData();
         Node node = new Node("Debug");
 
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");

@@ -2,7 +2,6 @@ package meshlib.structure;
 
 import com.jme3.math.Vector3f;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
@@ -29,41 +28,28 @@ public class BMesh {
     }
 
 
-    public List<Vertex> vertices() {
-        return vertexData.elements();
-    }
-
-    public List<Edge> edges() {
-        return edgeData.elements();
-    }
-
-    public List<Face> faces() {
-        return faceData.elements();
-    }
-
-
-    public BMeshData<Vertex> vertexData() {
+    public BMeshData<Vertex> vertices() {
         return vertexData;
     }
 
-    public BMeshData<Edge> edgeData() {
+    public BMeshData<Edge> edges() {
         return edgeData;
     }
 
-    public BMeshData<Face> faceData() {
+    public BMeshData<Face> faces() {
         return faceData;
     }
 
-    public BMeshData<Loop> loopData() {
+    public BMeshData<Loop> loops() {
         return loopData;
     }
 
 
     public void compactData() {
-        vertexData.compact();
-        edgeData.compact();
-        faceData.compact();
-        loopData.compact();
+        vertexData.compactData();
+        edgeData.compactData();
+        faceData.compactData();
+        loopData.compactData();
 
         //tempLoops.trimToSize();
     }
@@ -150,9 +136,23 @@ public class BMesh {
             
             return face;
         }
+        catch(Throwable t) {
+            for(Loop loop : tempLoops)
+                loopData.destroy(loop);
+            throw t;
+        }
         finally {
             tempLoops.clear();
         }
+    }
+
+
+    public void removeFace(Face face) {
+        // Disconnect loops from Edges
+        // Leave Edges
+        // Release elements (Loops)
+
+        
     }
 
 

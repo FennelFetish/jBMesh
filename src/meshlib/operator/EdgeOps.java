@@ -17,7 +17,7 @@ public class EdgeOps {
 
     public EdgeOps(BMesh bmesh) {
         this.bmesh = bmesh;
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
     }
 
 

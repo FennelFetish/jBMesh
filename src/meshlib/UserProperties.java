@@ -42,6 +42,20 @@ public class UserProperties {
             return new Vector2f[size];
         }
 
+        @Override
+        public void copy(E from, E to) {
+            int iFrom = indexOf(from);
+            int iTo = indexOf(to);
+
+            for(int i=0; i<numComponents; ++i) {
+                if(data[iTo] == null)
+                    data[iTo] = new Vector2f();
+
+                data[iTo].set(data[iFrom+i]);
+                iTo++;
+            }
+        }
+
         
         public Vector2f getA(E element) {
             int eleIndex = element.getIndex() * numComponents;

@@ -14,7 +14,7 @@ public class PropertyAccessTest {
     public PropertyAccessTest(BMesh bmesh) {
         this.bmesh = bmesh;
         Vec3Property<Face> propFace = new Vec3Property<>("FaceVec");
-        bmesh.faceData().addProperty(propFace);
+        bmesh.faces().addProperty(propFace);
     }
 
 
@@ -37,20 +37,20 @@ public class PropertyAccessTest {
         //IntProperty<Face> propInt2          = bmesh.faceData().getProperty("FaceVec", IntProperty.class);
         //Vec3Property<Vertex> propInt2          = bmesh.faceData().getProperty("FaceVec", Vec3Property.class);
 
-        IntProperty<Face> propFace6 = IntProperty.get("FaceVec", bmesh.faceData()); // ok fails
+        IntProperty<Face> propFace6 = IntProperty.get("FaceVec", bmesh.faces()); // ok fails
     }
 
 
     public void shouldWork() {
-        Vec3Property<Face> propFace3 = Vec3Property.get("A", bmesh.faceData());
+        Vec3Property<Face> propFace3 = Vec3Property.get("A", bmesh.faces());
         assert propFace3 == null;
 
-        Vec3Property<Face> propFace5 = (Vec3Property<Face>) bmesh.faceData().getProperty("FaceVec");
-        Vec3Property<Face> propFace6 = Vec3Property.get("FaceVec", bmesh.faceData());
+        Vec3Property<Face> propFace5 = (Vec3Property<Face>) bmesh.faces().getProperty("FaceVec");
+        Vec3Property<Face> propFace6 = Vec3Property.get("FaceVec", bmesh.faces());
 
         //Vec3Property<Face> propFace4        = bmesh.faceData().getProperty("FaceVec");
 
         //Vec3Property<Vertex> propPosition = (Vec3Property<Vertex>) bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
-        ColorProperty<Vertex> propVertexColor = (ColorProperty<Vertex>) bmesh.vertexData().getProperty(BMeshProperty.Vertex.COLOR);
+        ColorProperty<Vertex> propVertexColor = (ColorProperty<Vertex>) bmesh.vertices().getProperty(BMeshProperty.Vertex.COLOR);
     }
 }

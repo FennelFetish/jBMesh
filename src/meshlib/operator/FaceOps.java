@@ -18,7 +18,7 @@ public class FaceOps {
 
     public FaceOps(BMesh bmesh) {
         this.bmesh = bmesh;
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertexData());
+        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
     }
 
 
@@ -31,18 +31,19 @@ public class FaceOps {
         Loop current = face.loop;
         Loop next = current.nextFaceLoop;
 
-        store.zero();
         Vector3f vCurrent = new Vector3f();
         Vector3f vNext = new Vector3f();
+        propPosition.get(current.vertex, vCurrent);
+        store.zero();
 
         do {
-            propPosition.get(current.vertex, vCurrent);
             propPosition.get(next.vertex, vNext);
 
             store.x += (vCurrent.y - vNext.y) * (vCurrent.z + vNext.z);
             store.y += (vCurrent.z - vNext.z) * (vCurrent.x + vNext.x);
             store.z += (vCurrent.x - vNext.x) * (vCurrent.y + vNext.y);
 
+            vCurrent.set(vNext);
             current = next;
             next = next.nextFaceLoop;
         } while(current != face.loop);

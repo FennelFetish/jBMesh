@@ -22,13 +22,11 @@ public class IntTupleProperty<E extends Element> extends BMeshProperty<E, int[]>
     public void set(E element, int... values) {
         // throw?
         assert values.length == numComponents;
-
-        int i = indexOf(element);
-        for(int val : values)
-            data[i++] = val;
+        
+        int index = indexOf(element);
+        for(int i=0; i<numComponents; ++i)
+            data[index++] = values[i];
     }
-
-
 
 
     @Override

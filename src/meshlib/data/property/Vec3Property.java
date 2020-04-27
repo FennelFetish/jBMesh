@@ -2,10 +2,9 @@ package meshlib.data.property;
 
 import com.jme3.math.Vector3f;
 import meshlib.data.BMeshData;
-import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class Vec3Property<E extends Element> extends BMeshProperty<E, float[]> {
+public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
     public Vec3Property(String name) {
         super(name, 3);
     }
@@ -37,27 +36,27 @@ public class Vec3Property<E extends Element> extends BMeshProperty<E, float[]> {
 
 
     public float getX(E element) {
-        return data[indexOf(element)];
+        return get(element, 0);
     }
 
     public void setX(E element, float x) {
-        data[indexOf(element)] = x;
+        set(element, 0, x);
     }
 
     public float getY(E element) {
-        return data[indexOf(element, 1)];
+        return get(element, 1);
     }
 
     public void setY(E element, float y) {
-        data[indexOf(element, 1)] = y;
+        set(element, 1, y);
     }
 
     public float getZ(E element) {
-        return data[indexOf(element, 2)];
+        return get(element, 2);
     }
 
     public void setZ(E element, float z) {
-        data[indexOf(element, 2)] = z;
+        set(element, 2, z);
     }
 
 
@@ -75,11 +74,6 @@ public class Vec3Property<E extends Element> extends BMeshProperty<E, float[]> {
         store.z -= data[i+2];
     }
 
-
-    @Override
-    protected float[] alloc(int size) {
-        return new float[size];
-    }
 
     public static <E extends Element> Vec3Property<E> get(String name, BMeshData<E> meshData) {
         return (Vec3Property<E>) getProperty(name, meshData, float[].class);

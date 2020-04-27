@@ -112,11 +112,11 @@ public class VertexTest {
             center.removeEdge(e1);
         });
 
-        center.removeEdge(e2);
-        assertDiskCycleNext(center, e3, e3);
-        assertDiskCyclePrev(center, e3, e3);
-
         center.removeEdge(e3);
+        assertDiskCycleNext(center, e2, e2);
+        assertDiskCyclePrev(center, e2, e2);
+
+        center.removeEdge(e2);
         assertNull(center.edge);
 
         // Throw same IllegalArgumentException and not NPE when center.edge == null

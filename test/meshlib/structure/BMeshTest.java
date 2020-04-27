@@ -81,7 +81,21 @@ public class BMeshTest {
             bmesh.createFace(null);
         });
 
+        TestUtil.assertThrows(NullPointerException.class, () -> {
+            bmesh.createFace(v0, v1, null);
+        });
+
+        assertThat(bmesh.vertices().size(), is(3));
+        assertThat(bmesh.edges().size(), is(0));
+        assertThat(bmesh.faces().size(), is(0));
+        assertThat(bmesh.loops().size(), is(0));
+
         Face face = bmesh.createFace(v0, v1, v2);
+
+        assertThat(bmesh.vertices().size(), is(3));
+        assertThat(bmesh.edges().size(), is(3));
+        assertThat(bmesh.faces().size(), is(1));
+        assertThat(bmesh.loops().size(), is(3));
         
         Edge e1 = v0.getEdgeTo(v1);
         Edge e2 = v1.getEdgeTo(v2);
@@ -141,7 +155,7 @@ public class BMeshTest {
         assertThat(bmesh.vertices().size(), is(5));
         assertThat(bmesh.edges().size(), is(7));
         assertThat(bmesh.faces().size(), is(3));
-        assertThat(bmesh.loopData().elements().size(), is(9));
+        assertThat(bmesh.loops().size(), is(9));
 
         // Do split
         Edge edge = vEdge0.getEdgeTo(vEdge1);
@@ -150,7 +164,7 @@ public class BMeshTest {
         assertThat(bmesh.vertices().size(), is(6));
         assertThat(bmesh.edges().size(), is(8));
         assertThat(bmesh.faces().size(), is(3));
-        assertThat(bmesh.loopData().elements().size(), is(12));
+        assertThat(bmesh.loops().size(), is(12));
 
         // Test edge connectivity
         assertThat(vSplit.getEdgeTo(vEdge0), is(edge));

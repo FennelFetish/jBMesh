@@ -45,4 +45,12 @@ public class Loop extends Element {
             prevLoop = prevLoop.nextFaceLoop;
         return prevLoop;
     }
+
+
+    public Loop getPrevEdgeLoop() {
+        Loop prevLoop = nextEdgeLoop;
+        while(prevLoop.nextEdgeLoop != this)
+            prevLoop = prevLoop.nextEdgeLoop;
+        return prevLoop;
+    }
 }
