@@ -61,6 +61,7 @@ public class EdgeTest {
 
         assertThat(edge.loop, is(loop1));
         assertThat(edge.loop.nextEdgeLoop, is(loop1));
+        assertThat(edge.loop.prevEdgeLoop, is(loop1));
 
         Loop loop2 = new Loop();
         loop2.edge = edge;
@@ -69,6 +70,8 @@ public class EdgeTest {
         assertThat(edge.loop, is(loop1));
         assertThat(edge.loop.nextEdgeLoop, is(loop2));
         assertThat(edge.loop.nextEdgeLoop.nextEdgeLoop, is(loop1));
+        assertThat(edge.loop.prevEdgeLoop, is(loop2));
+        assertThat(edge.loop.prevEdgeLoop.prevEdgeLoop, is(loop1));
     }
 
 

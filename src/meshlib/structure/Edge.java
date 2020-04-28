@@ -11,18 +11,20 @@ public class Edge extends Element {
     // Target vertex (at end).
     // Needed? Can we use BMLoop's reference instead?
     // -> No, we need both vertices since an edge can exist without faces (no loop) and without adjacent edges (wireframe, single line, no nextEdge)
-    public Vertex vertex0;
+    public Vertex vertex0; // Blender calls these v1 and v2
     public Vertex vertex1;
     // Make those private? Add setter that checks for null?
 
     // Disk cycle at start vertex.
     //Needed? Can we go through BMLoop instead? -> No, wireframe doesn't have loops
     // Never NULL
-    private Edge v0NextEdge = this;
+    private Edge v0NextEdge = this; // Blender calls this v0DiskNext (v1_disk_link.next)
+    private Edge v0PrevEdge = this; // v0DiskPrev
 
     // Disk cycle at end vertex
     // Never NULL
-    private Edge v1NextEdge = this;
+    private Edge v1NextEdge = this; // v1DiskNext
+    private Edge v1PrevEdge = this; // v1DiskPrev
 
     // Can be null
     public Loop loop;
@@ -36,7 +38,9 @@ public class Edge extends Element {
         vertex0 = null;
         vertex1 = null;
         v0NextEdge = null;
+        v0PrevEdge = null;
         v1NextEdge = null;
+        v1PrevEdge = null;
         loop = null;
     }
     
@@ -47,54 +51,53 @@ public class Edge extends Element {
      */
     public void addLoop(Loop loop) {
         assert loop.edge == this;
+        //Objects.requireNonNull(loop);
+
+        // TODO: Is this check needed?
+        // TODO: Also see if the 'existst alread in cycle' check is needed in Vertex.addEdge. -> Could make manipulations more difficult.
+        // This throws in BMesh.createFace() because the references are set before. Also at other places.
+        /*if(loop.nextEdgeLoop != loop)
+            throw new IllegalArgumentException("Loop already associated with a radial cycle"); // TODO: Add to unit test
+        assert loop.prevEdgeLoop == loop;*/
 
         if(this.loop == null) {
             this.loop = loop;
             return;
         }
 
-        // Do this first so it will throw if loop is null
-        loop.nextEdgeLoop = this.loop;
-
         // Insert loop at end of linked list
-        Loop lastLoop = this.loop;
-        while(lastLoop.nextEdgeLoop != this.loop)
-            lastLoop = lastLoop.nextEdgeLoop;
-        lastLoop.nextEdgeLoop = loop;
+        // Throws NPE if loop is null
+        loop.radialSetBetween(this.loop.prevEdgeLoop, this.loop);
     }
 
 
     public void removeLoop(Loop loop) {
         // Throw NPE if loop is null
-        if(loop.edge != this) {
+        if(loop.edge != this)
             throw new IllegalArgumentException("Loop is not adjacent to Edge");
-        }
 
         if(this.loop == loop) {
             if(loop.nextEdgeLoop == loop) {
                 // Loop was the only one here
                 this.loop = null;
             } else {
-                Loop prev = loop.getPrevEdgeLoop();
-                prev.nextEdgeLoop = loop.nextEdgeLoop;
                 this.loop = loop.nextEdgeLoop;
-                loop.nextEdgeLoop = loop;
+                loop.radialRemove();
             }
 
             return;
         }
-        
+
+        // Check for null so it will throw IllegalArgumentException and not NPE, regardless of this object's state
         if(this.loop != null) {
-            Loop prev = this.loop;
-            Loop current = prev.nextEdgeLoop;
+            // Check if 'loop' exists in radial cycle
+            Loop current = this.loop.nextEdgeLoop;
             while(current != this.loop) {
                 if(current == loop) {
-                    prev.nextEdgeLoop = current.nextEdgeLoop;
-                    loop.nextEdgeLoop = loop;
+                    loop.radialRemove();
                     return;
                 }
 
-                prev = current;
                 current = current.nextEdgeLoop;
             }
         }
@@ -114,6 +117,17 @@ public class Edge extends Element {
             throw new IllegalArgumentException("Edge is not adjacent to Vertex");
     }
 
+    public void setPrevEdge(Vertex contactPoint, Edge edge) {
+        Objects.requireNonNull(edge);
+
+        if(contactPoint == vertex0)
+            v0PrevEdge = edge;
+        else if(contactPoint == vertex1)
+            v1PrevEdge = edge;
+        else
+            throw new IllegalArgumentException("Edge is not adjacent to Vertex");
+    }
+
 
     // Iterate disk cycle
     // TODO: find(Edge): Use iterators that also allow insertion/removal at position (with prev reference) -> better than a prev-reference because it also checks if edge exists in cycle
@@ -128,16 +142,66 @@ public class Edge extends Element {
         throw new IllegalArgumentException("Edge is not adjacent to Vertex");
     }
 
-
     public Edge getPrevEdge(Vertex contactPoint) {
-        Edge prev = this;
-        Edge current = getNextEdge(contactPoint);
-        while(current != this) {
-            prev = current;
-            current = current.getNextEdge(contactPoint);
-        }
+        if(contactPoint == vertex0)
+            return v0PrevEdge;
+        else if(contactPoint == vertex1)
+            return v1PrevEdge;
 
-        return prev;
+        throw new IllegalArgumentException("Edge is not adjacent to Vertex");
+    }
+
+
+    /**
+     * Updates the links in the disk cycle of <i>contactPoint</i> so that the following order is created:<br>
+     * <pre>
+     * Before: prev -&gt; next
+     * After:  prev -&gt; this -&gt; next
+     * </pre>
+     * @param contactPoint
+     * @param prev
+     * @param next
+     */
+    public void diskSetBetween(Vertex contactPoint, Edge prev, Edge next) {
+        assert prev.getNextEdge(contactPoint) == next;
+        assert next.getPrevEdge(contactPoint) == prev;
+
+        if(contactPoint == vertex0) {
+            v0NextEdge = next;
+            v0PrevEdge = prev;
+            prev.setNextEdge(contactPoint, this);
+            next.setPrevEdge(contactPoint, this);
+        }
+        else if(contactPoint == vertex1) {
+            v1NextEdge = next;
+            v1PrevEdge = prev;
+            prev.setNextEdge(contactPoint, this);
+            next.setPrevEdge(contactPoint, this);
+        }
+        else
+            throw new IllegalArgumentException("Edge is not adjacent to Vertex");
+    }
+
+
+    /**
+     * Removed this Edge from the disk cycle. Links the previous and the next element to eachother.
+     * @param contactPoint Adjacent Vertex.
+     */
+    public void diskRemove(Vertex contactPoint) {
+        if(contactPoint == vertex0) {
+            v0NextEdge.setPrevEdge(contactPoint, v0PrevEdge);
+            v0PrevEdge.setNextEdge(contactPoint, v0NextEdge);
+            v0NextEdge = this;
+            v0PrevEdge = this;
+        }
+        else if(contactPoint == vertex1) {
+            v1NextEdge.setPrevEdge(contactPoint, v1PrevEdge);
+            v1PrevEdge.setNextEdge(contactPoint, v1NextEdge);
+            v1NextEdge = this;
+            v1PrevEdge = this;
+        }
+        else
+            throw new IllegalArgumentException("Edge is not adjacent to Vertex");
     }
 
 

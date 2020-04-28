@@ -49,7 +49,7 @@ public class Face extends Element {
     private static class FaceLoopIterator implements Iterator<Loop> {
         private final Loop startLoop;
         private Loop currentLoop;
-        private boolean first = true; // Get rid of this flag? (emulate do-while)
+        private boolean first = true; // Get rid of this flag? (emulate do-while), also doesn't work with prevFaceLoops
 
         public FaceLoopIterator(Loop loop) {
             startLoop = loop;

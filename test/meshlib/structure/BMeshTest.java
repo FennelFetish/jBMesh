@@ -114,9 +114,9 @@ public class BMeshTest {
         assertThat(loops[1].nextFaceLoop, is(loops[2]));
         assertThat(loops[2].nextFaceLoop, is(loops[0]));
 
-        assertThat(loops[0].getPrevFaceLoop(), is(loops[2]));
-        assertThat(loops[1].getPrevFaceLoop(), is(loops[0]));
-        assertThat(loops[2].getPrevFaceLoop(), is(loops[1]));
+        assertThat(loops[0].prevFaceLoop, is(loops[2]));
+        assertThat(loops[1].prevFaceLoop, is(loops[0]));
+        assertThat(loops[2].prevFaceLoop, is(loops[1]));
 
         assertThat(loops[0].edge, is(e1));
         assertThat(loops[1].edge, is(e2));
@@ -196,18 +196,24 @@ public class BMeshTest {
         // [1] is the new Loop in Face 1
         assertThat(face1LoopsAfter[0].nextFaceLoop, is(face1LoopsAfter[1]));
         assertThat(face1LoopsAfter[1].nextFaceLoop, is(face1LoopsAfter[2]));
+        assertThat(face1LoopsAfter[1].prevFaceLoop, is(face1LoopsAfter[0]));
+        assertThat(face1LoopsAfter[2].prevFaceLoop, is(face1LoopsAfter[1]));
         assertThat(face1LoopsAfter[2], is(face1LoopsBefore[1]));
         assertThat(face1LoopsAfter[3], is(face1LoopsBefore[2]));
 
         // [3] is the new Loop in Face 2
         assertThat(face2LoopsAfter[2].nextFaceLoop, is(face2LoopsAfter[3]));
         assertThat(face2LoopsAfter[3].nextFaceLoop, is(face2LoopsAfter[0]));
+        assertThat(face2LoopsAfter[3].prevFaceLoop, is(face2LoopsAfter[2]));
+        assertThat(face2LoopsAfter[0].prevFaceLoop, is(face2LoopsAfter[3]));
         assertThat(face2LoopsAfter[1], is(face2LoopsBefore[1]));
         assertThat(face2LoopsAfter[2], is(face2LoopsBefore[2]));
 
         // [1] is the new Loop in Face 3
         assertThat(face3LoopsAfter[0].nextFaceLoop, is(face3LoopsAfter[1]));
         assertThat(face3LoopsAfter[1].nextFaceLoop, is(face3LoopsAfter[2]));
+        assertThat(face3LoopsAfter[1].prevFaceLoop, is(face3LoopsAfter[0]));
+        assertThat(face3LoopsAfter[2].prevFaceLoop, is(face3LoopsAfter[1]));
         assertThat(face3LoopsAfter[2], is(face3LoopsBefore[1]));
         assertThat(face3LoopsAfter[3], is(face3LoopsBefore[2]));
    }
@@ -237,9 +243,9 @@ public class BMeshTest {
         assertThat(invertedLoops[1].nextFaceLoop, is(expectedLoops[2]));
         assertThat(invertedLoops[2].nextFaceLoop, is(expectedLoops[0]));
 
-        assertThat(invertedLoops[0].getPrevFaceLoop(), is(expectedLoops[2]));
-        assertThat(invertedLoops[1].getPrevFaceLoop(), is(expectedLoops[0]));
-        assertThat(invertedLoops[2].getPrevFaceLoop(), is(expectedLoops[1]));
+        assertThat(invertedLoops[0].prevFaceLoop, is(expectedLoops[2]));
+        assertThat(invertedLoops[1].prevFaceLoop, is(expectedLoops[0]));
+        assertThat(invertedLoops[2].prevFaceLoop, is(expectedLoops[1]));
 
         assertThat(invertedLoops[0].vertex, is(v0));
         assertThat(invertedLoops[1].vertex, is(v2));

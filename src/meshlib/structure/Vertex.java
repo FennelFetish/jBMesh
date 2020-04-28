@@ -24,38 +24,30 @@ public class Vertex extends Element {
     public void addEdge(Edge edge) {
         // Edge cannot already belong to a disk cycle
         // Will throw if edge is null or not adjacent
+        // TODO: Does this make modifications more difficult?
         if(edge.getNextEdge(this) != edge)
             throw new IllegalArgumentException("Edge already associated with a disk cycle for this Vertex");
+        assert edge.getPrevEdge(this) == edge;
 
-        if(this.edge == null) {
+        if(this.edge == null)
             this.edge = edge;
-            return;
-        }
-
-        // Find last edge of disk cycle at this vertex
-        // TODO: Insert at beginning instead, because O(1)?
-        //       -> Doesn't work without "prev" references because we have to iterate and find the previous node anyway.
-        Edge prevEdge = this.edge.getPrevEdge(this);
-        prevEdge.setNextEdge(this, edge);
-        edge.setNextEdge(this, this.edge);
+        else
+            edge.diskSetBetween(this, this.edge.getPrevEdge(this), this.edge);
     }
     
 
     public void removeEdge(Edge edge) {
         // Do this first so it will throw if edge is null or not adjacent
-        Edge nextEdge = edge.getNextEdge(this);
+        Edge next = edge.getNextEdge(this);
 
         if(this.edge == edge) {
-            if(nextEdge == edge) {
+            if(next == edge) {
                 // Edge was the only one in disk cycle
-                edge.setNextEdge(this, edge);
+                assert edge.getPrevEdge(this) == edge;
                 this.edge = null;
-            }
-            else {
-                Edge prev = edge.getPrevEdge(this); // Could continue search from 'nextEdge'
-                prev.setNextEdge(this, nextEdge);
-                edge.setNextEdge(this, edge);
-                this.edge = nextEdge;
+            } else {
+                edge.diskRemove(this);
+                this.edge = next;
             }
 
             return;
@@ -63,16 +55,14 @@ public class Vertex extends Element {
 
         // Check for null so it will throw IllegalArgumentException and not NPE, regardless of this object's state
         if(this.edge != null) {
-            Edge prevEdge = this.edge;
+            // Check if 'edge' exists in disk cycle
             Edge current = this.edge.getNextEdge(this);
             while(current != this.edge) {
                 if(current == edge) {
-                    prevEdge.setNextEdge(this, nextEdge);
-                    edge.setNextEdge(this, edge);
+                    edge.diskRemove(this);
                     return;
                 }
 
-                prevEdge = current;
                 current = current.getNextEdge(this);
             }
         }
@@ -85,12 +75,12 @@ public class Vertex extends Element {
         if(edge == null)
             return null;
 
-        Edge currentEdge = this.edge;
+        Edge current = this.edge;
         do {
-            if(currentEdge.connects(this, other))
-                return currentEdge;
-            currentEdge = currentEdge.getNextEdge(this);
-        } while(currentEdge != this.edge);
+            if(current.connects(this, other))
+                return current;
+            current = current.getNextEdge(this);
+        } while(current != this.edge);
 
         return null;
     }

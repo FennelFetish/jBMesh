@@ -17,13 +17,15 @@ public class Loop extends Element {
     // Can also store in this loop whether the vertex was merged/remapped during conversion
 
     // Loop Cycle: Loop around face (iterate to list vertices of a face)
-    // Shouldn't be null
-    public Loop nextFaceLoop;
-    // prev?
+    // Never null
+    public Loop nextFaceLoop; // Blender calls this next
+    public Loop prevFaceLoop; // prev
 
     // Radial Cycle: Loop around edge (iterate to list faces on an edge)
     // Never null
-    public Loop nextEdgeLoop = this;
+    public Loop nextEdgeLoop = this; // Blender calls this radialNext
+    public Loop prevEdgeLoop = this; // radialPrev
+
 
 
     Loop() {}
@@ -35,22 +37,44 @@ public class Loop extends Element {
         edge = null;
         vertex = null;
         nextFaceLoop = null;
+        prevFaceLoop = null;
         nextEdgeLoop = null;
+        prevEdgeLoop = null;
     }
 
 
-    public Loop getPrevFaceLoop() {
-        Loop prevLoop = nextFaceLoop;
-        while(prevLoop.nextFaceLoop != this)
-            prevLoop = prevLoop.nextFaceLoop;
-        return prevLoop;
+    public void faceSetBetween(final Loop prev, final Loop next) {
+        assert prev.nextFaceLoop == next;
+        assert next.prevFaceLoop == prev;
+
+        prevFaceLoop = prev;
+        nextFaceLoop = next;
+        prev.nextFaceLoop = this;
+        next.prevFaceLoop = this;
+    }
+
+    public void faceRemove() {
+        nextFaceLoop.prevFaceLoop = prevFaceLoop;
+        prevFaceLoop.nextFaceLoop = nextFaceLoop;
+        prevFaceLoop = this;
+        nextFaceLoop = this;
     }
 
 
-    public Loop getPrevEdgeLoop() {
-        Loop prevLoop = nextEdgeLoop;
-        while(prevLoop.nextEdgeLoop != this)
-            prevLoop = prevLoop.nextEdgeLoop;
-        return prevLoop;
+    public void radialSetBetween(final Loop prev, final Loop next) {
+        assert prev.nextEdgeLoop == next;
+        assert next.prevEdgeLoop == prev;
+
+        prevEdgeLoop = prev;
+        nextEdgeLoop = next;
+        prev.nextEdgeLoop = this;
+        next.prevEdgeLoop = this;
+    }
+
+    public void radialRemove() {
+        nextEdgeLoop.prevEdgeLoop = prevEdgeLoop;
+        prevEdgeLoop.nextEdgeLoop = nextEdgeLoop;
+        prevEdgeLoop = this;
+        nextEdgeLoop = this;
     }
 }
