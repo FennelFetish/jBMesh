@@ -27,13 +27,13 @@ public class FloatBufferBenchmark {
             data[i] = rnd.nextFloat();
         }
 
-		// Inside-Out Fisher-Yates Shuffle for randomized permutations.
+        // Inside-Out Fisher-Yates Shuffle for randomized permutations.
         randomAccessPattern = new int[size];
-		for(int i=1; i<size; ++i) {
+        for(int i=1; i<size; ++i) {
             int k = rnd.nextInt(i);
-			randomAccessPattern[i] = randomAccessPattern[k];
-			randomAccessPattern[k] = i;
-		}
+            randomAccessPattern[i] = randomAccessPattern[k];
+            randomAccessPattern[k] = i;
+        }
 
         /*System.out.println("randomAccessPattern: ");
         for(int i=0; i<size; ++i) {

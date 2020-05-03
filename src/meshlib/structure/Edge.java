@@ -37,10 +37,10 @@ public class Edge extends Element {
     protected void releaseElement() {
         vertex0 = null;
         vertex1 = null;
-        v0NextEdge = null;
-        v0PrevEdge = null;
-        v1NextEdge = null;
-        v1PrevEdge = null;
+        v0NextEdge = this;
+        v0PrevEdge = this;
+        v1NextEdge = this;
+        v1PrevEdge = this;
         loop = null;
     }
     
@@ -162,7 +162,7 @@ public class Edge extends Element {
      * @param prev
      * @param next
      */
-    public void diskSetBetween(Vertex contactPoint, Edge prev, Edge next) {
+    void diskSetBetween(Vertex contactPoint, Edge prev, Edge next) {
         assert prev.getNextEdge(contactPoint) == next;
         assert next.getPrevEdge(contactPoint) == prev;
 
@@ -184,10 +184,14 @@ public class Edge extends Element {
 
 
     /**
-     * Removed this Edge from the disk cycle. Links the previous and the next element to eachother.
+     * Removes this Edge from the disk cycle. Links the previous and the next element to eachother.
+     * <pre>
+     * Before: prev -&gt; this -&gt; next
+     * After:  prev -&gt; next
+     * </pre>
      * @param contactPoint Adjacent Vertex.
      */
-    public void diskRemove(Vertex contactPoint) {
+    void diskRemove(Vertex contactPoint) {
         if(contactPoint == vertex0) {
             v0NextEdge.setPrevEdge(contactPoint, v0PrevEdge);
             v0PrevEdge.setNextEdge(contactPoint, v0NextEdge);
@@ -232,6 +236,34 @@ public class Edge extends Element {
             return vertex1;
 
         return null;
+    }
+
+    
+    public Vertex getOther(Vertex vertex) {
+        if(vertex == vertex0)
+            return vertex1;
+        else if(vertex == vertex1)
+            return vertex0;
+        else
+            throw new IllegalArgumentException("Edge is not adjacent to Vertex");
+    }
+
+    public void setOther(Vertex contactPoint, Vertex vertex) {
+        if(contactPoint == vertex0)
+            vertex1 = vertex;
+        else if(contactPoint == vertex1)
+            vertex0 = vertex;
+        else
+            throw new IllegalArgumentException("Edge is not adjacent to Vertex");
+    }
+
+    public void replace(Vertex oldVertex, Vertex newVertex) {
+        if(oldVertex == vertex0)
+            vertex0 = newVertex;
+        else if(oldVertex == vertex1)
+            vertex1 = newVertex;
+        else
+            throw new IllegalArgumentException("Edge is not adjacent to Vertex");
     }
 
 

@@ -13,11 +13,12 @@ import java.util.Map;
 
 // Implement Collection<E>?
 public class BMeshData<E extends Element> implements Iterable<E> {
-    public static interface ElementFactory<T> {
-        T createElement();
+    public static interface ElementFactory<E extends Element> {
+        E createElement();
     }
 
-    
+
+    // TODO: ConcurrentModificationException (when adding/removing elements while iterating)
     private class ElementIterator implements Iterator<E> {
         private int index = -1;
 
@@ -43,6 +44,9 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     private final ElementFactory<E> factory;
     private final ArrayList<E> elements = new ArrayList<>();
     private final Deque<Integer> freeList = new ArrayDeque<>(); // PriorityQueue?
+    // A sorted TreeSet could be used in iterator to optimize skipping? No, it would need to additionally iterate through tree, since it stores single elements.
+    // A sorted Set that stores non-intersecting ranges could be used: [3] [4] [5-7] [9] [12] [27-60] [82]   SegmentTree? IntervalTree? --> no...? but RangeTree?
+    // Or store the range (a link to the next active element) in the elements themselves. Similar to a skip list.
 
     private static final int INITIAL_ARRAY_SIZE = 32;
     private static final float GROW_FACTOR = 1.5f;
@@ -56,14 +60,6 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         this.factory = factory;
     }
 
-
-    /**
-     * elements().size() won't return actual number of alive elements!
-     * @return
-     */
-    /*public List<E> elements() {
-        return readonlyElements;
-    }*/
 
     @Override
     public Iterator<E> iterator() {
@@ -121,14 +117,16 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         properties.put(property.name, property);
     }
 
-    // getProperty(name, Vec3Property.class) should return Vec3Property<T> ??
+    // getProperty(name, Vec3Property.class) should return Vec3Property<E> ?? to avoid casting at call site
     BMeshProperty<E, ?> getProperty(String name) {
         return properties.get(name);
     }
 
     public void removeProperty(BMeshProperty<E, ?> property) {
-        property.release();
-        properties.remove(property.name);
+        if(properties.remove(property.name) != null)
+            property.release();
+        else
+            throw new IllegalArgumentException("Property not associated with this data set");
     }
 
 
@@ -299,7 +297,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     public void sort(Comparator<E> comparator) {
-        // Sort backing arrays
+        // Sort backing arrays, reassign element indices
         // For optimizing OpenGL performance? Does this matter?
         // e.g. sort vertices by face for better cache utilisation, sort loops by face
 

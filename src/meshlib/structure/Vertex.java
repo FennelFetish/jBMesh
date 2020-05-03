@@ -29,6 +29,7 @@ public class Vertex extends Element {
             throw new IllegalArgumentException("Edge already associated with a disk cycle for this Vertex");
         assert edge.getPrevEdge(this) == edge;
 
+        // Insert edge at end of disk cycle
         if(this.edge == null)
             this.edge = edge;
         else
@@ -56,6 +57,7 @@ public class Vertex extends Element {
         // Check for null so it will throw IllegalArgumentException and not NPE, regardless of this object's state
         if(this.edge != null) {
             // Check if 'edge' exists in disk cycle
+            // TODO: Start from 'edge' and check if 'this.edge' is reachable? -> Less iterations?
             Edge current = this.edge.getNextEdge(this);
             while(current != this.edge) {
                 if(current == edge) {
@@ -71,6 +73,7 @@ public class Vertex extends Element {
     }
 
 
+    // TODO: Allow multiple Edges between two vertices?
     public Edge getEdgeTo(Vertex other) {
         if(edge == null)
             return null;

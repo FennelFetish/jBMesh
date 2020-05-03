@@ -16,6 +16,11 @@ public abstract class Element {
     }
 
 
+    public boolean isAlive() {
+        return index >= 0;
+    }
+
+
     final void release() {
         index = -1;
         releaseElement();

@@ -28,6 +28,10 @@ public class BMesh {
     }
 
 
+    public BMeshData<Vertex> verts() {
+        return vertexData;
+    }
+
     public BMeshData<Vertex> vertices() {
         return vertexData;
     }
@@ -97,8 +101,8 @@ public class BMesh {
 
 
     public void removeEdge(Edge edge) {
-        // Remove adjacent faces?
-        // Remove adjacent vertices if they're not connected to anything else?
+        // Remove adjacent faces? yes
+        // Remove adjacent vertices if they're not connected to anything else? no
 
         edgeData.destroy(edge);
     }
@@ -178,7 +182,7 @@ public class BMesh {
      * @param edge
      * @return A new Vertex (<i>vNew</i>) with default properties (no specific position).
      */
-    public Vertex splitEdge(Edge edge) {
+    public Vertex splitEdge(final Edge edge) {
         // Throws early if edge is null
         Vertex v0 = edge.vertex0;
         Vertex v1 = edge.vertex1;
@@ -223,16 +227,75 @@ public class BMesh {
 
 
     /**
-     * Removes edge and vertex. Vertex must be adjacent to <i>edge</i> one other Edge.
+     * Removes edge and vertex.<br>
+     * Vertex <i>v</i>must be adjacent to <i>edge</i> and exactly one other Edge.
+     * <pre>
+     *              edge
+     * Before: (tv)======(v)-----(ov)
+     * After:  (tv)--------------(ov)
+     * </pre>
      * @param edge Will be removed.
-     * @param vertex Will be removed.
+     * @param vertex (<i>v</i>) Will be removed.
      */
-    public boolean joinEdge(Edge edge, Vertex vertex) {
+    public boolean joinEdge(final Edge edge, final Vertex vertex) {
         // Do this first so it will throw if edge is null or not adjacent
         Edge keepEdge = edge.getNextEdge(vertex);
+
+        // No other edges
+        if(keepEdge == edge)
+            return false;
+
+         // Check if there are >2 edges in disk cycle of vertex
         if(keepEdge.getNextEdge(vertex) != edge)
             return false;
 
+        Vertex tv = edge.getOther(vertex);
+        //Vertex ov = keepEdge.getOther(vertex);
+
+        tv.removeEdge(edge);
+        //vertex.removeEdge(edge);     // Unecessary?
+        vertex.removeEdge(keepEdge); // Unecessary? No
+        keepEdge.replace(vertex, tv);
+        tv.addEdge(keepEdge);
+
+        // Iterate Loops in radial cycle
+        // 'edge' and 'keepEdge' must have same number of loops and they must be connected
+        // but the order in the radial cycle can be different (?).
+        if(edge.loop != null) {
+            Loop tl = edge.loop;
+            Loop ol = keepEdge.loop;
+
+            do {
+                if(ol.vertex == vertex)
+                    ol.vertex = tv;
+                ol = ol.nextEdgeLoop;
+
+                if(tl.face.loop == tl)
+                    tl.face.loop = tl.nextFaceLoop;
+
+                //tempLoops.add(tl);
+                //tl = tl.nextEdgeLoop;
+
+                Loop loopRemove = tl;
+                tl = tl.nextEdgeLoop;
+                loopRemove.faceRemove();
+                loopData.destroy(loopRemove);
+            } while(tl != edge.loop);
+
+            assert ol == keepEdge.loop;
+
+            // Debug
+            /*for(Loop loopRemove : tempLoops) {
+                loopRemove.faceRemove();
+                loopRemove.edge.removeLoop(loopRemove);
+                loopData.destroy(loopRemove);
+            }
+            tempLoops.clear();*/
+        }
+
+        //assert edge.loop == null;
+        edgeData.destroy(edge);
+        vertexData.destroy(vertex);
         return true;
     }
 

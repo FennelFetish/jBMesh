@@ -58,24 +58,20 @@ public class UserProperties {
 
         
         public Vector2f getA(E element) {
-            int eleIndex = element.getIndex() * numComponents;
-            return data[eleIndex];
+            return data[indexOf(element)];
         }
 
         public Vector2f getB(E element) {
-            int eleIndex = element.getIndex() * numComponents;
-            return data[eleIndex+1];
+            return data[indexOf(element, 1)];
         }
 
 
         public void setA(E element, Vector2f vec) {
-            int eleIndex = element.getIndex() * numComponents;
-            data[eleIndex] = vec;
+            data[indexOf(element)] = vec;
         }
 
         public void setB(E element, Vector2f vec) {
-            int eleIndex = element.getIndex() * numComponents;
-            data[eleIndex+1] = vec;
+            data[indexOf(element, 1)] = vec;
         }
     }
 }

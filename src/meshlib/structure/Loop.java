@@ -7,12 +7,15 @@ import meshlib.data.Element;
 
 // (stores per-face-vertex data, UV's, vertex-colors, etc)
 public class Loop extends Element {
+    // Never null
     public Face face;
 
+    // Never null
     public Edge edge;
 
     // Reference is needed for properly defining winding order.
     // Can't rely on BMEdge's reference, since BMEdge has no specifc direction.
+    // Never null
     public Vertex vertex; // source
     // Can also store in this loop whether the vertex was merged/remapped during conversion
 
@@ -38,8 +41,8 @@ public class Loop extends Element {
         vertex = null;
         nextFaceLoop = null;
         prevFaceLoop = null;
-        nextEdgeLoop = null;
-        prevEdgeLoop = null;
+        nextEdgeLoop = this;
+        prevEdgeLoop = this;
     }
 
 

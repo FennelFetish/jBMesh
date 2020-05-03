@@ -37,9 +37,8 @@ public class HashGrid<T> {
     public T getAndSet(Index cellPos, T value) {
         if(value == null)
             return grid.remove(cellPos.key);
-        else {
+        else
             return grid.put(cellPos.key, value);
-        }
     }
 
     public void set(Index cellPos, T value) {

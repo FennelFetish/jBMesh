@@ -3,8 +3,13 @@ package meshlib.data.property;
 import com.jme3.math.Vector3f;
 import meshlib.data.BMeshData;
 import meshlib.data.Element;
+import meshlib.util.Func;
 
 public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
+    private final Vector3f tempA = new Vector3f();
+    private final Vector3f tempB = new Vector3f();
+    
+
     public Vec3Property(String name) {
         super(name, 3);
     }
@@ -72,6 +77,22 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
         store.x -= data[i];
         store.y -= data[i+1];
         store.z -= data[i+2];
+    }
+
+
+    public void execute(E element, Func.Unary<Vector3f> op) {
+        get(element, tempA);
+        op.exec(tempA);
+        set(element, tempA);
+    }
+
+
+    public void execute(E element1, E element2, Func.Binary<Vector3f> op) {
+        get(element1, tempA);
+        get(element2, tempB);
+        op.exec(tempA, tempB);
+        set(element1, tempA);
+        set(element2, tempB);
     }
 
 
