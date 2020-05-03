@@ -13,7 +13,10 @@ import meshlib.structure.Vertex;
 // Instead:
 // - Add all vertices to VertexDeduplication first
 // - That will create mapping
-public class MeshConverter {
+//
+// TODO? Selection (Box, Sphere...)/Views: Convert only parts of a mesh if only that part needs to be worked with.
+//       Constrain operations to that part. Insert locked elements in BMeshData so the data is not used/overriden?
+public class Import {
     private static final float RANGE = 0.01f;
 
     
@@ -90,9 +93,13 @@ public class MeshConverter {
         //System.out.println("Reduced vertex count from " + triangleExtractor.getNumVertices() + " to " + bmesh.vertices().size());
 
         triangleExtractor.process((int i0, int i1, int i2) -> {
+            Vertex v0 = indexMap[i0];
+            Vertex v1 = indexMap[i1];
+            Vertex v2 = indexMap[i2];
+
             // Check for degenerate triangles
-            if(indexMap[i0] != indexMap[i1] && indexMap[i0] != indexMap[i2] && indexMap[i1] != indexMap[i2])
-                bmesh.createFace(indexMap[i0], indexMap[i1], indexMap[i2]);
+            if(v0 != v1 && v0 != v2 && v1 != v2)
+                bmesh.createFace(v0, v1, v2);
         });
 
         return bmesh;

@@ -10,26 +10,24 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
+import com.jme3.scene.VertexBuffer;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Torus;
 import com.jme3.system.AppSettings;
 import java.util.ArrayList;
 import java.util.List;
-import meshlib.conversion.DebugMeshBuilder;
-import meshlib.conversion.MeshConverter;
+import meshlib.conversion.DebugMeshExport;
+import meshlib.conversion.Import;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.ColorProperty;
-import meshlib.data.property.Vec3Property;
 import meshlib.operator.EdgeOps;
-import meshlib.operator.ExtrudeFace;
-import meshlib.operator.FaceOps;
+import meshlib.operator.Inset;
 import meshlib.structure.BMesh;
 import meshlib.structure.Edge;
 import meshlib.structure.Face;
-import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
-import meshlib.util.BMeshVisualization;
+import meshlib.conversion.Export;
 
 
 public class Main extends SimpleApplication {
@@ -40,7 +38,7 @@ public class Main extends SimpleApplication {
         //Mesh in = new Sphere(32, 32, 5.0f);
         //Mesh in = new Box(1, 1, 1);
 
-        BMesh bmesh = MeshConverter.convertGridMapped(in);
+        BMesh bmesh = Import.convertGridMapped(in);
         processMesh(bmesh);
         bmesh.compactData();
         rootNode.attachChild(createDebugMesh(bmesh));
@@ -56,80 +54,42 @@ public class Main extends SimpleApplication {
 
 
     private void processMesh(BMesh bmesh) {
-        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
-        EdgeOps edgeOps = new EdgeOps(bmesh);
-        
         List<Edge> edges = new ArrayList<>();
-        /*for(Edge e : bmesh.edges())
-            edges.add(e);
+        bmesh.edges().forEach(e -> edges.add(e));
+
+        // Edge split
+        EdgeOps edgeOps = new EdgeOps(bmesh);
+        for(Edge e : edges) {
+            Vertex vert = edgeOps.splitAtCenter(e);
+
+            // Revert split
+            Edge newEdge = e.getNextEdge(vert);
+            assert newEdge != e;
+            if(!bmesh.joinEdge(newEdge, vert))
+                throw new RuntimeException();
+        }
+
+        // Second edge split
+        edges.clear();
+        bmesh.edges().forEach(e -> edges.add(e));
 
         for(Edge e : edges) {
-            Vector3f center = edgeOps.calcCenter(e);
-            Vertex vert = bmesh.splitEdge(e);
-            propPosition.set(vert, center);
-        }*/
+            Vertex vert = edgeOps.splitAtCenter(e);
+        }
 
-        /*edges.clear();
-        for(Edge e : bmesh.edges())
-            edges.add(e);
-
-        for(Edge e : edges) {
-            Vector3f center = edgeOps.calcCenter(e);
-            Vertex vert = bmesh.splitEdge(e);
-            propPosition.set(vert, center);
-        }*/
-
+        // Invert faces
         /*for(Face f : bmesh.faces()) {
             bmesh.invertFace(f);
             //bmesh.invertFace(f);
         }*/
 
-        FaceOps faceOps = new FaceOps(bmesh);
+        // Inset
         List<Face> faces = new ArrayList<>();
-        for(Face f : bmesh.faces())
-            faces.add(f);
+        bmesh.faces().forEach(f -> faces.add(f));
 
-        ExtrudeFace extr = new ExtrudeFace(bmesh);
-        for(Face f : faces) {
-            extr.extrude(f);
-            extr.copyVertexProperties();
-            
-            Vector3f centroid = faceOps.calcCentroid(f);
-            Vector3f normal = faceOps.calcNormal(f).multLocal(0.2f);
-
-            for(Loop loop : f.loops()) {
-                Vector3f p = propPosition.get(loop.vertex);
-                p.subtractLocal(centroid);
-                p.multLocal(0.7f);
-                p.addLocal(centroid);
-                p.addLocal(normal);
-                propPosition.set(loop.vertex, p);
-            }
-
-            for(Face fRes : extr.getResultFaces()) {
-                edges.clear();
-                for(Loop l : fRes.loops())
-                    edges.add(l.edge);
-
-                for(Edge e : edges) {
-                    Vector3f center = edgeOps.calcCenter(e);
-                    Vertex vert  = bmesh.splitEdge(e);
-                    propPosition.set(vert, center);
-                }
-
-                /*centroid = faceOps.calcCentroid(fRes);
-                normal = faceOps.calcNormal(fRes).multLocal(0.1f);
-
-                for(Loop loop : fRes.loops()) {
-                    Vector3f p = propPosition.get(loop.vertex);
-                    p.subtractLocal(centroid);
-                    p.multLocal(0.95f);
-                    p.addLocal(centroid);
-                    p.addLocal(normal);
-                    propPosition.set(loop.vertex, p);
-                }*/
-            }
-        }
+        Inset inset = new Inset(bmesh, 0.7f, -0.1f);
+        for(Face face : faces)
+            inset.apply(face);
     }
 
 
@@ -145,7 +105,7 @@ public class Main extends SimpleApplication {
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.setBoolean("UseVertexColor", true);
 
-        Geometry geom = new Geometry("Geom", BMeshVisualization.create(bmesh));
+        Geometry geom = new Geometry("Geom", Export.create(bmesh));
         geom.setMaterial(mat);
         return geom;
     }
@@ -159,15 +119,15 @@ public class Main extends SimpleApplication {
         //mat.getAdditionalRenderState().setWireframe(true);
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
 
-        DebugMeshBuilder debugMeshBuilder = new DebugMeshBuilder();
-        debugMeshBuilder.apply(bmesh);
-        Geometry geom = new Geometry("Geom", debugMeshBuilder.createMesh());
+        DebugMeshExport export = new DebugMeshExport();
+        export.apply(bmesh);
+        Geometry geom = new Geometry("Geom", export.createMesh());
         geom.setMaterial(mat);
         node.attachChild(geom);
 
         Material matNormals = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         matNormals.setBoolean("VertexColor", true);
-        Geometry geomNormals = new Geometry("GeomNormals", DebugMeshBuilder.createNormals(bmesh, 0.33f));
+        Geometry geomNormals = new Geometry("GeomNormals", DebugMeshExport.createNormals(bmesh, 0.33f));
         geomNormals.setMaterial(matNormals);
         node.attachChild(geomNormals);
 

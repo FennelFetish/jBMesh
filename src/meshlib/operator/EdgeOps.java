@@ -41,4 +41,12 @@ public class EdgeOps {
 
         return Math.abs(v1.dot(v2)) > 0.999f;
     }
+
+
+    public Vertex splitAtCenter(Edge edge) {
+        Vector3f center = calcCenter(edge);
+        Vertex vertex = bmesh.splitEdge(edge);
+        propPosition.set(vertex, center);
+        return vertex;
+    }
 }

@@ -12,7 +12,7 @@ import meshlib.structure.Face;
 import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
-public class DebugMeshBuilder {
+public class DebugMeshExport {
     private static final float INNER_SCALE       = 0.85f;
     private static final Vector3f COLOR_INNER    = new Vector3f(194, 185, 149).divideLocal(255);
     private static final Vector3f COLOR_SRC      = new Vector3f(30, 30, 30).divideLocal(255);
@@ -36,7 +36,7 @@ public class DebugMeshBuilder {
     private final ArrayList<Integer> indices = new ArrayList<>();
 
 
-    public DebugMeshBuilder() {}
+    public DebugMeshExport() {}
 
 
     public void clear() {
@@ -117,29 +117,29 @@ public class DebugMeshBuilder {
 
     public void apply(BMesh bmesh) {
         Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
-        final ArrayList<Vector3f> vertices = new ArrayList<>();
+        final ArrayList<Vector3f> faceVertices = new ArrayList<>();
         FaceOps faceOps = new FaceOps(bmesh);
 
         for(Face face : bmesh.faces()) {
-            vertices.clear();
+            faceVertices.clear();
             for(Loop loop : face.loops())
-                vertices.add(propPosition.get(loop.vertex));
+                faceVertices.add(propPosition.get(loop.vertex));
 
-            final int size = vertices.size();
+            final int size = faceVertices.size();
             final Vector3f normal   = faceOps.calcNormal(face);
             final Vector3f centroid = faceOps.calcCentroid(face);
 
             // Scale vertices
             Vector3f[] innerVerts = new Vector3f[size];
             for(int i=0; i<size; ++i)
-                innerVerts[i] = vertices.get(i).subtract(centroid).multLocal(INNER_SCALE).addLocal(centroid);
+                innerVerts[i] = faceVertices.get(i).subtract(centroid).multLocal(INNER_SCALE).addLocal(centroid);
 
             // Create "arrows"
             Loop loop = face.loop;
             for(int i=0; i<size; ++i) {
                 int i0 = addVertex(innerVerts[i]);
-                int i1 = addVertex(vertices.get(i));
-                int i2 = addVertex(vertices.get((i+1)%size));
+                int i1 = addVertex(faceVertices.get(i));
+                int i2 = addVertex(faceVertices.get((i+1)%size));
                 int i3 = addVertex(innerVerts[(i+1)%size]);
 
                 addNormal(normal, 4);

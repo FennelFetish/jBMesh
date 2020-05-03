@@ -2,7 +2,7 @@ package meshlib;
 
 import com.jme3.scene.Mesh;
 import com.jme3.scene.shape.Torus;
-import meshlib.conversion.MeshConverter;
+import meshlib.conversion.Import;
 import meshlib.util.Profiler;
 
 public class ConversionBenchmark {
@@ -55,7 +55,7 @@ Torus 160x160                                          1643,8165999         %   
             }*/
 
             try(Profiler p = Profiler.start("Grid")) {
-                MeshConverter.convertGrid(in);
+                Import.convertGrid(in);
             }
 
             /*try(Profiler p = Profiler.start("Simple Mapped")) {
@@ -63,11 +63,11 @@ Torus 160x160                                          1643,8165999         %   
             }*/
 
             try(Profiler p = Profiler.start("Grid Mapped")) {
-                MeshConverter.convertGridMapped(in);
+                Import.convertGridMapped(in);
             }
 
             try(Profiler p = Profiler.start("Sort Mapped")) {
-                MeshConverter.convertSortMapped(in);
+                Import.convertSortMapped(in);
             }
         }
     }

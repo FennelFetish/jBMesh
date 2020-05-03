@@ -23,7 +23,7 @@ public class ExtrudeFace {
     }
 
 
-    public void extrude(Face face) {
+    public void apply(Face face) {
         // Disconnect face
         // Keep loops, but disconnect
         // Leave vertices, create new Vertices (without properties)
