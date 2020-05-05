@@ -89,10 +89,25 @@ public class Vertex extends Element {
     }
 
 
+    public Face getCommonFace(Vertex other) {
+        for(Edge edgeThis : edges()) {
+            for(Loop loopThis : edgeThis.loops()) {
+                for(Edge edgeOther : other.edges()) {
+                    for(Loop loopOther : edgeOther.loops()) {
+                        if(loopThis.face == loopOther.face)
+                            return loopThis.face;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+
     public Iterable<Edge> edges() {
         return () -> new VertexEdgeIterator();
     }
-
 
     private class VertexEdgeIterator implements Iterator<Edge> {
         private Edge current;
@@ -114,6 +129,24 @@ public class Vertex extends Element {
             Edge edge = current;
             current = current.getNextEdge(Vertex.this);
             return edge;
+        }
+    }
+
+
+    public Iterable<Face> faces() {
+        return () -> new VertexFaceIterator();
+    }
+
+    private static class VertexFaceIterator implements Iterator<Face> {
+        @Override
+        public boolean hasNext() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+
+        @Override
+        public Face next() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }
 }

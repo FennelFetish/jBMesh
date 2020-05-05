@@ -1,6 +1,8 @@
 package meshlib.structure;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import meshlib.data.Element;
 
 public class Face extends Element {
@@ -28,7 +30,6 @@ public class Face extends Element {
     }
 
 
-    // TODO: Can have multiple common edges!
     public Edge getAnyCommonEdge(Face face) {
         for(Loop l1 : loops()) {
             for(Loop l2 : face.loops()) {
@@ -38,6 +39,18 @@ public class Face extends Element {
         }
 
         return null;
+    }
+
+    public List<Edge> getCommonEdges(Face face) {
+        List<Edge> edges = new ArrayList<>(4);
+        for(Loop l1 : loops()) {
+            for(Loop l2 : face.loops()) {
+                if(l1.edge == l2.edge)
+                    edges.add(loop.edge);
+            }
+        }
+
+        return edges;
     }
 
 

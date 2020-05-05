@@ -47,8 +47,8 @@ public class Loop extends Element {
 
 
     public void faceSetBetween(final Loop prev, final Loop next) {
-        assert prev.nextFaceLoop == next;
-        assert next.prevFaceLoop == prev;
+        //assert prev.nextFaceLoop == next;
+        //assert next.prevFaceLoop == prev;
 
         prevFaceLoop = prev;
         nextFaceLoop = next;

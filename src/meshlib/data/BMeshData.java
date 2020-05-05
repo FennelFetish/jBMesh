@@ -4,36 +4,45 @@ import java.nio.Buffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-// Implement Collection<E>?
 public class BMeshData<E extends Element> implements Iterable<E> {
     public static interface ElementFactory<E extends Element> {
         E createElement();
     }
 
 
-    // TODO: ConcurrentModificationException (when adding/removing elements while iterating)
     private class ElementIterator implements Iterator<E> {
+        private final int mod;
         private int index = -1;
 
         private ElementIterator() {
+            mod = modCount;
+
             // Skip to next living element
             while(++index < elements.size() && elements.get(index).getIndex() < 0) {}
         }
 
         @Override
         public boolean hasNext() {
+            if(modCount != mod)
+                throw new ConcurrentModificationException();
+
             return index < elements.size();
         }
 
         @Override
         public E next() {
+            if(modCount != mod)
+                throw new ConcurrentModificationException();
+
             E element = elements.get(index);
             while(++index < elements.size() && elements.get(index).getIndex() < 0) {} 
             return element;
@@ -52,6 +61,8 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     private static final float GROW_FACTOR = 1.5f;
     private int arraySize = INITIAL_ARRAY_SIZE;
     private int numElementsAlive = 0;
+
+    private int modCount = 0;
     
     private final Map<String, BMeshProperty<E, ?>> properties = new HashMap<>();
 
@@ -68,6 +79,11 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
     public int size() {
         return numElementsAlive;
+    }
+
+    public void getAll(Collection<E> dest) {
+        for(E e : this)
+            dest.add(e);
     }
 
 
@@ -92,6 +108,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         }
 
         numElementsAlive++;
+        modCount++;
         return element;
     }
 
@@ -102,6 +119,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         freeList.add(element.getIndex());
         element.release();
         numElementsAlive--;
+        modCount++;
     }
 
 
@@ -182,6 +200,8 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         elements.trimToSize();
         freeList.clear();
         arraySize = numElementsAlive;
+
+        modCount++;
     }
 
 
@@ -208,7 +228,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
             int copyLastIndex;
             if(f+1 >= free.length)
-                copyLastIndex = arraySize-1;
+                copyLastIndex = elements.size()-1;
             else if(free[f+1] == free[f]+1)
                 continue;
             else
@@ -267,7 +287,14 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         public void copy(int numComponents, Object srcArray, Object destArray) {
             int copyStartIndex = firstIndex * numComponents;
             int copyLength = (lastIndex-firstIndex + 1) * numComponents;
-            System.arraycopy(srcArray, copyStartIndex, destArray, copyStartIndex-shift, copyLength);
+            int copyShift = shift * numComponents;
+
+            System.arraycopy(srcArray, copyStartIndex, destArray, copyStartIndex-copyShift, copyLength);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("op: %s-%s by %s", firstIndex, lastIndex, shift);
         }
     }
 

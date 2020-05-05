@@ -28,6 +28,8 @@ import meshlib.structure.Edge;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.conversion.Export;
+import meshlib.operator.FaceOps;
+import meshlib.util.Profiler;
 
 
 public class Main extends SimpleApplication {
@@ -39,7 +41,9 @@ public class Main extends SimpleApplication {
         //Mesh in = new Box(1, 1, 1);
 
         BMesh bmesh = Import.convertGridMapped(in);
-        processMesh(bmesh);
+        try(Profiler p = Profiler.start("Processing")) {
+            processMesh(bmesh);
+        }
         bmesh.compactData();
         rootNode.attachChild(createDebugMesh(bmesh));
         //rootNode.attachChild(createMesh(bmesh));
@@ -54,10 +58,23 @@ public class Main extends SimpleApplication {
 
 
     private void processMesh(BMesh bmesh) {
+        FaceOps faceOps = new FaceOps(bmesh);
+
         List<Edge> edges = new ArrayList<>();
-        bmesh.edges().forEach(e -> edges.add(e));
+        bmesh.edges().getAll(edges);
+
+        // Merge planar faces
+        for(Edge e : edges) {
+            Face f1 = e.loop.face;
+            Face f2 = e.loop.nextEdgeLoop.face;
+
+            if(f1 != f2 && faceOps.coplanar(f1, f2) && f1.getCommonEdges(f2).size() == 1)
+                bmesh.joinFace(f1, f2, e);
+        }
 
         // Edge split
+        edges.clear();
+        bmesh.edges().getAll(edges);
         EdgeOps edgeOps = new EdgeOps(bmesh);
         for(Edge e : edges) {
             Vertex vert = edgeOps.splitAtCenter(e);
@@ -71,17 +88,17 @@ public class Main extends SimpleApplication {
 
         // Second edge split
         edges.clear();
-        bmesh.edges().forEach(e -> edges.add(e));
+        bmesh.edges().getAll(edges);
 
         for(Edge e : edges) {
             Vertex vert = edgeOps.splitAtCenter(e);
         }
 
         // Invert faces
-        /*for(Face f : bmesh.faces()) {
+        for(Face f : bmesh.faces()) {
             bmesh.invertFace(f);
             //bmesh.invertFace(f);
-        }*/
+        }
 
         // Inset
         List<Face> faces = new ArrayList<>();
@@ -90,6 +107,11 @@ public class Main extends SimpleApplication {
         Inset inset = new Inset(bmesh, 0.7f, -0.1f);
         for(Face face : faces)
             inset.apply(face);
+
+        for(Face f : bmesh.faces()) {
+            bmesh.invertFace(f);
+            //bmesh.invertFace(f);
+        }
     }
 
 

@@ -66,12 +66,11 @@ public class BMesh {
     // Join Face, remove Edge       Face(void?) joinFace(Face 1, Face 2)
     // Invert face                  void invert(Face)
 
-    // extrudeVertex        -> new edge
-    // extrudeEdgeQuad      -> new face
-    // extrudeEdgeTriangle  -> new triangle-face from edge with 1 additional vertex
-    // extrudeFace          -> new volume
 
-
+    /**
+     * Creates a new vertex.
+     * @return A new vertex.
+     */
     public Vertex createVertex() {
         return vertexData.create();
     }
@@ -86,7 +85,51 @@ public class BMesh {
         return createVertex(location.x, location.y, location.z);
     }
 
+    
+    /**
+     * Removes the given vertex and all adjacent edges and faces from the structure.
+     * @param vertex
+     */
+    public void removeVertex(Vertex vertex) {
+        try {
+            assert tempLoops.isEmpty();
 
+            // Iterate disk cycle for vertex
+            for(Edge edge : vertex.edges()) {
+                // Iterate radial cycle for edge
+                for(Loop radialLoop : edge.loops()) {
+                    // Gather loops and destroy face
+                    if(radialLoop.face.isAlive()) {
+                        for(Loop faceLoop : radialLoop.face.loops())
+                            tempLoops.add(faceLoop);
+                        faceData.destroy(radialLoop.face);
+                    }
+                }
+
+                edge.getOther(vertex).removeEdge(edge);
+                edgeData.destroy(edge);
+            }
+
+            for(Loop loop : tempLoops) {
+                if(loop.edge.isAlive())
+                    loop.edge.removeLoop(loop);
+                loopData.destroy(loop);
+            }
+        }
+        finally {
+            tempLoops.clear();
+        }
+
+        vertexData.destroy(vertex);
+    }
+
+
+    /**
+     * Creates a new edge between the given vertices.
+     * @param v0
+     * @param v1
+     * @return A new edge.
+     */
     public Edge createEdge(Vertex v0, Vertex v1) {
         assert v0 != v1;
 
@@ -100,14 +143,41 @@ public class BMesh {
     }
 
 
+    /**
+     * Removes the given edge and all adjacent faces from the structure.
+     * @param edge
+     */
     public void removeEdge(Edge edge) {
-        // Remove adjacent faces? yes
-        // Remove adjacent vertices if they're not connected to anything else? no
+        try {
+            // Gather all loops from adjacent faces
+            assert tempLoops.isEmpty();
+            for(Loop loop : edge.loops()) {
+                for(Loop faceLoop : loop.face.loops())
+                    tempLoops.add(faceLoop);
+                faceData.destroy(loop.face);
+            }
 
+            for(Loop loop : tempLoops) {
+                loop.edge.removeLoop(loop);
+                loopData.destroy(loop);
+            }
+        }
+        finally {
+            tempLoops.clear();
+        }
+
+        edge.vertex0.removeEdge(edge);
+        edge.vertex1.removeEdge(edge);
         edgeData.destroy(edge);
     }
 
 
+    /**
+     * Creates a new face between the given vertices. The order of the vertices define the winding order of the face.<br>
+     * If edges between vertices already exist, they are used for the resulting face. Otherwise new edges are created.
+     * @param faceVertices
+     * @return A new Face.
+     */
     public Face createFace(Vertex... faceVertices) {
         if(faceVertices.length < 3)
             throw new IllegalArgumentException("A face needs at least 3 vertices");
@@ -154,17 +224,31 @@ public class BMesh {
     }
 
 
+    /**
+     * Removes the given face from the structure.
+     * @param face
+     */
     public void removeFace(Face face) {
-        // Disconnect loops from Edges
-        // Leave Edges
-        // Release elements (Loops)
+        try {
+            assert tempLoops.isEmpty();
+            for(Loop loop : face.loops())
+                tempLoops.add(loop);
 
-        
+            for(Loop loop : tempLoops) {
+                loop.edge.removeLoop(loop);
+                loopData.destroy(loop);
+            }
+        }
+        finally {
+            tempLoops.clear();
+        }
+
+        faceData.destroy(face);
     }
 
 
     /**
-     * Splits the Edge into two:
+     * Splits the edge into two:
      * <ul>
      * <li>Creates a new Edge (from <i>vNew</i> to <i>v1</i>).</li>
      * <li>Reference <i>edge.vertex1</i> changes to <i>vNew</i>.</li>
@@ -236,6 +320,7 @@ public class BMesh {
      * </pre>
      * @param edge Will be removed.
      * @param vertex (<i>v</i>) Will be removed.
+     * @return True on success.
      */
     public boolean joinEdge(final Edge edge, final Vertex vertex) {
         // Do this first so it will throw if edge is null or not adjacent
@@ -273,9 +358,6 @@ public class BMesh {
                 if(tl.face.loop == tl)
                     tl.face.loop = tl.nextFaceLoop;
 
-                //tempLoops.add(tl);
-                //tl = tl.nextEdgeLoop;
-
                 Loop loopRemove = tl;
                 tl = tl.nextEdgeLoop;
                 loopRemove.faceRemove();
@@ -283,36 +365,106 @@ public class BMesh {
             } while(tl != edge.loop);
 
             assert ol == keepEdge.loop;
-
-            // Debug
-            /*for(Loop loopRemove : tempLoops) {
-                loopRemove.faceRemove();
-                loopRemove.edge.removeLoop(loopRemove);
-                loopData.destroy(loopRemove);
-            }
-            tempLoops.clear();*/
         }
 
-        //assert edge.loop == null;
         edgeData.destroy(edge);
         vertexData.destroy(vertex);
         return true;
     }
 
 
-    
     public Edge splitFace(Vertex vertex1, Vertex vertex2) {
-        return null;
+        Face face = vertex1.getCommonFace(vertex2);
+        if(face == null)
+            throw new IllegalArgumentException("Vertices are not adjacent to a common face");
+
+        return splitFace(face, vertex1, vertex2);
     }
 
 
     /**
-     * Removes face2.
+     * Existing face is on right side, new face will be on left side of new edge.
+     * @param face
+     * @param vertex1
+     * @param vertex2
+     * @return
+     */
+    public Edge splitFace(Face face, Vertex vertex1, Vertex vertex2) {
+        assert vertex1 != vertex2;
+
+        try {
+            assert tempLoops.isEmpty();
+
+            // Find v2
+            Loop l2 = null;
+            Loop loop = face.loop;
+            do {
+                if(loop.vertex == vertex2) {
+                    l2 = loop;
+                    break;
+                }
+
+                loop = loop.nextFaceLoop;
+            } while(loop != face.loop);
+
+            if(l2 == null)
+                throw new IllegalArgumentException("Vertices are not adjacent to the given face");
+
+            // Continue from v2 and find v1
+            Loop l1 = null;
+            do {
+                if(loop.vertex == vertex1) {
+                    l1 = loop;
+                    break;
+                }
+
+                tempLoops.add(loop);
+                loop = loop.nextFaceLoop;
+            } while(loop != l2);
+
+            if(l1 == null)
+                throw new IllegalArgumentException("Vertices are not adjacent to the given face");
+
+            Edge newEdge = createEdge(vertex1, vertex2);
+            Loop l1Prev = l1.prevFaceLoop;
+            Loop l2Prev = l2.prevFaceLoop;
+
+            Loop l1New = loopData.create();
+            l1New.face = face;
+            l1New.edge = newEdge;
+            l1New.vertex = vertex2;
+            l1New.faceSetBetween(l2Prev, l1);
+
+            Face newFace = faceData.create();
+            for(Loop loopF2 : tempLoops)
+                loopF2.face = newFace;
+
+            Loop l2New = loopData.create();
+            l2New.face = newFace;
+            l2New.edge = newEdge;
+            l2New.vertex = vertex1;
+            l2New.faceSetBetween(l1Prev, l2);
+
+            face.loop = l1New;
+            newFace.loop = l2New;
+            
+            newEdge.addLoop(l1New);
+            newEdge.addLoop(l2New);
+            return newEdge;
+        }
+        finally {
+            tempLoops.clear();
+        }
+    }
+
+
+    /**
+     * Removes face2. Faces must have exactly one common edge.
      * @param face1
      * @param face2
      */
     public void joinFace(Face face1, Face face2) {
-        // TODO: Can have multiple common edges!
+        // TODO: Can have multiple common edges! -> This operator can't work safely in this case
         Edge commonEdge = face1.getAnyCommonEdge(face2);
         if(commonEdge == null)
             throw new IllegalArgumentException("Faces are not adjacent");
@@ -327,7 +479,59 @@ public class BMesh {
         // Remove loops along commonEdge
         // Connect loops of face1 to face2
 
+        // TODO: Remove check, leave up to user
+        /*if(face1.getCommonEdges(face2).size() != 1) {
+            System.out.println("common edges: " + face1.getCommonEdges(face2).size());
+            return;
+        }*/
 
+        assert face1.getCommonEdges(face2).size() == 1;
+        assert face1 != face2;
+
+        Loop l1 = null;
+        Loop l2 = null;
+
+        if(commonEdge.loop.nextEdgeLoop.nextEdgeLoop != commonEdge.loop)
+            throw new IllegalArgumentException("Only the two given faces must be adjacent to the edge");
+
+        if(commonEdge.loop.face == face1 && commonEdge.loop.nextEdgeLoop.face == face2) {
+            l1 = commonEdge.loop;
+            l2 = commonEdge.loop.nextEdgeLoop;
+        }
+        else if(commonEdge.loop.face == face2 && commonEdge.loop.nextEdgeLoop.face == face1) {
+            l1 = commonEdge.loop.nextEdgeLoop;
+            l2 = commonEdge.loop;
+        }
+        else
+            throw new IllegalArgumentException("Faces are not adjacent to the given edge");
+
+        if(l1.vertex == l2.vertex) {
+            // TODO: throw? Overload with 'invert if needed' argument?
+            System.out.println("invert");
+            invertFace(face2);
+        }
+
+        for(Loop loop = l2.nextFaceLoop; loop != l2; loop = loop.nextFaceLoop) {
+            assert loop.face == face2;
+            loop.face = face1;
+        }
+
+        l1.nextFaceLoop.prevFaceLoop = l2.prevFaceLoop;
+        l2.prevFaceLoop.nextFaceLoop = l1.nextFaceLoop;
+
+        l1.prevFaceLoop.nextFaceLoop = l2.nextFaceLoop;
+        l2.nextFaceLoop.prevFaceLoop = l1.prevFaceLoop;
+
+        commonEdge.vertex0.removeEdge(commonEdge);
+        commonEdge.vertex1.removeEdge(commonEdge);
+
+        assert l1.nextFaceLoop != l2;
+        face1.loop = l1.nextFaceLoop;
+
+        loopData.destroy(l1);
+        loopData.destroy(l2);
+        edgeData.destroy(commonEdge);
+        faceData.destroy(face2);
     }
 
 
@@ -337,15 +541,21 @@ public class BMesh {
             for(Loop loop : face.loops())
                 tempLoops.add(loop);
 
+            Vertex firstVertex = tempLoops.get(0).vertex;
             Loop prev = tempLoops.get(tempLoops.size()-1);
+
             for(int i=0; i<tempLoops.size(); ++i) {
                 int nextIndex = (i+1) % tempLoops.size();
 
                 Loop current = tempLoops.get(i);
+                current.vertex = current.nextFaceLoop.vertex;
                 current.nextFaceLoop = prev;
                 current.prevFaceLoop = tempLoops.get(nextIndex);
                 prev = current;
             }
+
+            prev.vertex = firstVertex;
+            face.loop = prev; // Keep first vertex
         }
         finally {
             tempLoops.clear();

@@ -3,7 +3,9 @@ package meshlib.structure;
 import java.util.Iterator;
 import meshlib.TestUtil;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
@@ -17,7 +19,7 @@ public class BMeshEulerTest {
             bmesh.splitEdge(null);
         });
 
-        // Setup
+        // Setup 3 faces along one edge
         Vertex vEdge0 = bmesh.createVertex();
         Vertex vEdge1 = bmesh.createVertex();
 
@@ -41,6 +43,10 @@ public class BMeshEulerTest {
         // Do split
         Edge edge = vEdge0.getEdgeTo(vEdge1);
         Vertex vSplit = bmesh.splitEdge(edge);
+
+        TestUtil.assertFace(face1, vEdge0, vSplit, vEdge1, vFace1);
+        TestUtil.assertFace(face2, vSplit, vEdge0, vFace2, vEdge1);
+        TestUtil.assertFace(face3, vEdge0, vSplit, vEdge1, vFace3);
 
         assertThat(bmesh.vertices().size(), is(6));
         assertThat(bmesh.edges().size(), is(8));
@@ -127,6 +133,9 @@ public class BMeshEulerTest {
         Edge e0 = v0.getEdgeTo(v1);
         bmesh.joinEdge(e0, v1);
 
+        TestUtil.assertFace(ft, v0, v2, vt);
+        TestUtil.assertFace(fb, vb, v2, v0);
+
         assertThat(bmesh.verts().size(), is(4));
         assertThat(bmesh.edges().size(), is(5));
         assertThat(bmesh.faces().size(), is(2));
@@ -169,6 +178,71 @@ public class BMeshEulerTest {
 
 
     @Test
+    public void testSplitFace() {
+        BMesh bmesh = new BMesh();
+
+        // Setup rhombus
+        Vertex v0 = bmesh.createVertex(); // Left
+        Vertex v1 = bmesh.createVertex(); // Right
+        Vertex vt = bmesh.createVertex(); // Top
+        Vertex vb = bmesh.createVertex(); // Bottom
+
+        Face face = bmesh.createFace(v0, vb, v1, vt);
+        Edge edge = bmesh.splitFace(v0, v1);
+
+        assertNotNull(edge);
+        assertNotNull(edge.loop);
+        assertThat(v0.getEdgeTo(v1), is(edge));
+        assertTrue(edge.connects(v0, v1));
+
+        assertThat(bmesh.vertices().size(), is(4));
+        assertThat(bmesh.edges().size(), is(5));
+        assertThat(bmesh.faces().size(), is(2));
+        assertThat(bmesh.loops().size(), is(6));
+
+        assertThat(edge.loop.face, is(face));
+        assertThat(face.loop.edge, is(edge));
+        
+        Face newFace = edge.loop.nextEdgeLoop.face;
+        assertNotNull(newFace);
+        assertThat(newFace, not(face));
+        assertThat(newFace.loop.edge, is(edge));
+
+        TestUtil.assertFace(newFace, v0, v1, vt);
+        TestUtil.assertFace(face,    v1, v0, vb);
+    }
+
+
+    @Test
+    public void testjoinFace() {
+        BMesh bmesh = new BMesh();
+
+        // Setup rhombus
+        Vertex v0 = bmesh.createVertex(); // Left
+        Vertex v1 = bmesh.createVertex(); // Right
+        Vertex vt = bmesh.createVertex(); // Top
+        Vertex vb = bmesh.createVertex(); // Bottom
+
+        Face ft = bmesh.createFace(v0, v1, vt);
+        Face fb = bmesh.createFace(v1, v0, vb);
+
+        TestUtil.assertFace(ft, v0, v1, vt);
+        TestUtil.assertFace(fb, v1, v0, vb);
+
+        bmesh.joinFace(ft, fb);
+
+        assertThat(bmesh.vertices().size(), is(4));
+        assertThat(bmesh.edges().size(), is(4));
+        assertThat(bmesh.faces().size(), is(1));
+        assertThat(bmesh.loops().size(), is(4));
+
+        assertTrue(ft.isAlive());
+        assertFalse(fb.isAlive());
+        TestUtil.assertFace(ft, v1, vt, v0, vb);
+    }
+
+
+    @Test
     public void testInvertFace() {
         BMesh bmesh = new BMesh();
 
@@ -178,10 +252,11 @@ public class BMeshEulerTest {
 
         Face face = bmesh.createFace(v0, v1, v2);
         Loop[] originalLoops = TestUtil.getLoops(face);
-        Loop[] expectedLoops = new Loop[] { originalLoops[0], originalLoops[2], originalLoops[1] };
+        Loop[] expectedLoops = new Loop[] { originalLoops[2], originalLoops[1], originalLoops[0] };
 
         bmesh.invertFace(face);
-        assertThat(face.loop, is(originalLoops[0]));
+        TestUtil.assertFace(face, v0, v2, v1);
+
         Loop[] invertedLoops = TestUtil.getLoops(face);
 
         assertThat(invertedLoops[0], is(expectedLoops[0]));
