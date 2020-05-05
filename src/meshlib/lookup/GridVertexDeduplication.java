@@ -22,13 +22,14 @@ public class GridVertexDeduplication implements VertexDeduplication {
     }*/
 
 
-    
+
+    // TODO: store number of neighbors to avoid walks?
     private static final class Cell {
         private final List<Vertex> vertices = new ArrayList<>();
     }
 
 
-    // 26 directions, 3x3 cube without center
+    // 26 directions, 3x3x3 cube without center
     private static final int[][] WALK_DIRECTION = {
         // Two zeros
         {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1},

@@ -126,8 +126,8 @@ public class DebugMeshExport {
                 faceVertices.add(propPosition.get(loop.vertex));
 
             final int size = faceVertices.size();
-            final Vector3f normal   = faceOps.calcNormal(face);
-            final Vector3f centroid = faceOps.calcCentroid(face);
+            final Vector3f normal   = faceOps.normal(face);
+            final Vector3f centroid = faceOps.centroid(face);
 
             // Scale vertices
             Vector3f[] innerVerts = new Vector3f[size];
@@ -194,12 +194,12 @@ public class DebugMeshExport {
         int ii = 0;
 
         for(Face face : bmesh.faces()) {
-            Vector3f centroid = faceOps.calcCentroid(face);
+            Vector3f centroid = faceOps.centroid(face);
             vbuf[iv++] = centroid.x;
             vbuf[iv++] = centroid.y;
             vbuf[iv++] = centroid.z;
 
-            Vector3f normal = faceOps.calcNormal(face);
+            Vector3f normal = faceOps.normal(face);
             cbuf[ic++] = normal.x;
             cbuf[ic++] = normal.y;
             cbuf[ic++] = normal.z;

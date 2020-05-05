@@ -59,14 +59,6 @@ public class BMesh {
     }
 
 
-    // Euler operations:
-    // Split Edge, create Vertex    Vertex splitEdge(Edge)
-    // Join Edge, remove Vertex     Edge(void?) joinEdge(Edge 1, Edge 2)
-    // Split Face, create Edge      Edge splitFace(Vertex 1, Vertex 2, Face?)
-    // Join Face, remove Edge       Face(void?) joinFace(Face 1, Face 2)
-    // Invert face                  void invert(Face)
-
-
     /**
      * Creates a new vertex.
      * @return A new vertex.
@@ -335,11 +327,8 @@ public class BMesh {
             return false;
 
         Vertex tv = edge.getOther(vertex);
-        //Vertex ov = keepEdge.getOther(vertex);
-
         tv.removeEdge(edge);
-        //vertex.removeEdge(edge);     // Unecessary?
-        vertex.removeEdge(keepEdge); // Unecessary? No
+        vertex.removeEdge(keepEdge);
         keepEdge.replace(vertex, tv);
         tv.addEdge(keepEdge);
 
@@ -383,7 +372,7 @@ public class BMesh {
 
 
     /**
-     * Existing face is on right side, new face will be on left side of new edge.
+     * Existing face is on right side, new face will be on left side of new edge (seen from vertex1 while looking at vertex2).
      * @param face
      * @param vertex1
      * @param vertex2
@@ -535,6 +524,10 @@ public class BMesh {
     }
 
 
+    /**
+     * Reverses the winding order of the given Face.
+     * @param face
+     */
     public void invertFace(Face face) {
         try {
             assert tempLoops.isEmpty();

@@ -45,7 +45,6 @@ public class TestUtil {
         for(int i=0; i<loops.length; ++i) {
             int nextIndex = (i+1) % loops.length;
             Loop loop = loops[i];
-            System.out.println("loop " + loop.vertex);
 
             assertThat(loop.nextFaceLoop, is(loops[nextIndex]));
             assertThat(loop.prevFaceLoop, is(loops[prevIndex]));
@@ -58,5 +57,12 @@ public class TestUtil {
 
             prevIndex = i;
         }
+    }
+
+
+    public static void assertFloat(float actual, float expected) {
+        final float epsilon = 0.001f;
+        if(actual > expected+epsilon  ||  actual < expected-epsilon)
+            fail("Expected: " + expected + ", Actual: " + actual);
     }
 }

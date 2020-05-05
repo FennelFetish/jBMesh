@@ -1,6 +1,7 @@
 package meshlib.operator;
 
 import com.jme3.math.Vector3f;
+import meshlib.TestUtil;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
@@ -10,7 +11,7 @@ import org.junit.Test;
 
 public class FaceOpsTest {
     @Test
-    public void testCalcNormal() {
+    public void testNormal() {
         BMesh bmesh = new BMesh();
         FaceOps faceOps = new FaceOps(bmesh);
 
@@ -28,9 +29,52 @@ public class FaceOpsTest {
 
         Face face = bmesh.createFace(v0, v1, v2, v3);
 
-        Vector3f normal = faceOps.calcNormal(face);
+        Vector3f normal = faceOps.normal(face);
         assertThat(normal.x, is(0.0f));
         assertThat(normal.y, is(0.0f));
         assertThat(normal.z, is(1.0f));
+    }
+
+
+    @Test
+    public void testArea() {
+        BMesh bmesh = new BMesh();
+        FaceOps faceOps = new FaceOps(bmesh);
+
+        testArea(bmesh, faceOps, 0.5f,
+            0.0f, 0.0f, 0.0f,
+            1.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f);
+
+        testArea(bmesh, faceOps, 1.0f,
+            0.0f, 0.0f, 0.0f,
+            1.0f, 0.0f, 0.0f,
+            1.0f, 1.0f, 0.0f,
+            0.0f, 1.0f, 0.0f);
+
+        testArea(bmesh, faceOps, 0.5f,
+            0.0f, 0.0f, 0.0f,
+            1.0f, 0.0f, 0.0f,
+            1.0f, 1.0f, 0.0f,
+            0.5f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f);
+
+        // TODO: more...
+    }
+
+
+    private void testArea(BMesh bmesh, FaceOps faceOps, float expectedArea, float... vertices) {
+        Vertex[] vs = new Vertex[vertices.length / 3];
+        assert vs.length * 3 == vertices.length;
+
+        int v=0;
+        for(int i=2; i<vertices.length; i += 3)
+            vs[v++] = bmesh.createVertex(vertices[i-2], vertices[i-1], vertices[i]);
+
+        Face face = bmesh.createFace(vs);
+        TestUtil.assertFloat(faceOps.area(face), expectedArea);
+
+        if(vs.length == 3)
+            TestUtil.assertFloat(faceOps.areaTriangle(face), expectedArea);
     }
 }

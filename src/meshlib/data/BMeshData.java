@@ -20,11 +20,11 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     private class ElementIterator implements Iterator<E> {
-        private final int mod;
+        private final int expectedModCount;
         private int index = -1;
 
         private ElementIterator() {
-            mod = modCount;
+            expectedModCount = modCount;
 
             // Skip to next living element
             while(++index < elements.size() && elements.get(index).getIndex() < 0) {}
@@ -32,7 +32,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
         @Override
         public boolean hasNext() {
-            if(modCount != mod)
+            if(modCount != expectedModCount)
                 throw new ConcurrentModificationException();
 
             return index < elements.size();
@@ -40,7 +40,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
         @Override
         public E next() {
-            if(modCount != mod)
+            if(modCount != expectedModCount)
                 throw new ConcurrentModificationException();
 
             E element = elements.get(index);

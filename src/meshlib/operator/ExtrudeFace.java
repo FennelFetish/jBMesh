@@ -7,6 +7,10 @@ import meshlib.structure.Face;
 import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
+// extrudeVertex        -> new edge
+// extrudeEdgeQuad      -> new face
+// extrudeEdgeTriangle  -> new triangle-face from edge with 1 additional vertex
+// extrudeFace          -> new volume
 public class ExtrudeFace {
     private final BMesh bmesh;
 

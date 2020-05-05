@@ -33,8 +33,8 @@ public class Inset {
         extrusion.copyVertexProperties();
 
         Vector3f p = new Vector3f();
-        Vector3f centroid = faceOps.calcCentroid(face);
-        Vector3f normal = faceOps.calcNormal(face).multLocal(-depth);
+        Vector3f centroid = faceOps.centroid(face);
+        Vector3f normal = faceOps.normal(face).multLocal(-depth);
 
         for(Loop loop : face.loops()) {
             propPosition.get(loop.vertex, p);

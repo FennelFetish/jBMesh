@@ -1,5 +1,7 @@
 package meshlib.data;
 
+// TODO: Remember dirty state of elements for each property separately.
+//       A normal generator could use the dirty state of the vertex-position property to determine which face normals have to be regenerated.
 public abstract class BMeshProperty<E extends Element, TArray> {
     public static final class Vertex {
         private Vertex() {}
@@ -11,8 +13,16 @@ public abstract class BMeshProperty<E extends Element, TArray> {
     public static final class Face {
         private Face() {}
 
+        public static final String NORMAL = "FaceNormal";
+
         public static final String INDICES_3 = "FaceIndicesTriangle";
         public static final String INDICES_4 = "FaceIndicesQuad";
+    }
+
+    public static final class Loop {
+        private Loop() {}
+
+        public static final String NORMAL = "LoopNormal";
     }
 
 
@@ -52,7 +62,7 @@ public abstract class BMeshProperty<E extends Element, TArray> {
 
     public void copy(E from, E to) {
         int iFrom = indexOf(from);
-        int iTo = indexOf(to);
+        int iTo   = indexOf(to);
         System.arraycopy(data, iFrom, data, iTo, numComponents);
     }
 

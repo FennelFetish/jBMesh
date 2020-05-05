@@ -9,6 +9,7 @@ import java.util.Map;
 import meshlib.structure.BMesh;
 import meshlib.structure.Vertex;
 
+// TODO: Use insertion sort or TreeSet instead
 public class SortedVertexDeduplication {
     private class Entry {
         public final int index;
@@ -137,11 +138,11 @@ public class SortedVertexDeduplication {
     }
 
 
-    private abstract class Axis implements Comparator<Entry> {
+    private static abstract class Axis implements Comparator<Entry> {
         public abstract float component(Entry e);
     }
 
-    private class AxisX extends Axis {
+    private static class AxisX extends Axis {
         @Override
         public int compare(Entry e1, Entry e2) {
             return Float.compare(e1.location.x, e2.location.x);
@@ -153,7 +154,7 @@ public class SortedVertexDeduplication {
         }
     }
 
-    private class AxisY extends Axis {
+    private static class AxisY extends Axis {
         @Override
         public int compare(Entry e1, Entry e2) {
             return Float.compare(e1.location.y, e2.location.y);
@@ -165,7 +166,7 @@ public class SortedVertexDeduplication {
         }
     }
 
-    private class AxisZ extends Axis {
+    private static class AxisZ extends Axis {
         @Override
         public int compare(Entry e1, Entry e2) {
             return Float.compare(e1.location.z, e2.location.z);

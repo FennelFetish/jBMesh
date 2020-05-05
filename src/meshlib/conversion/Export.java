@@ -36,7 +36,7 @@ public class Export {
         for(Face f : bmesh.faces()) {
             for(Loop loop : f.loops()) {
                 loops.add(loop);
-                faceOps.calcNormal(f, normal);
+                faceOps.normal(f, normal);
                 /*nbuf[in++] = normal.x;
                 nbuf[in++] = normal.y;
                 nbuf[in++] = normal.z;*/
