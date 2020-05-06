@@ -1,12 +1,7 @@
 package meshlib.structure;
 
-import meshlib.TestUtil;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class EdgeTest {
     @Test
@@ -19,8 +14,8 @@ public class EdgeTest {
         edge.vertex1 = v1;
         
         assertNull(edge.loop);
-        assertThat(edge.getNextEdge(v0), is(edge));
-        assertThat(edge.getNextEdge(v1), is(edge));
+        assertEquals(edge, edge.getNextEdge(v0));
+        assertEquals(edge, edge.getNextEdge(v1));
     }
 
 
@@ -34,13 +29,13 @@ public class EdgeTest {
         edge.vertex0 = v0;
         edge.vertex1 = v1;
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             edge.getNextEdge(v2);
-        });
+        }, "Edge is not adjacent to Vertex");
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             v2.addEdge(edge);
-        });
+        }, "Edge is not adjacent to Vertex");
     }
 
 
@@ -59,19 +54,19 @@ public class EdgeTest {
         loop1.edge = edge;
         edge.addLoop(loop1);
 
-        assertThat(edge.loop, is(loop1));
-        assertThat(edge.loop.nextEdgeLoop, is(loop1));
-        assertThat(edge.loop.prevEdgeLoop, is(loop1));
+        assertEquals(loop1, edge.loop);
+        assertEquals(loop1, edge.loop.nextEdgeLoop);
+        assertEquals(loop1, edge.loop.prevEdgeLoop);
 
         Loop loop2 = new Loop();
         loop2.edge = edge;
         edge.addLoop(loop2);
 
-        assertThat(edge.loop, is(loop1));
-        assertThat(edge.loop.nextEdgeLoop, is(loop2));
-        assertThat(edge.loop.nextEdgeLoop.nextEdgeLoop, is(loop1));
-        assertThat(edge.loop.prevEdgeLoop, is(loop2));
-        assertThat(edge.loop.prevEdgeLoop.prevEdgeLoop, is(loop1));
+        assertEquals(loop1, edge.loop);
+        assertEquals(loop2, edge.loop.nextEdgeLoop);
+        assertEquals(loop1, edge.loop.nextEdgeLoop.nextEdgeLoop);
+        assertEquals(loop2, edge.loop.prevEdgeLoop);
+        assertEquals(loop1, edge.loop.prevEdgeLoop.prevEdgeLoop);
     }
 
 

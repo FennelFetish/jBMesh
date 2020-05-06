@@ -4,31 +4,10 @@ import java.util.ArrayList;
 import meshlib.structure.Face;
 import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestUtil {
-    public static <T> void assertThrows(Class<T> exceptionType, Runnable runnable) {
-        assertThrows(exceptionType, null, runnable);
-    }
-
-
-    public static <T> void assertThrows(Class<T> exceptionType, String message, Runnable runnable) {
-        try {
-            runnable.run();
-            fail();
-        }
-        catch(Throwable t) {
-            assertTrue("Throwable expected: " + exceptionType.getName() + ", Actual: " + t.getClass().getName(), exceptionType.isInstance(t));
-
-            if(message != null)
-                assertTrue("Message expected: \"" + message + "\", Actual: \"" + t.getMessage() + "\"", t.getMessage().equals(message));
-        }
-    }
-
-    
     public static Loop[] getLoops(Face face) {
         ArrayList<Loop> loops = new ArrayList<>(3);
         for(Loop loop : face.loops())
@@ -39,30 +18,29 @@ public class TestUtil {
 
     public static void assertFace(Face face, Vertex... vertices) {
         Loop[] loops = getLoops(face);
-        assertThat(loops.length, is(vertices.length));
+        assertEquals(vertices.length, loops.length);
 
         int prevIndex = loops.length-1;
         for(int i=0; i<loops.length; ++i) {
             int nextIndex = (i+1) % loops.length;
             Loop loop = loops[i];
 
-            assertThat(loop.nextFaceLoop, is(loops[nextIndex]));
-            assertThat(loop.prevFaceLoop, is(loops[prevIndex]));
+            assertEquals(loops[nextIndex], loop.nextFaceLoop);
+            assertEquals(loops[prevIndex], loop.prevFaceLoop);
             
-            assertThat(loop.face, is(face));
-            assertThat(loop.vertex, is(vertices[i]));
+            assertEquals(face, loop.face);
+            assertEquals(vertices[i], loop.vertex);
             assertTrue(loop.edge.connects(vertices[i], vertices[nextIndex]));
-            assertThat(vertices[i].getEdgeTo(vertices[nextIndex]), is(loop.edge));
-            assertThat(vertices[nextIndex].getEdgeTo(vertices[i]), is(loop.edge));
+            assertEquals(loop.edge, vertices[i].getEdgeTo(vertices[nextIndex]));
+            assertEquals(loop.edge, vertices[nextIndex].getEdgeTo(vertices[i]));
 
             prevIndex = i;
         }
     }
 
 
-    public static void assertFloat(float actual, float expected) {
+    public static void assertFloat(float expected, float actual) {
         final float epsilon = 0.001f;
-        if(actual > expected+epsilon  ||  actual < expected-epsilon)
-            fail("Expected: " + expected + ", Actual: " + actual);
+        assertEquals(expected, actual, epsilon);
     }
 }

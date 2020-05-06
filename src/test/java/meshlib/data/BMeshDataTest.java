@@ -2,11 +2,11 @@ package meshlib.data;
 
 import meshlib.data.property.FloatProperty;
 import meshlib.data.property.IntTupleProperty;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 public class BMeshDataTest {
     private static class TestElement extends Element {
@@ -26,15 +26,12 @@ public class BMeshDataTest {
         assertNull(prop.data);
 
         data.addProperty(prop);
-        assertThat(data.getProperty(propName), is(prop));
+        assertEquals(prop, data.getProperty(propName));
         assertNotNull(prop.data);
 
-        try {
+        assertThrows(IllegalStateException.class, () -> {
             data.addProperty(prop);
-            assert false;
-        }
-        catch(IllegalStateException ex) {}
-        catch(Exception ex) { assert false; }
+        });
 
         data.removeProperty(prop);
         assertNull(prop.data);
@@ -57,7 +54,7 @@ public class BMeshDataTest {
             prop.set(elements[i], i, i, i);
         }
 
-        assertThat(data.size(), is(13));
+        assertEquals(13, data.size());
 
         data.destroy(elements[0]);
         // 1
@@ -73,20 +70,20 @@ public class BMeshDataTest {
         data.destroy(elements[11]);
         // 12
 
-        assertThat(data.size(), is(6));
+        assertEquals(6, data.size());
 
         data.compactData();
 
-        assertThat(data.size(), is(6));
-        assertThat(prop.data.length, is(6*3));
+        assertEquals(6, data.size());
+        assertEquals(6*3, prop.data.length);
 
         for(int i=0; i<elements.length; ++i) {
             if(!elements[i].isAlive())
                 continue;
 
-            assertThat(prop.get(elements[i], 0), is(i));
-            assertThat(prop.get(elements[i], 1), is(i));
-            assertThat(prop.get(elements[i], 2), is(i));
+            assertEquals(i, prop.get(elements[i], 0));
+            assertEquals(i, prop.get(elements[i], 1));
+            assertEquals(i, prop.get(elements[i], 2));
         }
     }
 }

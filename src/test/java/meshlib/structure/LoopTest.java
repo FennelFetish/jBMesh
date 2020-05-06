@@ -1,9 +1,8 @@
 package meshlib.structure;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.Test;
 
 public class LoopTest {
     @Test
@@ -15,6 +14,6 @@ public class LoopTest {
         assertNull(loop.vertex);
         assertNull(loop.nextFaceLoop);
 
-        assertThat(loop.nextEdgeLoop, is(loop));
+        assertEquals(loop, loop.nextEdgeLoop);
     }
 }

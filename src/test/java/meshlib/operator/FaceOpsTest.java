@@ -5,9 +5,8 @@ import meshlib.TestUtil;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 public class FaceOpsTest {
     @Test
@@ -30,9 +29,9 @@ public class FaceOpsTest {
         Face face = bmesh.createFace(v0, v1, v2, v3);
 
         Vector3f normal = faceOps.normal(face);
-        assertThat(normal.x, is(0.0f));
-        assertThat(normal.y, is(0.0f));
-        assertThat(normal.z, is(1.0f));
+        assertEquals(0.0f, normal.x);
+        assertEquals(0.0f, normal.y);
+        assertEquals(1.0f, normal.z);
     }
 
 
@@ -72,9 +71,9 @@ public class FaceOpsTest {
             vs[v++] = bmesh.createVertex(vertices[i-2], vertices[i-1], vertices[i]);
 
         Face face = bmesh.createFace(vs);
-        TestUtil.assertFloat(faceOps.area(face), expectedArea);
+        TestUtil.assertFloat(expectedArea, faceOps.area(face));
 
         if(vs.length == 3)
-            TestUtil.assertFloat(faceOps.areaTriangle(face), expectedArea);
+            TestUtil.assertFloat(expectedArea, faceOps.areaTriangle(face));
     }
 }

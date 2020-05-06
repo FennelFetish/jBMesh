@@ -1,13 +1,8 @@
 package meshlib.structure;
 
 import meshlib.TestUtil;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class BMeshTest {
     @Test
@@ -28,7 +23,7 @@ public class BMeshTest {
         Edge e0 = center.getEdgeTo(v0);
         Edge e1 = center.getEdgeTo(v1);
         Edge e2 = center.getEdgeTo(v2);
-        assertThat(bmesh.edges().size(), is(6));
+        assertEquals(6, bmesh.edges().size());
 
         bmesh.removeVertex(center);
 
@@ -36,17 +31,17 @@ public class BMeshTest {
         assertTrue(v0.isAlive());
         assertTrue(v1.isAlive());
         assertTrue(v2.isAlive());
-        assertThat(bmesh.vertices().size(), is(3));
+        assertEquals(3, bmesh.vertices().size());
 
         assertFalse(e0.isAlive());
         assertFalse(e1.isAlive());
         assertFalse(e2.isAlive());
-        assertThat(bmesh.edges().size(), is(3));
+        assertEquals(3, bmesh.edges().size());
 
         assertFalse(f0.isAlive());
         assertFalse(f1.isAlive());
         assertFalse(f2.isAlive());
-        assertThat(bmesh.faces().size(), is(0));
+        assertEquals(0, bmesh.faces().size());
 
         Edge e0_1 = v0.getEdgeTo(v1);
         Edge e1_2 = v1.getEdgeTo(v2);
@@ -57,16 +52,16 @@ public class BMeshTest {
         assertNotNull(e2_0);
 
         assertTrue(e0_1.getNextEdge(v1).isAdjacentTo(v2));
-        assertThat(e0_1.getNextEdge(v1).getNextEdge(v1), is(e0_1));
+        assertEquals(e0_1, e0_1.getNextEdge(v1).getNextEdge(v1));
         assertTrue(e1_2.getNextEdge(v2).isAdjacentTo(v0));
-        assertThat(e1_2.getNextEdge(v2).getNextEdge(v2), is(e1_2));
+        assertEquals(e1_2, e1_2.getNextEdge(v2).getNextEdge(v2));
         assertTrue(e2_0.getNextEdge(v0).isAdjacentTo(v1));
-        assertThat(e2_0.getNextEdge(v0).getNextEdge(v0), is(e2_0));
+        assertEquals(e2_0, e2_0.getNextEdge(v0).getNextEdge(v0));
 
         assertNull(e0_1.loop);
         assertNull(e1_2.loop);
         assertNull(e2_0.loop);
-        assertThat(bmesh.loops().size(), is(0));
+        assertEquals(0, bmesh.loops().size());
     }
 
 
@@ -80,48 +75,48 @@ public class BMeshTest {
 
         // Add first Edge
         Edge edge1 = bmesh.createEdge(v0, v1);
-        assertThat(edge1.vertex0, is(v0));
-        assertThat(edge1.vertex1, is(v1));
+        assertEquals(v0, edge1.vertex0);
+        assertEquals(v1, edge1.vertex1);
         assertNull(edge1.loop);
 
-        assertThat(edge1.getNextEdge(v0), is(edge1));
-        assertThat(edge1.getNextEdge(v1), is(edge1));
-        assertThat(edge1.getPrevEdge(v0), is(edge1));
-        assertThat(edge1.getPrevEdge(v1), is(edge1));
+        assertEquals(edge1, edge1.getNextEdge(v0));
+        assertEquals(edge1, edge1.getNextEdge(v1));
+        assertEquals(edge1, edge1.getPrevEdge(v0));
+        assertEquals(edge1, edge1.getPrevEdge(v1));
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             edge1.getNextEdge(v2);
-        });
+        }, "Edge is not adjacent to Vertex");
 
         // Add second Edge
         Edge edge2 = bmesh.createEdge(v1, v2);
-        assertThat(edge2.vertex0, is(v1));
-        assertThat(edge2.vertex1, is(v2));
+        assertEquals(v1, edge2.vertex0);
+        assertEquals(v2, edge2.vertex1);
         assertNull(edge2.loop);
 
-        assertThat(edge1.getNextEdge(v0), is(edge1));
-        assertThat(edge1.getNextEdge(v1), is(edge2));
-        assertThat(edge1.getPrevEdge(v0), is(edge1));
-        assertThat(edge1.getPrevEdge(v1), is(edge2));
+        assertEquals(edge1, edge1.getNextEdge(v0));
+        assertEquals(edge2, edge1.getNextEdge(v1));
+        assertEquals(edge1, edge1.getPrevEdge(v0));
+        assertEquals(edge2, edge1.getPrevEdge(v1));
 
-        assertThat(edge1.getNextEdge(v1).getNextEdge(v1), is(edge1));
-        assertThat(edge1.getPrevEdge(v1).getPrevEdge(v1), is(edge1));
-        assertThat(edge1.getNextEdge(v1).getPrevEdge(v1), is(edge1));
-        assertThat(edge1.getPrevEdge(v1).getNextEdge(v1), is(edge1));
+        assertEquals(edge1, edge1.getNextEdge(v1).getNextEdge(v1));
+        assertEquals(edge1, edge1.getPrevEdge(v1).getPrevEdge(v1));
+        assertEquals(edge1, edge1.getNextEdge(v1).getPrevEdge(v1));
+        assertEquals(edge1, edge1.getPrevEdge(v1).getNextEdge(v1));
 
-        assertThat(edge2.getNextEdge(v1), is(edge1));
-        assertThat(edge2.getNextEdge(v2), is(edge2));
-        assertThat(edge2.getPrevEdge(v1), is(edge1));
-        assertThat(edge2.getPrevEdge(v2), is(edge2));
+        assertEquals(edge1, edge2.getNextEdge(v1));
+        assertEquals(edge2, edge2.getNextEdge(v2));
+        assertEquals(edge1, edge2.getPrevEdge(v1));
+        assertEquals(edge2, edge2.getPrevEdge(v2));
 
-        assertThat(edge2.getNextEdge(v1).getNextEdge(v1), is(edge2));
-        assertThat(edge2.getPrevEdge(v1).getPrevEdge(v1), is(edge2));
-        assertThat(edge2.getNextEdge(v1).getPrevEdge(v1), is(edge2));
-        assertThat(edge2.getPrevEdge(v1).getNextEdge(v1), is(edge2));
+        assertEquals(edge2, edge2.getNextEdge(v1).getNextEdge(v1));
+        assertEquals(edge2, edge2.getPrevEdge(v1).getPrevEdge(v1));
+        assertEquals(edge2, edge2.getNextEdge(v1).getPrevEdge(v1));
+        assertEquals(edge2, edge2.getPrevEdge(v1).getNextEdge(v1));
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             edge2.getNextEdge(v0);
-        });
+        }, "Edge is not adjacent to Vertex");
     }
 
 
@@ -145,10 +140,10 @@ public class BMeshTest {
         assertFalse(ft.isAlive());
         assertFalse(fb.isAlive());
 
-        assertThat(bmesh.vertices().size(), is(4));
-        assertThat(bmesh.edges().size(), is(4));
-        assertThat(bmesh.faces().size(), is(0));
-        assertThat(bmesh.loops().size(), is(0));
+        assertEquals(4, bmesh.vertices().size());
+        assertEquals(4, bmesh.edges().size());
+        assertEquals(0, bmesh.faces().size());
+        assertEquals(0, bmesh.loops().size());
 
         assertNull(v0.getEdgeTo(v1));
         Edge e0_t = v0.getEdgeTo(vt);
@@ -171,30 +166,30 @@ public class BMeshTest {
         Vertex v1 = bmesh.createVertex();
         Vertex v2 = bmesh.createVertex();
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "A face needs at least 3 vertices", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             bmesh.createFace(v0, v1);
+        }, "A face needs at least 3 vertices");
+
+        assertThrows(NullPointerException.class, () -> {
+            bmesh.createFace((Vertex[]) null);
         });
 
-        TestUtil.assertThrows(NullPointerException.class, () -> {
-            bmesh.createFace(null);
-        });
-
-        TestUtil.assertThrows(NullPointerException.class, () -> {
+        assertThrows(NullPointerException.class, () -> {
             bmesh.createFace(v0, v1, null);
         });
 
-        assertThat(bmesh.vertices().size(), is(3));
-        assertThat(bmesh.edges().size(), is(0));
-        assertThat(bmesh.faces().size(), is(0));
-        assertThat(bmesh.loops().size(), is(0));
+        assertEquals(3, bmesh.vertices().size());
+        assertEquals(0, bmesh.edges().size());
+        assertEquals(0, bmesh.faces().size());
+        assertEquals(0, bmesh.loops().size());
 
         Face face = bmesh.createFace(v0, v1, v2);
         TestUtil.assertFace(face, v0, v1, v2);
 
-        assertThat(bmesh.vertices().size(), is(3));
-        assertThat(bmesh.edges().size(), is(3));
-        assertThat(bmesh.faces().size(), is(1));
-        assertThat(bmesh.loops().size(), is(3));
+        assertEquals(3, bmesh.vertices().size());
+        assertEquals(3, bmesh.edges().size());
+        assertEquals(1, bmesh.faces().size());
+        assertEquals(3, bmesh.loops().size());
         
         Edge e1 = v0.getEdgeTo(v1);
         Edge e2 = v1.getEdgeTo(v2);
@@ -205,25 +200,25 @@ public class BMeshTest {
         assertTrue(e3.connects(v2, v0));
 
         Loop[] loops = TestUtil.getLoops(face);
-        assertThat(loops.length, is(3));
+        assertEquals(3, loops.length);
         for(Loop loop : loops)
-            assertThat(loop.face, is(face));
+            assertEquals(face, loop.face);
 
-        assertThat(loops[0].nextFaceLoop, is(loops[1]));
-        assertThat(loops[1].nextFaceLoop, is(loops[2]));
-        assertThat(loops[2].nextFaceLoop, is(loops[0]));
+        assertEquals(loops[1], loops[0].nextFaceLoop);
+        assertEquals(loops[2], loops[1].nextFaceLoop);
+        assertEquals(loops[0], loops[2].nextFaceLoop);
 
-        assertThat(loops[0].prevFaceLoop, is(loops[2]));
-        assertThat(loops[1].prevFaceLoop, is(loops[0]));
-        assertThat(loops[2].prevFaceLoop, is(loops[1]));
+        assertEquals(loops[2], loops[0].prevFaceLoop);
+        assertEquals(loops[0], loops[1].prevFaceLoop);
+        assertEquals(loops[1], loops[2].prevFaceLoop);
 
-        assertThat(loops[0].edge, is(e1));
-        assertThat(loops[1].edge, is(e2));
-        assertThat(loops[2].edge, is(e3));
+        assertEquals(e1, loops[0].edge);
+        assertEquals(e2, loops[1].edge);
+        assertEquals(e3, loops[2].edge);
 
-        assertThat(loops[0].vertex, is(v0));
-        assertThat(loops[1].vertex, is(v1));
-        assertThat(loops[2].vertex, is(v2));
+        assertEquals(v0, loops[0].vertex);
+        assertEquals(v1, loops[1].vertex);
+        assertEquals(v2, loops[2].vertex);
     }
 
 
@@ -241,10 +236,10 @@ public class BMeshTest {
 
         assertFalse(face.isAlive());
 
-        assertThat(bmesh.vertices().size(), is(3));
-        assertThat(bmesh.edges().size(), is(3));
-        assertThat(bmesh.faces().size(), is(0));
-        assertThat(bmesh.loops().size(), is(0));
+        assertEquals(3, bmesh.vertices().size());
+        assertEquals(3, bmesh.edges().size());
+        assertEquals(0, bmesh.faces().size());
+        assertEquals(0, bmesh.loops().size());
 
         Edge e0 = v0.getEdgeTo(v1);
         Edge e1 = v1.getEdgeTo(v2);

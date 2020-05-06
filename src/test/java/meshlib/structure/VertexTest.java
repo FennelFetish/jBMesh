@@ -1,11 +1,10 @@
 package meshlib.structure;
 
-import meshlib.TestUtil;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import org.junit.Test;
-
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 public class VertexTest {
     @Test
@@ -23,19 +22,19 @@ public class VertexTest {
 
         Edge e1 = new Edge();
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             center.addEdge(e1);
-        });
+        }, "Edge is not adjacent to Vertex");
 
         e1.vertex1 = v1;
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge is not adjacent to Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             center.addEdge(e1);
-        });
+        }, "Edge is not adjacent to Vertex");
 
         e1.vertex0 = center;
         center.addEdge(e1);
-        assertThat(center.edge, is(e1));
+        assertEquals(e1, center.edge);
         assertDiskCycleNext(center, e1);
         assertDiskCyclePrev(center, e1);
 
@@ -54,27 +53,27 @@ public class VertexTest {
         assertDiskCyclePrev(center, e1, e3, e2, e1);
 
         center.removeEdge(e2);
-        assertThat(e2.getNextEdge(center), is(e2));
-        assertThat(e2.getNextEdge(v2), is(e2));
+        assertEquals(e2, e2.getNextEdge(center));
+        assertEquals(e2, e2.getNextEdge(v2));
         assertDiskCycleNext(center, e1, e3, e1);
         assertDiskCyclePrev(center, e1, e3, e1);
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge does not exists in disk cycle for Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             center.removeEdge(e2);
-        });
+        }, "Edge does not exists in disk cycle for Vertex");
 
         center.addEdge(e2);
         assertDiskCycleNext(center, e1, e3, e2, e1);
         assertDiskCyclePrev(center, e1, e2, e3, e1);
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge already associated with a disk cycle for this Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             center.addEdge(e2);
-        });
+        }, "Edge already associated with a disk cycle for this Vertex");
 
         // Test Vertex.getEdgeTo(Vertex)
-        assertThat(center.getEdgeTo(v1), is(e1));
-        assertThat(center.getEdgeTo(v2), is(e2));
-        assertThat(center.getEdgeTo(v3), is(e3));
+        assertEquals(e1, center.getEdgeTo(v1));
+        assertEquals(e2, center.getEdgeTo(v2));
+        assertEquals(e3, center.getEdgeTo(v3));
 
         Vertex v4 = new Vertex();
         assertNull(center.getEdgeTo(v4));
@@ -108,9 +107,9 @@ public class VertexTest {
         assertDiskCycleNext(center, e2, e3, e2);
         assertDiskCyclePrev(center, e2, e3, e2);
 
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge does not exists in disk cycle for Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             center.removeEdge(e1);
-        });
+        }, "Edge does not exists in disk cycle for Vertex");
 
         center.removeEdge(e3);
         assertDiskCycleNext(center, e2, e2);
@@ -120,9 +119,9 @@ public class VertexTest {
         assertNull(center.edge);
 
         // Throw same IllegalArgumentException and not NPE when center.edge == null
-        TestUtil.assertThrows(IllegalArgumentException.class, "Edge does not exists in disk cycle for Vertex", () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             center.removeEdge(e1);
-        });
+        }, "Edge does not exists in disk cycle for Vertex");
     }
 
 
@@ -130,11 +129,11 @@ public class VertexTest {
     public void testEdgeNull() {
         Vertex v = new Vertex();
 
-        TestUtil.assertThrows(NullPointerException.class, () -> {
+        assertThrows(NullPointerException.class, () -> {
             v.addEdge(null);
         });
 
-        TestUtil.assertThrows(NullPointerException.class, () -> {
+        assertThrows(NullPointerException.class, () -> {
             v.removeEdge(null);
         });
     }
@@ -149,7 +148,7 @@ public class VertexTest {
             edge = edge.getNextEdge(vert);
         }
 
-        assertThat(actual, is(expectedEdges));
+        assertArrayEquals(expectedEdges, actual);
     }
 
     private static void assertDiskCyclePrev(Vertex vert, Edge... expectedEdges) {
@@ -161,6 +160,6 @@ public class VertexTest {
             edge = edge.getPrevEdge(vert);
         }
 
-        assertThat(actual, is(expectedEdges));
+        assertArrayEquals(expectedEdges, actual);
     }
 }
