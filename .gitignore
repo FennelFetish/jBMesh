@@ -2,3 +2,6 @@
 /nbproject
 /build/
 /dist/
+/.gradle/
+/.idea/
+/*.log
