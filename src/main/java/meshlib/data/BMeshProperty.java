@@ -8,6 +8,7 @@ public abstract class BMeshProperty<E extends Element, TArray> {
 
         public static final String POSITION = "VertexPosition";
         public static final String COLOR    = "VertexColor";
+        public static final String NORMAL   = "VertexNormal";
     }
 
     public static final class Face {
@@ -30,6 +31,8 @@ public abstract class BMeshProperty<E extends Element, TArray> {
     public final int numComponents;
 
     protected TArray data = null;
+
+    private boolean comparable = true;
 
 
     protected BMeshProperty(String name, int numComponents) {
@@ -64,6 +67,17 @@ public abstract class BMeshProperty<E extends Element, TArray> {
         int iFrom = indexOf(from);
         int iTo   = indexOf(to);
         System.arraycopy(data, iFrom, data, iTo, numComponents);
+    }
+
+
+    public abstract boolean equals(E a, E b);
+
+    public void setComparable(boolean comparable) {
+        this.comparable = comparable;
+    }
+
+    public boolean isComparable() {
+        return comparable;
     }
 
 

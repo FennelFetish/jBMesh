@@ -30,6 +30,20 @@ public class IntTupleProperty<E extends Element> extends BMeshProperty<E, int[]>
 
 
     @Override
+    public boolean equals(E a, E b) {
+        int indexA = indexOf(a);
+        int indexB = indexOf(b);
+
+        for(int i=0; i<numComponents; ++i) {
+            if(data[indexA++] != data[indexB++])
+                return false;
+        }
+
+        return true;
+    }
+
+
+    @Override
     protected int[] alloc(int size) {
         return new int[size];
     }

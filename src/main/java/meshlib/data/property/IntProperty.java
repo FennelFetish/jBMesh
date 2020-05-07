@@ -4,7 +4,7 @@ import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class IntProperty<E extends Element> extends BMeshProperty<E, int[]>{
+public class IntProperty<E extends Element> extends BMeshProperty<E, int[]> {
     public IntProperty(String name) {
         super(name);
     }
@@ -16,6 +16,12 @@ public class IntProperty<E extends Element> extends BMeshProperty<E, int[]>{
 
     public void set(E element, int value) {
         data[element.getIndex()] = value;
+    }
+
+
+    @Override
+    public boolean equals(E a, E b) {
+        return data[a.getIndex()] == data[b.getIndex()];
     }
 
 

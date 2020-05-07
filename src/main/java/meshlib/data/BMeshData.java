@@ -27,7 +27,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
             expectedModCount = modCount;
 
             // Skip to next living element
-            while(++index < elements.size() && elements.get(index).getIndex() < 0) {}
+            while(++index < elements.size() && !elements.get(index).isListed()) {}
         }
 
         @Override
@@ -44,7 +44,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
                 throw new ConcurrentModificationException();
 
             E element = elements.get(index);
-            while(++index < elements.size() && elements.get(index).getIndex() < 0) {} 
+            while(++index < elements.size() && !elements.get(index).isListed()) {}
             return element;
         }
     }
@@ -61,6 +61,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     private static final float GROW_FACTOR = 1.5f;
     private int arraySize = INITIAL_ARRAY_SIZE;
     private int numElementsAlive = 0;
+    private int numVirtual = 0;
 
     private int modCount = 0;
     
@@ -78,12 +79,18 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
     public int size() {
-        return numElementsAlive;
+        return numElementsAlive - numVirtual;
     }
 
     public void getAll(Collection<E> dest) {
         for(E e : this)
             dest.add(e);
+    }
+
+    public List<E> getAll() {
+        List<E> list = new ArrayList<E>(numElementsAlive);
+        getAll(list);
+        return list;
     }
 
 
@@ -112,9 +119,19 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         return element;
     }
 
+    public E createVirtual() {
+        E element = create();
+        element.setFlags(Element.FLAG_VIRTUAL);
+        numVirtual++;
+        return element;
+    }
+
     public void destroy(E element) {
         if(element.getIndex() < 0)
             return;
+
+        if(element.checkFlags(Element.FLAG_VIRTUAL))
+            numVirtual--;
 
         freeList.add(element.getIndex());
         element.release();
@@ -332,8 +349,13 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
 
-    public void equals(E element1, E element2) {
-        // Compare all properties
+    public boolean equals(E a, E b) {
+        for(BMeshProperty<E, ?> prop : properties.values()) {
+            if(prop.isComparable() && !prop.equals(a, b))
+                return false;
+        }
+
+        return true;
     }
 
 

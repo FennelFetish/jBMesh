@@ -2,10 +2,9 @@ package meshlib.data.property;
 
 import com.jme3.math.ColorRGBA;
 import meshlib.data.BMeshData;
-import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
-public class ColorProperty<E extends Element> extends BMeshProperty<E, float[]> {
+public class ColorProperty<E extends Element> extends FloatTupleProperty<E> {
     public ColorProperty(String name) {
         super(name, 4);
     }
@@ -37,11 +36,6 @@ public class ColorProperty<E extends Element> extends BMeshProperty<E, float[]> 
         data[i+3] = a;
     }
 
-
-    @Override
-    protected float[] alloc(int size) {
-        return new float[size];
-    }
 
     public static <E extends Element> ColorProperty<E> get(String name, BMeshData<E> meshData) {
         return (ColorProperty<E>) getProperty(name, meshData, float[].class);

@@ -30,6 +30,20 @@ public class FloatTupleProperty<E extends Element> extends BMeshProperty<E, floa
 
 
     @Override
+    public boolean equals(E a, E b) {
+        int indexA = indexOf(a);
+        int indexB = indexOf(b);
+
+        for(int i=0; i<numComponents; ++i) {
+            if(!FloatProperty.floatEquals(data[indexA++], data[indexB++]))
+                return false;
+        }
+
+        return true;
+    }
+
+
+    @Override
     protected float[] alloc(int size) {
         return new float[size];
     }

@@ -12,17 +12,22 @@ public class UserProperties {
             super(name);
         }
 
-        @Override
-        protected long[] alloc(int size) {
-            return new long[size];
-        }
-
         public long get(E element) {
             return data[element.getIndex()];
         }
 
         public void set(E element, long l) {
             data[element.getIndex()] = l;
+        }
+
+        @Override
+        public boolean equals(E a, E b) {
+            return data[a.getIndex()] == data[b.getIndex()];
+        }
+
+        @Override
+        protected long[] alloc(int size) {
+            return new long[size];
         }
 
         public static <E extends Element> LongProperty<E> get(String name, BMeshData<E> meshData) {
@@ -36,6 +41,32 @@ public class UserProperties {
         public Vec2TupleProperty(String name) {
             super(name, 2);
         }
+
+
+        public Vector2f getA(E element) {
+            return data[indexOf(element)];
+        }
+
+        public Vector2f getB(E element) {
+            return data[indexOf(element, 1)];
+        }
+
+
+        public void setA(E element, Vector2f vec) {
+            data[indexOf(element)] = vec;
+        }
+
+        public void setB(E element, Vector2f vec) {
+            data[indexOf(element, 1)] = vec;
+        }
+
+
+        @Override
+        public boolean equals(E a, E b) {
+            return data[indexOf(a, 0)].equals(data[indexOf(b, 0)])
+                && data[indexOf(a, 1)].equals(data[indexOf(b, 1)]);
+        }
+
 
         @Override
         protected Vector2f[] alloc(int size) {
@@ -54,24 +85,6 @@ public class UserProperties {
                 data[iTo].set(data[iFrom+i]);
                 iTo++;
             }
-        }
-
-        
-        public Vector2f getA(E element) {
-            return data[indexOf(element)];
-        }
-
-        public Vector2f getB(E element) {
-            return data[indexOf(element, 1)];
-        }
-
-
-        public void setA(E element, Vector2f vec) {
-            data[indexOf(element)] = vec;
-        }
-
-        public void setB(E element, Vector2f vec) {
-            data[indexOf(element, 1)] = vec;
         }
     }
 }

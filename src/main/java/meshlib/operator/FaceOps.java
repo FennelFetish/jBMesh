@@ -73,7 +73,7 @@ public class FaceOps {
     public boolean coplanar(Face face1, Face face2) {
         Vector3f normal1 = normal(face1);
         Vector3f normal2 = normal(face2);
-        return normal1.dot(normal2) > 0.999f;
+        return normal1.dot(normal2) > 0.9999f;
     }
 
 
