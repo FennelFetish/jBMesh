@@ -51,6 +51,7 @@ public class TriangleExtractor {
         VertexBuffer vbIdx = mesh.getBuffer(VertexBuffer.Type.Index);
         switch(vbIdx.getFormat()) {
             case Int:
+            case UnsignedInt:
                 indexBuffer = BufferUtils.getIntArray((IntBuffer) vbIdx.getData());
                 break;
 

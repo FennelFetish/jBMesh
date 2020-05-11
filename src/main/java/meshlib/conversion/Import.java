@@ -2,10 +2,7 @@ package meshlib.conversion;
 
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
-import meshlib.lookup.GridVertexDeduplication;
-import meshlib.lookup.SimpleVertexDeduplication;
-import meshlib.lookup.SortedVertexDeduplication;
-import meshlib.lookup.VertexDeduplication;
+import meshlib.lookup.*;
 import meshlib.structure.BMesh;
 import meshlib.structure.Vertex;
 
@@ -36,6 +33,10 @@ public class Import {
         return convertMapped(bmesh, mesh, new SimpleVertexDeduplication(bmesh, RANGE));
     }
 
+    public static BMesh convertExactMapped(Mesh mesh) {
+        BMesh bmesh = new BMesh();
+        return convertMapped(bmesh, mesh, new ExactHashDeduplication());
+    }
 
     public static BMesh convertGridMapped(Mesh mesh) {
         BMesh bmesh = new BMesh();
@@ -70,17 +71,17 @@ public class Import {
 
     /**
      * Deduplicates the vertices first, so each vertex is only checked once.
-     * @param mesh
+     * @param bmesh
      * @return
      */
     private static BMesh convertMapped(BMesh bmesh, Mesh inputMesh, VertexDeduplication dedup) {
         TriangleExtractor triangleExtractor = new TriangleExtractor(inputMesh);
-
         bmesh.vertices().ensureCapacity(triangleExtractor.getNumIndices());
         bmesh.edges().ensureCapacity(triangleExtractor.getNumIndices());
         bmesh.faces().ensureCapacity(triangleExtractor.getNumIndices() / 3);
         bmesh.loops().ensureCapacity(triangleExtractor.getNumIndices());
 
+        // TODO: Keep duplicated vertices in LoopVertex property?
         Vertex[] indexMap = new Vertex[triangleExtractor.getNumIndices()];
         Vector3f location = new Vector3f();
 
@@ -143,5 +144,14 @@ public class Import {
         });
 
         return bmesh;
+    }
+
+
+    public static BMesh importKeep(Mesh inputMesh) {
+        // Keep normals
+        // Keep duplication: Create virtual vertices for index targets with multiple uses
+        // Keep triangulation: Indices -> Create Triangle objects in Triangulate
+        // Copy and reuse arrays from buffer
+        return null;
     }
 }
