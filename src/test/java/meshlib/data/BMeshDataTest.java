@@ -51,7 +51,7 @@ public class BMeshDataTest {
         TestElement[] elements = new TestElement[13];
         for(int i=0; i<elements.length; ++i) {
             elements[i] = data.create();
-            prop.set(elements[i], i, i, i);
+            prop.setValues(elements[i], i, i, i);
         }
 
         assertEquals(13, data.size());

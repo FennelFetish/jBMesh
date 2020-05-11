@@ -33,8 +33,18 @@ public class FloatProperty<E extends Element> extends BMeshProperty<E, float[]> 
         return new float[size];
     }
 
+
     public static <E extends Element> FloatProperty<E> get(String name, BMeshData<E> meshData) {
         return (FloatProperty<E>) getProperty(name, meshData, float[].class);
+    }
+
+    public static <E extends Element> FloatProperty<E> getOrCreate(String name, BMeshData<E> meshData) {
+        FloatProperty<E> prop = get(name, meshData);
+        if(prop == null) {
+            prop = new FloatProperty<>(name);
+            meshData.addProperty(prop);
+        }
+        return prop;
     }
 
 

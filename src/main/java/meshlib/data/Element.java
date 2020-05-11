@@ -38,15 +38,15 @@ public abstract class Element {
     protected abstract void releaseElement();
 
 
-    public void setFlags(int flags) {
+    void setFlags(int flags) {
         this.flags |= flags;
     }
 
-    public void unsetFlags(int flags) {
+    void unsetFlags(int flags) {
         this.flags &= ~flags;
     }
 
-    public boolean checkFlags(int flags) {
+    boolean checkFlags(int flags) {
         return (this.flags & flags) == flags;
     }
 }

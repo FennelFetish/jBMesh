@@ -99,4 +99,13 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
     public static <E extends Element> Vec3Property<E> get(String name, BMeshData<E> meshData) {
         return (Vec3Property<E>) getProperty(name, meshData, float[].class);
     }
+
+    public static <E extends Element> Vec3Property<E> getOrCreate(String name, BMeshData<E> meshData) {
+        Vec3Property<E> prop = get(name, meshData);
+        if(prop == null) {
+            prop = new Vec3Property<>(name);
+            meshData.addProperty(prop);
+        }
+        return prop;
+    }
 }

@@ -19,7 +19,7 @@ public class FloatTupleProperty<E extends Element> extends BMeshProperty<E, floa
         data[indexOf(element, component)] = value;
     }
 
-    public void set(E element, float... values) {
+    public void setValues(E element, float... values) {
         // throw?
         assert values.length == numComponents;
 

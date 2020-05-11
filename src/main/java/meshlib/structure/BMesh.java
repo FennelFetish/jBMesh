@@ -19,18 +19,14 @@ public class BMesh {
 
 
     public BMesh() {
-        vertexData = new BMeshData<>(() -> new Vertex());
-        edgeData   = new BMeshData<>(() -> new Edge());
-        faceData   = new BMeshData<>(() -> new Face());
-        loopData   = new BMeshData<>(() -> new Loop());
+        vertexData = new BMeshData<>(Vertex::new);
+        edgeData   = new BMeshData<>(Edge::new);
+        faceData   = new BMeshData<>(Face::new);
+        loopData   = new BMeshData<>(Loop::new);
 
         vertexData.addProperty(propPosition);
     }
 
-
-    public BMeshData<Vertex> verts() {
-        return vertexData;
-    }
 
     public BMeshData<Vertex> vertices() {
         return vertexData;

@@ -26,7 +26,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         private ElementIterator() {
             expectedModCount = modCount;
 
-            // Skip to next living element
+            // Skip to next listed element (alive and non-virtual)
             while(++index < elements.size() && !elements.get(index).isListed()) {}
         }
 
@@ -82,15 +82,35 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         return numElementsAlive - numVirtual;
     }
 
+    /**
+     * Includes count of virtual elements.
+     * @return
+     */
+    public int totalSize() {
+        return numElementsAlive;
+    }
+
     public void getAll(Collection<E> dest) {
         for(E e : this)
             dest.add(e);
     }
 
     public List<E> getAll() {
-        List<E> list = new ArrayList<E>(numElementsAlive);
+        List<E> list = new ArrayList<E>(size());
         getAll(list);
         return list;
+    }
+
+
+    public void clear() {
+        for(E element : elements) {
+            freeList.add(element.getIndex());
+            element.release();
+        }
+
+        numElementsAlive = 0;
+        numVirtual = 0;
+        modCount++;
     }
 
 
@@ -262,40 +282,6 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
 
-    /*private void compact(int[] free) {
-        List<CompactOp> ops = new ArrayList<>(free.length);
-
-        int shift = 0;
-        for(int f=0; f<free.length; ++f) {
-            shift++;
-
-            int copyLastIndex;
-            if(f+1 >= free.length)
-                copyLastIndex = arraySize-1;
-            else if(free[f+1] == free[f]+1)
-                continue;
-            else
-                copyLastIndex = free[f+1] - 1;
-
-            CompactOp op = new CompactOp();
-            op.firstIndex = free[f] + 1;
-            op.lastIndex = copyLastIndex;
-            op.shift = shift;
-            ops.add(op);
-
-            for(int i=op.firstIndex; i<=copyLastIndex; ++i)
-                elements.get(i).setIndex(i-shift);
-        }
-
-        for(BMeshProperty property : properties.values()) {
-            Object oldArray = property.allocReplace(numElementsAlive);
-            for(CompactOp op : ops) {
-                op.compact(property, oldArray);
-            }
-        }
-    }*/
-
-
     private static final class CompactOp {
         private int firstIndex;
         private int lastIndex;
@@ -335,7 +321,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     public <TArray> void putCompactData(BMeshProperty<E, TArray> property, Buffer buffer) {
-        buffer.reset();
+        buffer.clear();
         // ...
     }
 

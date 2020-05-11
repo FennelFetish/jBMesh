@@ -6,24 +6,29 @@ public abstract class BMeshProperty<E extends Element, TArray> {
     public static final class Vertex {
         private Vertex() {}
 
-        public static final String POSITION = "VertexPosition";
-        public static final String COLOR    = "VertexColor";
-        public static final String NORMAL   = "VertexNormal";
+        public static final String POSITION     = "VertexPosition";
+        public static final String COLOR        = "VertexColor";
+        public static final String NORMAL       = "VertexNormal";
     }
 
     public static final class Face {
         private Face() {}
 
-        public static final String NORMAL = "FaceNormal";
+        public static final String NORMAL       = "FaceNormal";
+    }
 
-        public static final String INDICES_3 = "FaceIndicesTriangle";
-        public static final String INDICES_4 = "FaceIndicesQuad";
+    public static final class Edge {
+        private Edge() {}
+
+        public static final String COLOR        = "EdgeColor";
+        public static final String VERTEX_MAP   = "EdgeVertexMap";
     }
 
     public static final class Loop {
         private Loop() {}
 
-        public static final String NORMAL = "LoopNormal";
+        public static final String NORMAL       = "LoopNormal";
+        public static final String VERTEX_MAP   = "LoopVertexMap";
     }
 
 
@@ -78,6 +83,11 @@ public abstract class BMeshProperty<E extends Element, TArray> {
 
     public boolean isComparable() {
         return comparable;
+    }
+
+
+    public boolean isAttached() {
+        return data != null;
     }
 
 

@@ -131,7 +131,7 @@ public class BMeshEulerTest {
         TestUtil.assertFace(ft, v0, v2, vt);
         TestUtil.assertFace(fb, vb, v2, v0);
 
-        assertEquals(4, bmesh.verts().size());
+        assertEquals(4, bmesh.vertices().size());
         assertEquals(5, bmesh.edges().size());
         assertEquals(2, bmesh.faces().size());
         assertEquals(6, bmesh.loops().size());
