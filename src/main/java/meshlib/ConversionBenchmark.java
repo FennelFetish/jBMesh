@@ -69,6 +69,10 @@ Torus 160x160                                          1643,8165999         %   
             try(Profiler p = Profiler.start("Sort Mapped")) {
                 Import.convertSortMapped(in);
             }
+
+            try(Profiler p = Profiler.start("Exact Hash Mapped")) {
+                Import.convertExactMapped(in);
+            }
         }
     }
 

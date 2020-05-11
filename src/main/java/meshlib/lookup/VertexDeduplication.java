@@ -8,5 +8,5 @@ public interface VertexDeduplication {
     /*void add(int index, Vector3f location);
     Vertex getVertex(int originalIndex);*/
 
-    Vertex getOrCreateVertex(BMesh mesh, Vector3f location);
+    Vertex getOrCreateVertex(BMesh bmesh, Vector3f location);
 }
