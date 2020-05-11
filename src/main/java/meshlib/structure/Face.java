@@ -53,6 +53,29 @@ public class Face extends Element {
         return edges;
     }
 
+    public int numCommonEdges(Face face) {
+        int commonEdges = 0;
+        for(Loop l1 : loops()) {
+            for(Loop l2 : face.loops()) {
+                if(l1.edge == l2.edge)
+                    commonEdges++;
+            }
+        }
+
+        return commonEdges;
+    }
+
+
+    public List<Loop> getLoops() {
+        return getLoops(new ArrayList<>(4));
+    }
+
+    public List<Loop> getLoops(List<Loop> list) {
+        for(Loop l : loops())
+            list.add(l);
+        return list;
+    }
+
 
     public Iterable<Loop> loops() {
         return () -> new FaceLoopIterator(loop);

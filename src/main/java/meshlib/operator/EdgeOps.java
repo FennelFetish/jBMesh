@@ -49,4 +49,11 @@ public class EdgeOps {
         propPosition.set(vertex, center);
         return vertex;
     }
+
+
+    public float length(Edge edge) {
+        Vector3f d = propPosition.get(edge.vertex0);
+        propPosition.subtract(edge.vertex1, d);
+        return d.length();
+    }
 }
