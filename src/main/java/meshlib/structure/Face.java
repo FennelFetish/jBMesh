@@ -71,8 +71,12 @@ public class Face extends Element {
     }
 
     public List<Loop> getLoops(List<Loop> list) {
-        for(Loop l : loops())
-            list.add(l);
+        Loop current = loop;
+        do {
+            list.add(current);
+            current = current.nextFaceLoop;
+        } while(current != loop);
+
         return list;
     }
 

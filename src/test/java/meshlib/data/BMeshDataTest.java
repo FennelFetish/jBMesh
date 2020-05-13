@@ -19,7 +19,7 @@ public class BMeshDataTest {
     public void testPropertyAddRemove() {
         final String propName = "Prop";
 
-        BMeshData<TestElement> data = new BMeshData<>(() -> new TestElement());
+        BMeshData<TestElement> data = new BMeshData<>(TestElement::new);
         assertNull(data.getProperty(propName));
 
         FloatProperty<TestElement> prop = new FloatProperty<>(propName);
@@ -44,7 +44,7 @@ public class BMeshDataTest {
 
     @Test
     public void testCompact() {
-        BMeshData<TestElement> data = new BMeshData<>(() -> new TestElement());
+        BMeshData<TestElement> data = new BMeshData<>(TestElement::new);
         IntTupleProperty<TestElement> prop = new IntTupleProperty<>("Prop", 3);
         data.addProperty(prop);
 

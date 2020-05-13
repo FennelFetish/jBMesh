@@ -18,27 +18,27 @@ import com.jme3.scene.shape.Quad;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Torus;
 import com.jme3.system.AppSettings;
-import java.util.ArrayList;
-import java.util.List;
 import meshlib.conversion.*;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.ColorProperty;
 import meshlib.operator.*;
 import meshlib.operator.normalgen.NormalGenerator;
 import meshlib.structure.BMesh;
-import meshlib.structure.Edge;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.Profiler;
 
 
 public class Main extends SimpleApplication {
+    private final Node node = new Node();
+
     @Override
     public void simpleInitApp() {
         //Mesh in = new Torus(128, 128, 2.0f, 4.0f);
         //Mesh in = new Torus(32, 24, 1.2f, 2.5f);
-        Mesh in = new Sphere(32, 32, 5.0f);
-        //Mesh in = new Box(1, 1, 1);
+        //Mesh in = new Sphere(32, 32, 5.0f);
+        //Mesh in = new Sphere(12, 12, 5.0f);
+        Mesh in = new Box(1, 1, 1);
         //Mesh in = new Quad(1.0f, 1.0f);
         //Mesh in = loadModel();
 
@@ -56,8 +56,7 @@ public class Main extends SimpleApplication {
         }
         bmesh.compactData();
 
-        NormalGenerator normGen = new NormalGenerator(bmesh);
-        normGen.setCreaseAngle(30);
+        NormalGenerator normGen = new NormalGenerator(bmesh, 40);
         try(Profiler p = Profiler.start("Norm Gen")) {
             normGen.apply();
         }
@@ -65,9 +64,10 @@ public class Main extends SimpleApplication {
         //Spatial obj = createDebugMesh(bmesh);
         Spatial obj = createMesh(bmesh);
         cam.lookAt(obj.getWorldBound().getCenter(), Vector3f.UNIT_Y);
-        rootNode.attachChild(obj);
+        node.attachChild(obj);
 
-        rootNode.attachChild(createNormalVis(bmesh));
+        //node.attachChild(createNormalVis(bmesh));
+        rootNode.attachChild(node);
 
         rootNode.addLight(new AmbientLight(ColorRGBA.White.mult(0.7f)));
         rootNode.addLight(new DirectionalLight(new Vector3f(-0.7f, -1, -0.9f).normalizeLocal(), ColorRGBA.White));
@@ -88,22 +88,28 @@ public class Main extends SimpleApplication {
 
 
     private void processMesh(BMesh bmesh) {
-        SubdivideFace subdiv = new SubdivideFace(bmesh);
-        subdiv.setCuts(2);
-        subdiv.apply(bmesh.faces().getAll());
-
         // Inset
         // TODO: This Inset operator doesn't create nice topology and that's probably the reason why the normals aren't smooth.
         //       Insead, it should subdive the face 2 times and use the resulting vertices for forming the inset. -> Make nice quad strips
-        List<Face> faces = new ArrayList<>();
-        bmesh.faces().forEach(f -> faces.add(f));
-        Inset inset = new Inset(bmesh, 0.6f, -0.1f);
+        Inset inset = new Inset(bmesh, 0.6f, -0.4f);
         ScaleFace scale = new ScaleFace(bmesh, 0.8f);
-        for(Face face : faces) {
+        for(Face face : bmesh.faces().getAll()) {
+            //if(Math.random() > 0.03f) continue;
             inset.apply(face);
             scale.apply(face);
             inset.apply(face);
             scale.apply(face);
+        }
+
+        SubdivideFace subdiv = new SubdivideFace(bmesh, 2);
+        subdiv.apply(bmesh.faces().getAll());
+
+        try(Profiler p = Profiler.start("Catmull-Clark")) {
+            Smooth smooth = new Smooth(bmesh);
+            for(int i = 0; i < 3; ++i)
+                smooth.apply(bmesh.faces().getAll());
+
+            // TODO: Make faces planar after smoothing?
         }
 
         // TODO: Operator for removing collinear loops (those that were generated using the edge split above)
@@ -115,9 +121,9 @@ public class Main extends SimpleApplication {
         ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
         bmesh.vertices().addProperty(propVertexColor);
 
+        ColorRGBA color = hsb(0.25f, 0.1f, 0.5f);
         for(Vertex v : bmesh.vertices()) {
-            //ColorRGBA color = hsb((float)Math.random(), 0.8f, 0.8f);
-            ColorRGBA color = hsb(0.25f, 0.1f, 0.5f);
+            //color = hsb((float)Math.random(), 0.8f, 0.8f);
             propVertexColor.set(v, color.r, color.g, color.b, color.a);
         }
 
@@ -129,7 +135,6 @@ public class Main extends SimpleApplication {
 
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
-        //mat.getAdditionalRenderState().setWireframe(true);
         mat.setBoolean("UseVertexColor", true);
 
         Geometry geom = new Geometry("Geom", export.getMesh());
@@ -174,7 +179,10 @@ public class Main extends SimpleApplication {
     
 
     @Override
-    public void simpleUpdate(float tpf) {}
+    public void simpleUpdate(float tpf) {
+        final float speed = 0.3f;
+        node.rotate(0, speed * tpf, 0);
+    }
 
 
     private ColorRGBA hsb(float h, float s, float b) {

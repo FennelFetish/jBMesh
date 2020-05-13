@@ -19,8 +19,8 @@ public class SubdivideFace {
 
 
     private final BMesh bmesh;
-    private final Map<Face, FaceInfo> faceInfo = new HashMap<>();
-    private final Set<Edge> edges = new HashSet<>();
+    private final Map<Face, FaceInfo> faceInfo = new HashMap<>(); // TODO: This one too (as local variable in apply())
+    private final Set<Edge> edges = new HashSet<>(); // TODO: Try and benchmark as local variable in apply() with initialCapacity
 
     private final Vec3Property<Vertex> propPosition;
     private int cuts = 1;
@@ -31,12 +31,19 @@ public class SubdivideFace {
 
 
     public SubdivideFace(BMesh bmesh) {
+        this(bmesh, 1);
+    }
+
+    public SubdivideFace(BMesh bmesh, int cuts) {
         this.bmesh = bmesh;
+        setCuts(cuts);
         propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
     }
 
 
     public void setCuts(int cuts) {
+        if(cuts < 1)
+            throw new IllegalArgumentException("Number of cuts must be at least 1");
         this.cuts = cuts;
     }
 
@@ -124,47 +131,43 @@ public class SubdivideFace {
      * @param first
      */
     private void subdivideTriangle(Face face, final int first) {
-        try {
-            final int sideStep = 1 + cuts;
-            int cutStart = first + 1;
-            int cutEnd   = first + 2*sideStep - 1;
+        final int sideStep = 1 + cuts;
+        int cutStart = first + 1;
+        int cutEnd   = first + 2*sideStep - 1;
 
-            // Split face in one direction
-            for(int i=0; i<cuts; ++i) {
-                Vertex v0 = tempLoops.get(cutStart % tempLoops.size()).vertex;
-                Vertex v1 = tempLoops.get(cutEnd % tempLoops.size()).vertex;
-                Edge edge = bmesh.splitFace(face, v0, v1);
+        // Split face in one direction
+        for(int i=0; i<cuts; ++i) {
+            Vertex v0 = tempLoops.get(cutStart % tempLoops.size()).vertex;
+            Vertex v1 = tempLoops.get(cutEnd % tempLoops.size()).vertex;
+            Edge edge = bmesh.splitFace(face, v0, v1);
 
-                int edgeCuts = cuts-i-1;
-                if(edgeCuts > 0)
-                    splitEdge(edge, edgeCuts);
+            int edgeCuts = cuts-i-1;
+            if(edgeCuts > 0)
+                splitEdge(edge, edgeCuts);
 
-                cutStart++;
-                cutEnd--;
-            }
-
-            // Make inner triangles
-            cutStart = first;
-            for(int i=0; i<=cuts; ++i) {
-                Loop loopStart = tempLoops.get(cutStart % tempLoops.size()).nextFaceLoop;
-                Loop loopEnd = tempLoops.get(cutStart % tempLoops.size()).prevFaceLoop;
-                cutStart++;
-
-                for(int k=i; k<cuts; ++k) {
-                    Vertex v0 = loopStart.vertex;
-                    Vertex v1 = loopEnd.vertex;
-
-                    loopStart = loopStart.nextFaceLoop;
-                    loopEnd   = loopEnd.prevFaceLoop;
-                    Edge edge = bmesh.splitFace(loopStart.face, v0, v1);
-
-                    v0 = loopStart.vertex;
-                    edge = bmesh.splitFace(loopStart.face, v0, v1);
-                }
-            }
+            cutStart++;
+            cutEnd--;
         }
-        finally {
-            tempLoops.clear();
+
+        // Make inner triangles
+        cutStart = first;
+        for(int i=0; i<=cuts; ++i) {
+            Loop current   = tempLoops.get(cutStart % tempLoops.size());
+            Loop loopStart = current.nextFaceLoop;
+            Loop loopEnd   = current.prevFaceLoop;
+            cutStart++;
+
+            for(int k=i; k<cuts; ++k) {
+                Vertex v0 = loopStart.vertex;
+                Vertex v1 = loopEnd.vertex;
+
+                loopStart = loopStart.nextFaceLoop;
+                loopEnd   = loopEnd.prevFaceLoop;
+                bmesh.splitFace(loopStart.face, v0, v1);
+
+                v0 = loopStart.vertex;
+                bmesh.splitFace(loopStart.face, v0, v1);
+            }
         }
     }
 
@@ -175,41 +178,37 @@ public class SubdivideFace {
      * @param first
      */
     private void subdivideQuad(Face face, final int first) {
-        try {
-            final int sideStep = 1 + cuts;
-            int cutStart = first + 1;
-            int cutEnd   = first + 3*sideStep - 1;
+        final int sideStep = 1 + cuts;
+        int cutStart = first + 1;
+        int cutEnd   = first + 3*sideStep - 1;
 
-            // Split face in one direction
-            for(int i=0; i<cuts; ++i) {
-                Vertex v0 = tempLoops.get(cutStart % tempLoops.size()).vertex;
-                Vertex v1 = tempLoops.get(cutEnd % tempLoops.size()).vertex;
-                Edge edge = bmesh.splitFace(face, v0, v1);
-                splitEdge(edge, cuts);
+        // Split face in one direction
+        for(int i=0; i<cuts; ++i) {
+            Vertex v0 = tempLoops.get(cutStart % tempLoops.size()).vertex;
+            Vertex v1 = tempLoops.get(cutEnd % tempLoops.size()).vertex;
+            Edge edge = bmesh.splitFace(face, v0, v1);
+            splitEdge(edge, cuts);
 
-                cutStart++;
-                cutEnd--;
-            }
-
-            // Split faces in the other direction
-            cutStart = first;
-            for(int i=0; i<sideStep; ++i) {
-                Loop loopStart = tempLoops.get(cutStart % tempLoops.size()).nextFaceLoop.nextFaceLoop;
-                Loop loopEnd   = tempLoops.get(cutStart % tempLoops.size()).prevFaceLoop;
-                cutStart++;
-
-                for(int k=0; k<cuts; ++k) {
-                    Vertex v0 = loopStart.vertex;
-                    Vertex v1 = loopEnd.vertex;
-
-                    loopStart = loopStart.nextFaceLoop;
-                    loopEnd = loopEnd.prevFaceLoop;
-                    Edge edge = bmesh.splitFace(loopStart.face, v0, v1);
-                }
-            }
+            cutStart++;
+            cutEnd--;
         }
-        finally {
-            tempLoops.clear();
+
+        // Split faces in the other direction
+        cutStart = first;
+        for(int i=0; i<sideStep; ++i) {
+            Loop current   = tempLoops.get(cutStart % tempLoops.size());
+            Loop loopStart = current.nextFaceLoop.nextFaceLoop;
+            Loop loopEnd   = current.prevFaceLoop;
+            cutStart++;
+
+            for(int k=0; k<cuts; ++k) {
+                Vertex v0 = loopStart.vertex;
+                Vertex v1 = loopEnd.vertex;
+
+                loopStart = loopStart.nextFaceLoop;
+                loopEnd = loopEnd.prevFaceLoop;
+                bmesh.splitFace(loopStart.face, v0, v1);
+            }
         }
     }
 }

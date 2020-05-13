@@ -22,9 +22,13 @@ public class EdgeOps {
 
 
     public Vector3f calcCenter(Edge edge) {
-        Vector3f vec = propPosition.get(edge.vertex0);
-        propPosition.add(edge.vertex1, vec);
-        return vec.multLocal(0.5f);
+        return calcCenter(edge, new Vector3f());
+    }
+
+    public Vector3f calcCenter(Edge edge, Vector3f store) {
+        propPosition.get(edge.vertex0, store);
+        propPosition.add(edge.vertex1, store);
+        return store.multLocal(0.5f);
     }
 
 

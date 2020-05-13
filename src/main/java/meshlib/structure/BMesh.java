@@ -88,8 +88,7 @@ public class BMesh {
                 for(Loop radialLoop : edge.loops()) {
                     // Gather loops and destroy face
                     if(radialLoop.face.isAlive()) {
-                        for(Loop faceLoop : radialLoop.face.loops())
-                            tempLoops.add(faceLoop);
+                        radialLoop.face.getLoops(tempLoops);
                         faceData.destroy(radialLoop.face);
                     }
                 }
@@ -140,8 +139,7 @@ public class BMesh {
             // Gather all loops from adjacent faces
             assert tempLoops.isEmpty();
             for(Loop loop : edge.loops()) {
-                for(Loop faceLoop : loop.face.loops())
-                    tempLoops.add(faceLoop);
+                loop.face.getLoops(tempLoops);
                 faceData.destroy(loop.face);
             }
 
@@ -219,8 +217,7 @@ public class BMesh {
     public void removeFace(Face face) {
         try {
             assert tempLoops.isEmpty();
-            for(Loop loop : face.loops())
-                tempLoops.add(loop);
+            face.getLoops(tempLoops);
 
             for(Loop loop : tempLoops) {
                 loop.edge.removeLoop(loop);
@@ -527,8 +524,7 @@ public class BMesh {
     public void invertFace(Face face) {
         try {
             assert tempLoops.isEmpty();
-            for(Loop loop : face.loops())
-                tempLoops.add(loop);
+            face.getLoops(tempLoops);
 
             Vertex firstVertex = tempLoops.get(0).vertex;
             Loop prev = tempLoops.get(tempLoops.size()-1);
