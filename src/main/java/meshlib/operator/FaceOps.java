@@ -53,6 +53,25 @@ public class FaceOps {
     }
 
 
+    public Vector3f normalConvex(Face face) {
+        return normalConvex(face, new Vector3f());
+    }
+
+    public Vector3f normalConvex(Face face, Vector3f store) {
+        Vertex vertex = face.loop.vertex;
+        Vertex vNext = face.loop.nextFaceLoop.vertex;
+        Vertex vPrev = face.loop.prevFaceLoop.vertex;
+
+        Vector3f v1 = new Vector3f();
+        propPosition.get(vertex, v1);
+        store.set(v1);
+        propPosition.subtract(vNext, store);
+        propPosition.subtract(vPrev, v1);
+
+        return store.crossLocal(v1).normalizeLocal();
+    }
+
+
     public Vector3f centroid(Face face) {
         return centroid(face, new Vector3f());
     }
@@ -118,5 +137,10 @@ public class FaceOps {
         propPosition.subtract(face.loop.nextFaceLoop.nextFaceLoop.vertex, v1);
 
         return v0.crossLocal(v1).length() * 0.5f;
+    }
+
+
+    public void makePlanar(Face face) {
+        // TODO: ... Find plane with smallest deviation from existing vertices?
     }
 }

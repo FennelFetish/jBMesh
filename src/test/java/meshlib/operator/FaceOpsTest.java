@@ -26,9 +26,14 @@ public class FaceOpsTest {
         Vertex v2 = bmesh.createVertex(1.0f, 0.0f, 0.0f);
         Vertex v3 = bmesh.createVertex(0.5f, 1.0f, 0.0f);
 
-        Face face = bmesh.createFace(v0, v1, v2, v3);
+        Face faceConcave = bmesh.createFace(v1, v2, v3, v0);
+        Vector3f normal = faceOps.normal(faceConcave);
+        assertEquals(0.0f, normal.x);
+        assertEquals(0.0f, normal.y);
+        assertEquals(1.0f, normal.z);
 
-        Vector3f normal = faceOps.normal(face);
+        Face faceConvex = bmesh.createFace(v0, v2, v3);
+        normal = faceOps.normalConvex(faceConvex);
         assertEquals(0.0f, normal.x);
         assertEquals(0.0f, normal.y);
         assertEquals(1.0f, normal.z);

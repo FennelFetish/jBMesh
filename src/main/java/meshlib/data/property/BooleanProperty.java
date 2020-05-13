@@ -33,4 +33,13 @@ public class BooleanProperty<E extends Element> extends BMeshProperty<E, boolean
     public static <E extends Element> BooleanProperty<E> get(String name, BMeshData<E> meshData) {
         return (BooleanProperty<E>) getProperty(name, meshData, boolean[].class);
     }
+
+    public static <E extends Element> BooleanProperty<E> getOrCreate(String name, BMeshData<E> meshData) {
+        BooleanProperty<E> prop = get(name, meshData);
+        if(prop == null) {
+            prop = new BooleanProperty<>(name);
+            meshData.addProperty(prop);
+        }
+        return prop;
+    }
 }

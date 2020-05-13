@@ -18,7 +18,6 @@ class NormalAccumulator {
             if(accumulators.size() > numActive) {
                 acc = accumulators.get(numActive);
                 acc.normal.zero();
-                acc.magnitude = 0.0f;
             }
             else {
                 acc = new NormalAccumulator();
@@ -56,6 +55,5 @@ class NormalAccumulator {
 
 
     public final Vector3f normal = new Vector3f();
-    public float magnitude = 0.0f;
     public Loop firstLoop;
 }

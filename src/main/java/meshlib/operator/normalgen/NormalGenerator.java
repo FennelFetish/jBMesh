@@ -4,7 +4,6 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
-import meshlib.operator.FaceOps;
 import meshlib.structure.*;
 
 /**
@@ -13,10 +12,32 @@ import meshlib.structure.*;
  */
 public class NormalGenerator {
     public static interface NormalCalculator {
-        void prepare();
-        Vector3f getNormal(Face face);
-        float calcNormalWeight(Loop loop);
-        boolean isCrease(Face face1, Face face2, float creaseAngle);
+        /**
+         * Called once before processing the vertices.
+         */
+        void prepare(BMesh bmesh, float creaseAngle);
+
+        /**
+         * Called once after processing.
+         * @param bmesh
+         */
+        default void cleanup(BMesh bmesh) {}
+
+        /**
+         * @param loop
+         * @param store
+         * @return Weight of normal.
+         */
+        void getWeightedNormal(Loop loop, Vector3f store);
+
+        /**
+         * @param edge
+         * @param face1
+         * @param face2
+         * @param creaseAngle
+         * @return Whether there should be a crease between the two faces.
+         */
+        boolean isCrease(Edge edge, Face face1, Face face2, float creaseAngle);
     }
 
 
@@ -24,19 +45,26 @@ public class NormalGenerator {
     private NormalCalculator normalCalculator;
 
     private final Vec3Property<Loop> propLoopNormal;
+    private final Vector3f tempNormal = new Vector3f();
 
-    private float creaseAngle = FastMath.DEG_TO_RAD * 60; // Minimum angle for hard edges
+    private float creaseAngle = 0.0f; // Minimum angle for hard edges
 
     // TODO: Tip of cone? -> Ignore: Jaimie's tail has a cone and it should be smooth
+    // TODO: Support hard edges?
 
 
     public NormalGenerator(BMesh bmesh) {
-        this(bmesh, new AngleNormalCalculator(bmesh, new FaceOps(bmesh)));
+        this(bmesh, 60.0f, new AngleNormalCalculator());
     }
 
-    public NormalGenerator(BMesh bmesh, NormalCalculator normalCalculator) {
+    public NormalGenerator(BMesh bmesh, float creaseAngle) {
+        this(bmesh, creaseAngle, new AngleNormalCalculator());
+    }
+
+    public NormalGenerator(BMesh bmesh, float creaseAngle, NormalCalculator normalCalculator) {
         this.bmesh = bmesh;
         this.normalCalculator = normalCalculator;
+        setCreaseAngle(creaseAngle);
 
         propLoopNormal = Vec3Property.getOrCreate(BMeshProperty.Loop.NORMAL, bmesh.loops());
     }
@@ -47,8 +75,9 @@ public class NormalGenerator {
     }
 
 
+    // TODO: Apply to selection (Faces & Vertices)
     public void apply() {
-        normalCalculator.prepare();
+        normalCalculator.prepare(bmesh, creaseAngle);
         NormalAccumulator.Pool accumulators = new NormalAccumulator.Pool();
 
         for(Vertex vertex : bmesh.vertices()) {
@@ -62,11 +91,10 @@ public class NormalGenerator {
                 applyAccumulator(last, last.firstLoop);
             }
             else {
-                // Check if last edge was smooth. If it was, combine the last accumulator with the first one.
-                if(last.magnitude > 0) {
+                // Check if last edge was smooth (>1 values accumulated). If it was, combine the last accumulator with the first one.
+                if(last.normal.x != 0 || last.normal.y != 0 || last.normal.z != 0) {
                     NormalAccumulator first = accumulators.get(0);
                     first.normal.addLocal(last.normal);
-                    first.magnitude += last.magnitude;
                     first.firstLoop = last.firstLoop;
                 }
 
@@ -76,18 +104,19 @@ public class NormalGenerator {
                 }
             }
         }
+
+        normalCalculator.cleanup(bmesh);
     }
 
 
     private void populateAccumulators(Vertex vertex, NormalAccumulator.Pool accumulators) {
         // Find outgoing loop that uses this vertex
-        Edge edge = vertex.edge;
-        Loop startLoop = edge.loop;
-        if(startLoop.vertex != vertex)
-            startLoop = startLoop.nextFaceLoop;
+        Loop loop = vertex.edge.loop;
+        if(loop.vertex != vertex)
+            loop = loop.nextFaceLoop;
 
+        final Loop startLoop = loop;
         NormalAccumulator acc = accumulators.pushBack(startLoop);
-        Loop loop = startLoop;
 
         // Iterate faces/edges of this Vertex, but without the disk cycle formed by Edges.
         // This gives proper clockwise order, but can only work for manifolds.
@@ -108,11 +137,12 @@ public class NormalGenerator {
             }
 
             // Skip clockwise to next outgoing loop that uses vertex
+            Edge edge = loop.edge;
             Face face1 = loop.face;
             loop = loop.nextEdgeLoop.nextFaceLoop;
 
             Face face2 = loop.face;
-            if(normalCalculator.isCrease(face1, face2, creaseAngle))
+            if(normalCalculator.isCrease(edge, face1, face2, creaseAngle))
                 acc = accumulators.pushBack(loop);
         } while(loop != startLoop);
     }
@@ -125,6 +155,7 @@ public class NormalGenerator {
 
         while(loop.prevFaceLoop.nextEdgeLoop != loop.prevFaceLoop) {
             // Skip counter-clockwise to previous outgoing loop that uses vertex
+            Edge edge = loop.edge;
             Face face1 = loop.face;
             loop = loop.prevFaceLoop.nextEdgeLoop;
 
@@ -134,7 +165,7 @@ public class NormalGenerator {
             assert loop.vertex == vertex;
 
             Face face2 = loop.face;
-            if(normalCalculator.isCrease(face1, face2, creaseAngle))
+            if(normalCalculator.isCrease(edge, face1, face2, creaseAngle))
                 acc = accumulators.pushFront(loop);
             else
                 acc.firstLoop = loop;
@@ -145,18 +176,14 @@ public class NormalGenerator {
 
 
     private void addToAccumulator(NormalAccumulator acc, Loop loop) {
-        float normalWeight = normalCalculator.calcNormalWeight(loop);
-        Vector3f faceNormal = normalCalculator.getNormal(loop.face);
-
-        faceNormal.multLocal(normalWeight);
-        acc.normal.addLocal(faceNormal);
-        acc.magnitude += normalWeight;
+        normalCalculator.getWeightedNormal(loop, tempNormal);
+        acc.normal.addLocal(tempNormal);
     }
 
 
     private void applyAccumulator(NormalAccumulator acc, final Loop endLoop) {
         Loop loop = acc.firstLoop;
-        acc.normal.divideLocal(acc.magnitude);
+        acc.normal.normalizeLocal();
 
         do {
             propLoopNormal.set(loop, acc.normal);
