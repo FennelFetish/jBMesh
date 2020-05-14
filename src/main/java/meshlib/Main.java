@@ -14,7 +14,6 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.Quad;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Torus;
 import com.jme3.system.AppSettings;
@@ -24,7 +23,6 @@ import meshlib.data.property.ColorProperty;
 import meshlib.operator.*;
 import meshlib.operator.normalgen.NormalGenerator;
 import meshlib.structure.BMesh;
-import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.Profiler;
 
@@ -35,10 +33,10 @@ public class Main extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         //Mesh in = new Torus(128, 128, 2.0f, 4.0f);
-        //Mesh in = new Torus(32, 24, 1.2f, 2.5f);
+        Mesh in = new Torus(32, 24, 1.2f, 2.5f);
         //Mesh in = new Sphere(32, 32, 5.0f);
         //Mesh in = new Sphere(12, 12, 5.0f);
-        Mesh in = new Box(1, 1, 1);
+        //Mesh in = new Box(1, 1, 1);
         //Mesh in = new Quad(1.0f, 1.0f);
         //Mesh in = loadModel();
 
@@ -48,11 +46,14 @@ public class Main extends SimpleApplication {
             //BMesh bmesh = Import.convertSortMapped(in);
             bmesh = Import.convertExactMapped(in);
             //bmesh = TestMesh.testSphere();
+            //bmesh = TestMesh.crease();
+            //bmesh = VertexRemoveTest.testCube();
         }
 
         try(Profiler p = Profiler.start("Processing")) {
-            MeshOps.mergePlanarFaces(bmesh);
-            processMesh(bmesh);
+            //MeshOps.mergePlanarFaces(bmesh);
+            //TestMesh.smoothSpikes(bmesh);
+            TestMesh.subtract(bmesh);
         }
         bmesh.compactData();
 
@@ -61,22 +62,22 @@ public class Main extends SimpleApplication {
             normGen.apply();
         }
 
-        //Spatial obj = createDebugMesh(bmesh);
-        Spatial obj = createMesh(bmesh);
-        cam.lookAt(obj.getWorldBound().getCenter(), Vector3f.UNIT_Y);
-        node.attachChild(obj);
+        Spatial obj = createDebugMesh(bmesh);
+        //Spatial obj = createMesh(bmesh);
 
+        node.attachChild(obj);
         //node.attachChild(createNormalVis(bmesh));
         rootNode.attachChild(node);
 
-        rootNode.addLight(new AmbientLight(ColorRGBA.White.mult(0.7f)));
-        rootNode.addLight(new DirectionalLight(new Vector3f(-0.7f, -1, -0.9f).normalizeLocal(), ColorRGBA.White));
+        rootNode.addLight(new AmbientLight(ColorRGBA.White.mult(0.1f)));
+        rootNode.addLight(new DirectionalLight(new Vector3f(-0.7f, -1, -1.5f).normalizeLocal(), ColorRGBA.White));
         //rootNode.addLight(new DirectionalLight(new Vector3f(0.7f, 1, 0.9f).normalizeLocal(), ColorRGBA.Yellow));
 
         flyCam.setMoveSpeed(5);
-        cam.setLocation(new Vector3f(0, 0, 5));
+        cam.setLocation(new Vector3f(0, 1.2f, 4.5f));
+        cam.lookAt(obj.getWorldBound().getCenter(), Vector3f.UNIT_Y);
         cam.setFrustumPerspective(60, (float)cam.getWidth()/cam.getHeight(), 0.01f, 100f);
-        viewPort.setBackgroundColor(hsb(0.75f, 0.2f, 0.15f));
+        viewPort.setBackgroundColor(hsb(0.75f, 0.35f, 0.02f));
     }
 
 
@@ -87,55 +88,23 @@ public class Main extends SimpleApplication {
     }
 
 
-    private void processMesh(BMesh bmesh) {
-        // Inset
-        // TODO: This Inset operator doesn't create nice topology and that's probably the reason why the normals aren't smooth.
-        //       Insead, it should subdive the face 2 times and use the resulting vertices for forming the inset. -> Make nice quad strips
-        Inset inset = new Inset(bmesh, 0.6f, -0.4f);
-        ScaleFace scale = new ScaleFace(bmesh, 0.8f);
-        for(Face face : bmesh.faces().getAll()) {
-            //if(Math.random() > 0.03f) continue;
-            inset.apply(face);
-            scale.apply(face);
-            inset.apply(face);
-            scale.apply(face);
-        }
-
-        SubdivideFace subdiv = new SubdivideFace(bmesh, 2);
-        subdiv.apply(bmesh.faces().getAll());
-
-        try(Profiler p = Profiler.start("Catmull-Clark")) {
-            Smooth smooth = new Smooth(bmesh);
-            for(int i = 0; i < 3; ++i)
-                smooth.apply(bmesh.faces().getAll());
-
-            // TODO: Make faces planar after smoothing?
-        }
-
-        // TODO: Operator for removing collinear loops (those that were generated using the edge split above)
-        //       It would collapse all vertices which lie between exactly two collinear edges.
-    }
-
-
     private Geometry createMesh(BMesh bmesh) {
         ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
         bmesh.vertices().addProperty(propVertexColor);
 
-        ColorRGBA color = hsb(0.25f, 0.1f, 0.5f);
+        ColorRGBA color = hsb(0.18f, 0.28f, 0.8f);
         for(Vertex v : bmesh.vertices()) {
             //color = hsb((float)Math.random(), 0.8f, 0.8f);
             propVertexColor.set(v, color.r, color.g, color.b, color.a);
         }
 
-        Export export = new TriangleExport(bmesh);
-        //Export export = new LineExport(bmesh);
-        try(Profiler p = Profiler.start("Export")) {
-            export.update();
-        }
-
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
         mat.setBoolean("UseVertexColor", true);
+
+        Export export = new TriangleExport(bmesh);
+        //Export export = new LineExport(bmesh);
+        export.update();
 
         Geometry geom = new Geometry("Geom", export.getMesh());
         geom.setMaterial(mat);
@@ -146,7 +115,6 @@ public class Main extends SimpleApplication {
     private Geometry createDebugMesh(BMesh bmesh) {
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.setBoolean("UseVertexColor", true);
-        //mat.getAdditionalRenderState().setWireframe(true);
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
 
         DebugMeshExport export = new DebugMeshExport();
@@ -181,7 +149,7 @@ public class Main extends SimpleApplication {
     @Override
     public void simpleUpdate(float tpf) {
         final float speed = 0.3f;
-        node.rotate(0, speed * tpf, 0);
+        //node.rotate(0, speed * tpf, 0);
     }
 
 
@@ -250,6 +218,8 @@ public class Main extends SimpleApplication {
         AppSettings settings = new AppSettings(true);
         settings.setResolution(1280, 720);
         settings.setFrameRate(200);
+        settings.setSamples(8);
+        settings.setGammaCorrection(true);
 
         Main app = new Main();
         app.setSettings(settings);
