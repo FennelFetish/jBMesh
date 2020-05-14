@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 public class BMeshData<E extends Element> implements Iterable<E> {
+    // TODO: Functionality to compact single property arrays? With a Property.isCompact flag that is set to false on add/remove
+    //       Or check if the length of the array = numElementsAlive
+
     public static interface ElementFactory<E extends Element> {
         E createElement();
     }
@@ -257,7 +260,16 @@ public class BMeshData<E extends Element> implements Iterable<E> {
             free[i] = freeList.poll();
         Arrays.sort(free);
 
-        List<CompactOp> ops = new ArrayList<>(free.length);
+        List<CompactOp> ops = new ArrayList<>(free.length + 1);
+
+        // CompactOp for copying up until the first free slot
+        if(free.length == 0 || free[0] > 0) {
+            CompactOp op = new CompactOp();
+            op.firstIndex = 0;
+            op.lastIndex = (free.length > 0) ? free[0]-1 : elements.size()-1;
+            op.shift = 0;
+            ops.add(op);
+        }
 
         int shift = 0;
         for(int f=0; f<free.length; ++f) {

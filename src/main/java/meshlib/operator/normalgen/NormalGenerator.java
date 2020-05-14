@@ -81,6 +81,9 @@ public class NormalGenerator {
         NormalAccumulator.Pool accumulators = new NormalAccumulator.Pool();
 
         for(Vertex vertex : bmesh.vertices()) {
+            if(vertex.edge == null || vertex.edge.loop == null) // TODO: There might be other edges with a loop
+                continue;
+
             accumulators.clear();
             populateAccumulators(vertex, accumulators);
 
@@ -132,7 +135,7 @@ public class NormalGenerator {
             // we may have to complete traversal in the other direction.
             // TODO: Make this work with bowtie structures?
             if(loop.nextEdgeLoop == loop) {
-                otherDirection(vertex, accumulators);
+                populateAccumulatorsCounterclockwise(vertex, accumulators);
                 break;
             }
 
@@ -148,14 +151,13 @@ public class NormalGenerator {
     }
 
 
-    private void otherDirection(Vertex vertex, NormalAccumulator.Pool accumulators) {
+    private void populateAccumulatorsCounterclockwise(Vertex vertex, NormalAccumulator.Pool accumulators) {
         // Continue from starting point of first accumulator
         NormalAccumulator acc = accumulators.get(0);
         Loop loop = acc.firstLoop;
 
         while(loop.prevFaceLoop.nextEdgeLoop != loop.prevFaceLoop) {
             // Skip counter-clockwise to previous outgoing loop that uses vertex
-            Edge edge = loop.edge;
             Face face1 = loop.face;
             loop = loop.prevFaceLoop.nextEdgeLoop;
 
@@ -164,6 +166,7 @@ public class NormalGenerator {
                 break;
             assert loop.vertex == vertex;
 
+            Edge edge = loop.edge;
             Face face2 = loop.face;
             if(normalCalculator.isCrease(edge, face1, face2, creaseAngle))
                 acc = accumulators.pushFront(loop);
@@ -172,6 +175,9 @@ public class NormalGenerator {
 
             addToAccumulator(acc, loop);
         };
+
+        // Sentinel indicates that last edge wasn't smooth
+        accumulators.pushBack(null);
     }
 
 

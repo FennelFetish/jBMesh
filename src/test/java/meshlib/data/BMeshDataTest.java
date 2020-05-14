@@ -77,6 +77,35 @@ public class BMeshDataTest {
         assertEquals(6, data.size());
         assertEquals(6*3, prop.data.length);
 
+        assertValues(prop, elements);
+    }
+
+
+    /**
+     * Tests compacting/copying of values up to the first free slot.
+     */
+    @Test
+    public void testCompactFirstSegment() {
+        BMeshData<TestElement> data = new BMeshData<>(TestElement::new);
+        IntTupleProperty<TestElement> prop = new IntTupleProperty<>("Prop", 3);
+        data.addProperty(prop);
+
+        TestElement[] elements = new TestElement[6];
+        for(int i=0; i<elements.length; ++i) {
+            elements[i] = data.create();
+            prop.setValues(elements[i], i, i, i);
+        }
+
+        assertEquals(6, data.size());
+        data.destroy(elements[2]);
+        assertEquals(5, data.size());
+        data.compactData();
+
+        assertValues(prop, elements);
+    }
+
+
+    private void assertValues(IntTupleProperty<TestElement> prop, TestElement[] elements) {
         for(int i=0; i<elements.length; ++i) {
             if(!elements[i].isAlive())
                 continue;

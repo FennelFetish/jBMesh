@@ -121,6 +121,7 @@ public class Smooth {
                 count++;
             }
 
+            assert count <= 4;
             p.divideLocal(count);
             edgePointLoc[i] = p;
         }

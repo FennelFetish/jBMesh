@@ -48,6 +48,9 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
         faceOps = new FaceOps(bmesh);
 
         for(Edge edge : bmesh.edges()) {
+            if(edge.loop == null)
+                continue;
+
             Face face1 = edge.loop.face;
             Face face2 = edge.loop.nextEdgeLoop.face;
 

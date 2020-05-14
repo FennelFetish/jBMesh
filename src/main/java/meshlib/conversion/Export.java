@@ -65,6 +65,8 @@ public abstract class Export<T> {
             // Get elements that use vertex
             neighbors.clear();
             getVertexNeighborhood(vertex, neighbors);
+            if(neighbors.isEmpty())
+                continue;
 
             T element = neighbors.get(0);
             setVertexReference(vertex, element, vertex);
