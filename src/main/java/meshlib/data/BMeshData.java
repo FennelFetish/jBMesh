@@ -1,17 +1,7 @@
 package meshlib.data;
 
 import java.nio.Buffer;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.ConcurrentModificationException;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class BMeshData<E extends Element> implements Iterable<E> {
     // TODO: Functionality to compact single property arrays? With a Property.isCompact flag that is set to false on add/remove
@@ -54,7 +44,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     private final ElementFactory<E> factory;
-    private final ArrayList<E> elements = new ArrayList<>();
+    private ArrayList<E> elements = new ArrayList<>();
     private final Deque<Integer> freeList = new ArrayDeque<>(); // PriorityQueue?
     // A sorted TreeSet could be used in iterator to optimize skipping? No, it would need to additionally iterate through tree, since it stores single elements.
     // A sorted Set that stores non-intersecting ranges could be used: [3] [4] [5-7] [9] [12] [27-60] [82]   SegmentTree? IntervalTree? --> no...? but RangeTree?
@@ -231,13 +221,16 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
         // Remove dead elements (index = -1).
         // TODO: Can be optimized since we have free list
-        for(Iterator<E> it = elements.iterator(); it.hasNext(); ) {
-            E ele = it.next();
-            if(ele.getIndex() < 0)
-                it.remove();
+        // Much faster to replace the array instead of (re-)moving elements
+        ArrayList<E> newElements = new ArrayList<>(numElementsAlive);
+        for(E e : elements) {
+            if(e.isAlive()) {
+                assert e.getIndex() == newElements.size();
+                newElements.add(e);
+            }
         }
 
-        elements.trimToSize();
+        elements = newElements;
         freeList.clear();
         arraySize = numElementsAlive;
 
@@ -258,7 +251,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         int[] free = new int[freeList.size()];
         for(int i=0; !freeList.isEmpty(); ++i)
             free[i] = freeList.poll();
-        Arrays.sort(free);
+        Arrays.sort(free); // TODO: Most time is spend here -> Use sorted data structure?
 
         List<CompactOp> ops = new ArrayList<>(free.length + 1);
 
