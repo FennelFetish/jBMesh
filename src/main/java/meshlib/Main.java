@@ -51,7 +51,7 @@ public class Main extends SimpleApplication {
             //TestMesh.spikes(bmesh);
             TestMesh.hollow(bmesh);
             TestMesh.subdiv(bmesh);
-            //TestMesh.subtract(bmesh);
+            TestMesh.subtract(bmesh);
         }
 
         /*try(Profiler p0 = Profiler.start("Marching Cubes")) {
@@ -81,18 +81,6 @@ public class Main extends SimpleApplication {
             //spatial = createDebugMesh(bmesh);
             spatial = createMesh(bmesh);
             node.attachChild(spatial);
-
-
-
-            try(Profiler p = Profiler.start("Loop Normal Debug Vis")) {
-                Geometry loopNormals = null;
-                for(int i=0; i<100; ++i)
-                    //loopNormals = DebugNormals.loopNormals(assetManager, bmesh, 0.1f);
-                    loopNormals = DebugNormals.faceNormals(assetManager, bmesh, 0.1f);
-                node.attachChild(loopNormals);
-            }
-
-
 
             //node.attachChild(DebugNormals.loopNormals(assetManager, bmesh, 0.1f));
             //node.attachChild(DebugNormals.faceNormals(assetManager, bmesh, 0.33f));

@@ -119,8 +119,8 @@ public class TestMesh {
 
     public static DistanceFunction dfunc() {
         //return new DistanceFunction.Plane(new Vector3f(0.0f, 0, 0), Vector3f.UNIT_X);
-        return new DistanceFunction.Plane(new Vector3f(0, 0, 0), new Vector3f(1, 0.8f, 0.3f).normalizeLocal());
-        //return new DistanceFunction.Sphere(new Vector3f(1.0f, 1.3f, 1.0f), 1.0f);
+        //return new DistanceFunction.Plane(new Vector3f(0, 0, 0), new Vector3f(1, 0.8f, 0.3f).normalizeLocal());
+        return new DistanceFunction.Sphere(new Vector3f(1.0f, 1.3f, 1.0f), 1.0f);
         //return new DistanceFunction.Ellipsoid(new Vector3f(1.0f, 0.5f, 1.0f), new Vector3f(1.0f, 0.3f, 1.0f));
         //return new DistanceFunction.Box(new Vector3f(1, 1.07f, 1), new Vector3f(0.7f, 0.3f, 0.7f));
     }

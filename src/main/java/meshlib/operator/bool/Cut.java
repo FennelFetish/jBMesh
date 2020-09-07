@@ -4,15 +4,11 @@ import com.jme3.math.Vector3f;
 import java.util.*;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
-import meshlib.operator.EdgeOps;
+import meshlib.operator.meshgen.DistanceFunction;
 import meshlib.structure.*;
 
-public class Subtract {
-    public static interface DistanceFunc {
-        float dist(Vector3f p);
-    }
-
-
+// TODO: Create vertices inside intersecting faces when distance function makes a sharp corner? (Box)
+public abstract class Cut {
     private static class FaceSplitInfo {
         public Loop start = null;
         public Loop end = null;
@@ -22,27 +18,87 @@ public class Subtract {
     }
 
 
-    private final BMesh bmesh;
-    private final Vec3Property<Vertex> propPosition;
-    //private final Vector3f temp = new Vector3f();
+    protected final BMesh bmesh;
+    protected final Vec3Property<Vertex> propPosition;
 
-    private DistanceFunc dfunc;
-
-    private int edgeSubdivisions = 2; // No -> Make a max deviation parameter
+    protected DistanceFunction dfunc;
 
 
-    public Subtract(BMesh bmesh, DistanceFunc dfunc) {
+    public Cut(BMesh bmesh, DistanceFunction dfunc) {
         this.bmesh = bmesh;
         this.dfunc = dfunc;
         propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
     }
 
 
-    public void apply(List<Face> faces) {
-        // Accumulate elements: Inside, Intersecting
-        List<FaceSplitInfo> faceSplits = new ArrayList<>();
-        List<Face> insideFaces = new ArrayList<>();
+    protected void accumulateInside(Face face) {}
+    protected void accumulateOutside(Face face) {}
+    protected void accumulateIntersect(Face face) {}
 
+    protected void accumulateCutVertex(Vertex vertex) {}
+    protected void accumulateCutEdge(Edge edge) {}
+
+    protected abstract void prepareCut();
+    protected abstract void processCut();
+
+
+    public void apply(List<Face> faces) {
+        prepareCut();
+
+        // Accumulate elements: Inside, Intersecting
+        List<FaceSplitInfo> faceSplits = findEdgeCuts(faces);
+
+        // Split all edges which are references by FaceSplitInfos, but each edge only once, remember resulting vertex
+        // Split it so all Loops in FaceSplitInfos will be on the inside
+        Map<Edge, Vertex> splitEdges = new HashMap<>();
+
+        Vector3f p1 = new Vector3f();
+        Vector3f p2 = new Vector3f();
+
+        for(FaceSplitInfo splitInfo : faceSplits) {
+            Vertex vStart = splitEdges.get(splitInfo.startEdge);
+            if(vStart == null) {
+                propPosition.get(splitInfo.start.vertex, p1); // Outside
+                propPosition.get(splitInfo.start.nextFaceLoop.vertex, p2); // Inside
+
+                vStart = bmesh.splitEdge(splitInfo.startEdge);
+                moveToBorder(vStart, p2, p1);
+                splitEdges.put(splitInfo.startEdge, vStart);
+
+                accumulateCutVertex(vStart);
+            }
+
+            Vertex vEnd = splitEdges.get(splitInfo.endEdge);
+            if(vEnd == null) {
+                propPosition.get(splitInfo.end.vertex, p1); // Inside
+                propPosition.get(splitInfo.end.nextFaceLoop.vertex, p2); // Outside
+
+                vEnd = bmesh.splitEdge(splitInfo.endEdge);
+                moveToBorder(vEnd, p1, p2);
+                splitEdges.put(splitInfo.endEdge, vEnd);
+
+                accumulateCutVertex(vEnd);
+            }
+
+            Face face = splitInfo.start.face;
+            Edge edge = bmesh.splitFace(face, vStart, vEnd);
+            accumulateCutEdge(edge);
+            accumulateInside(face);
+
+            Face outsideFace = edge.loop.nextEdgeLoop.face;
+            if(outsideFace == face)
+                outsideFace = edge.loop.face;
+            accumulateOutside(outsideFace);
+        }
+
+        // TODO: Check for degenerate faces & edges
+
+        processCut();
+    }
+
+
+    private List<FaceSplitInfo> findEdgeCuts(List<Face> faces) {
+        List<FaceSplitInfo> faceSplits = new ArrayList<>();
         Vector3f p1 = new Vector3f();
         Vector3f p2 = new Vector3f();
 
@@ -53,6 +109,8 @@ public class Subtract {
             FaceSplitInfo splitInfo = null;
             Loop lastEndLoop = null;
             for(Loop loop : face.loops()) {
+                // TODO: Instead of doing intersection test for every loop, do it for each edge once -> save to HashMap?
+
                 // Check for intersection of edge with the border of distance function
                 propPosition.get(loop.vertex, p1);
                 float dist1 = dfunc.dist(p1);
@@ -101,66 +159,19 @@ public class Subtract {
             }
 
             if(hasInside) {
-                if(!hasOutside) {
-                    insideFaces.add(face);
-                    //face.loops().forEach(l -> insideVertices.add(l.vertex));
-                }
+                if(!hasOutside)
+                    accumulateInside(face);
+                else
+                    accumulateIntersect(face);
             }
             else {
+                accumulateOutside(face);
                 // TODO: Check for intersection with (large) polygons/edges that have no vertices inside
+                //       Can't represent holes in faces -> need to add 2 cuts to hole
             }
         }
 
-        // Split all edges which are references by FaceSplitInfos, but each edge only once, remember resulting vertex
-        // Split it so all Loops in FaceSplitInfos will be on the inside
-        Map<Edge, Vertex> splitEdges = new HashMap<>();
-        Set<Vertex> splitResultVertices = new HashSet<>();
-
-        for(FaceSplitInfo splitInfo : faceSplits) {
-            Vertex vStart = splitEdges.get(splitInfo.startEdge);
-            if(vStart == null) {
-                propPosition.get(splitInfo.start.vertex, p1); // Outside
-                propPosition.get(splitInfo.start.nextFaceLoop.vertex, p2); // Inside
-
-                vStart = bmesh.splitEdge(splitInfo.startEdge);
-                moveToBorder(vStart, p2, p1);
-                splitEdges.put(splitInfo.startEdge, vStart);
-
-                splitResultVertices.add(vStart);
-            }
-
-            Vertex vEnd = splitEdges.get(splitInfo.endEdge);
-            if(vEnd == null) {
-                propPosition.get(splitInfo.end.vertex, p1); // Inside
-                propPosition.get(splitInfo.end.nextFaceLoop.vertex, p2); // Outside
-
-                vEnd = bmesh.splitEdge(splitInfo.endEdge);
-                moveToBorder(vEnd, p1, p2);
-                splitEdges.put(splitInfo.endEdge, vEnd);
-
-                splitResultVertices.add(vEnd);
-            }
-
-            Face face = splitInfo.start.face;
-            Edge edge = bmesh.splitFace(face, vStart, vEnd);
-
-            insideFaces.add(face);
-
-            // Subdivide each new edge and approximate distance function, planar to face -> calc 2D normal on distance field?
-
-        }
-
-
-        // Process inside, TODO: Return to user
-        Set<Vertex> insideVertices = new HashSet<>();
-        for(Face face : insideFaces) {
-            face.loops().forEach(l -> insideVertices.add(l.vertex));
-        }
-
-        for(Vertex v : insideVertices) {
-            if(!splitResultVertices.contains(v))
-                bmesh.removeVertex(v);
-        }
+        return faceSplits;
     }
 
 
@@ -187,47 +198,25 @@ public class Subtract {
         propPosition.set(v, inside);
     }
 
+    // Does less but is not really faster since it's not the bottleneck
+    /*private void moveToBorder(Vertex v, Vector3f inside, Vector3f outside) {
+        float dIn  = dfunc.dist(inside);
+        float dOut = dfunc.dist(outside);
+
+        // Linear interpolation
+        float t = dIn / (dIn - dOut);
+
+        outside.subtractLocal(inside);
+        outside.multLocal(t);
+        outside.addLocal(inside);
+
+        propPosition.set(v, outside);
+    }*/
+
 
 
     // Move 2D
     private void moveOnPlane() {
 
-    }
-
-
-
-    public static class Plane implements DistanceFunc {
-        private final Vector3f p = new Vector3f();
-        private final Vector3f n = new Vector3f();
-        private final Vector3f proj = new Vector3f();
-
-        public Plane(Vector3f p, Vector3f n) {
-            this.p.set(p);
-            this.n.set(n).normalizeLocal();
-        }
-
-        @Override
-        public float dist(Vector3f p) {
-            proj.set(p).subtractLocal(this.p);
-            return -proj.dot(n); // "Inside" is in direction of normal
-        }
-    }
-
-
-    public static class Sphere implements DistanceFunc {
-        private final Vector3f center = new Vector3f();
-        private final float radius;
-        private final Vector3f pClone = new Vector3f();
-
-        public Sphere(Vector3f center, float radius) {
-            this.center.set(center);
-            this.radius = radius;
-        }
-
-        @Override
-        public float dist(Vector3f p) {
-            //p = pClone.set(p).multLocal(1, 7.0f, 1);
-            return center.distance(p) - radius;
-        }
     }
 }
