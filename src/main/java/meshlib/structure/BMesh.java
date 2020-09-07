@@ -158,6 +158,7 @@ public class BMesh {
     }
 
 
+    // TODO: Profile varargs, make separate overloads like createFace(Vertex, Vertex, Vertex, Vertex...) ?
     /**
      * Creates a new face between the given vertices. The order of the vertices define the winding order of the face.<br>
      * If edges between vertices already exist, they are used for the resulting face. Otherwise new edges are created.
@@ -325,8 +326,8 @@ public class BMesh {
         keepEdge.replace(vertex, tv);
         tv.addEdge(keepEdge);
 
-        // Iterate Loops in radial cycle
-        // 'edge' and 'keepEdge' must have same number of loops and they must be connected
+        // Iterate Loops in radial cycle.
+        // 'edge' and 'keepEdge' will have same number of loops and they will be connected
         // but the order in the radial cycle can be different (?).
         if(edge.loop != null) {
             Loop tl = edge.loop;

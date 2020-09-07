@@ -6,22 +6,18 @@ import java.util.*;
 import meshlib.conversion.Import;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
-import meshlib.lookup.ExactHashDeduplication;
-import meshlib.lookup.GridVertexDeduplication;
 import meshlib.lookup.OptimizedGridDeduplication;
 import meshlib.lookup.VertexDeduplication;
 import meshlib.operator.Inset;
 import meshlib.operator.ScaleFace;
 import meshlib.operator.Smooth;
 import meshlib.operator.SubdivideFace;
-import meshlib.operator.bool.DistanceFunction;
+import meshlib.operator.meshgen.DistanceFunction;
 import meshlib.operator.bool.Subtract;
 import meshlib.operator.meshgen.MarchingCube;
-import meshlib.operator.meshgen.Tables;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
-import meshlib.util.HashGrid;
 import meshlib.util.Profiler;
 
 public class TestMesh {
