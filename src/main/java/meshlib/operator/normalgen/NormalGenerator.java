@@ -144,7 +144,7 @@ public class NormalGenerator {
         NormalAccumulator acc = accumulators.pushBack(startLoop);
 
         // Iterate faces/edges around this Vertex by traversing the adjacent Loops (not the disk cycle formed by edges).
-        // This gives proper clockwise order, but can only work when each edge only has less than three adjacent faces (no T-structures).
+        // This gives proper clockwise order, but can only work when each edge only has a maximum of two adjacent faces (no T-structures).
         do {
             // Requires manifold (<=2 Loops per radial cycle of Edge)
             if(loop.nextEdgeLoop.nextEdgeLoop != loop)

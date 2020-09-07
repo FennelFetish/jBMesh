@@ -15,8 +15,7 @@ import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
 public class TriangleExport extends Export<Loop> {
-    private final ObjectProperty<Loop, Vertex> propLoopVertex;// = new ObjectProperty<>(BMeshProperty.Loop.VERTEX_MAP, Vertex[]::new);
-
+    private final ObjectProperty<Loop, Vertex> propLoopVertex;
     private final TriangleIndices triangleIndices;
 
 
@@ -44,7 +43,7 @@ public class TriangleExport extends Export<Loop> {
     @Override
     protected void updateOutputMesh() {
         triangleIndices.apply();
-        triangleIndices.update(); // Requires duplication / LoopVertex property
+        triangleIndices.update(); // Requires duplication / existing LoopVertex property
 
         outputMesh.setBuffer(triangleIndices.getIndexBuffer());
     }

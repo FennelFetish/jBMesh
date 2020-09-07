@@ -2,82 +2,118 @@ package meshlib;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.FileLocator;
+import com.jme3.bounding.BoundingBox;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
-import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.Sphere;
-import com.jme3.scene.shape.Torus;
 import com.jme3.system.AppSettings;
 import meshlib.conversion.*;
-import meshlib.data.BMeshProperty;
-import meshlib.data.property.ColorProperty;
 import meshlib.operator.*;
 import meshlib.operator.normalgen.NormalGenerator;
 import meshlib.structure.BMesh;
-import meshlib.structure.Vertex;
+import meshlib.util.ColorUtil;
+import meshlib.util.DebugNormals;
+import meshlib.util.Gizmo;
 import meshlib.util.Profiler;
-
 
 public class Main extends SimpleApplication {
     private final Node node = new Node();
+    private Spatial spatial = null;
 
-    @Override
-    public void simpleInitApp() {
+
+    private BMesh makeMesh() {
         //Mesh in = new Torus(128, 128, 2.0f, 4.0f);
-        Mesh in = new Torus(32, 24, 1.2f, 2.5f);
+        //Mesh in = new Torus(32, 24, 1.2f, 2.5f);
         //Mesh in = new Sphere(32, 32, 5.0f);
-        //Mesh in = new Sphere(12, 12, 5.0f);
-        //Mesh in = new Box(1, 1, 1);
+        //Mesh in = new Sphere(12, 12, 1.0f);
+        Mesh in = new Box(1f, 1f, 1f);
         //Mesh in = new Quad(1.0f, 1.0f);
         //Mesh in = loadModel();
 
         BMesh bmesh;
         try(Profiler p = Profiler.start("Import")) {
             //BMesh bmesh = Import.convertGridMapped(in); // TODO: Wrong results!
-            //BMesh bmesh = Import.convertSortMapped(in);
-            bmesh = Import.convertExactMapped(in);
-            //bmesh = TestMesh.testSphere();
-            //bmesh = TestMesh.crease();
-            //bmesh = VertexRemoveTest.testCube();
+            //bmesh = Import.convertExactMapped(in);
+            bmesh = DirectImport.importTriangles(in);
         }
 
         try(Profiler p = Profiler.start("Processing")) {
-            //MeshOps.mergePlanarFaces(bmesh);
-            //TestMesh.smoothSpikes(bmesh);
-            TestMesh.subtract(bmesh);
-        }
-        bmesh.compactData();
-
-        NormalGenerator normGen = new NormalGenerator(bmesh, 40);
-        try(Profiler p = Profiler.start("Norm Gen")) {
-            normGen.apply();
+            MeshOps.mergePlanarFaces(bmesh);
+            //TestMesh.spikes(bmesh);
+            TestMesh.hollow(bmesh);
+            TestMesh.subdiv(bmesh);
+            //TestMesh.subtract(bmesh);
         }
 
-        Spatial obj = createDebugMesh(bmesh);
-        //Spatial obj = createMesh(bmesh);
+        /*try(Profiler p0 = Profiler.start("Marching Cubes")) {
+            //bmesh = TestMesh.marchingCubes(bmesh);
+            bmesh = MarchingCube.build(bmesh, TestMesh.dfunc(), 0.05f, false);
+        }*/
 
-        node.attachChild(obj);
-        //node.attachChild(createNormalVis(bmesh));
+        return bmesh;
+    }
+
+
+    private void addMesh() {
+        try(Profiler p0 = Profiler.start("addMesh")) {
+            if(spatial != null)
+                spatial.removeFromParent();
+
+            BMesh bmesh = makeMesh();
+            try(Profiler p = Profiler.start("Compacting")) {
+                bmesh.compactData();
+            }
+
+            NormalGenerator normGen = new NormalGenerator(bmesh, 40);
+            try(Profiler p = Profiler.start("Normal Gen")) {
+                normGen.apply();
+            }
+
+            //spatial = createDebugMesh(bmesh);
+            spatial = createMesh(bmesh);
+            node.attachChild(spatial);
+
+
+
+            try(Profiler p = Profiler.start("Loop Normal Debug Vis")) {
+                Geometry loopNormals = null;
+                for(int i=0; i<100; ++i)
+                    //loopNormals = DebugNormals.loopNormals(assetManager, bmesh, 0.1f);
+                    loopNormals = DebugNormals.faceNormals(assetManager, bmesh, 0.1f);
+                node.attachChild(loopNormals);
+            }
+
+
+
+            //node.attachChild(DebugNormals.loopNormals(assetManager, bmesh, 0.1f));
+            //node.attachChild(DebugNormals.faceNormals(assetManager, bmesh, 0.33f));
+        }
+    }
+
+    @Override
+    public void simpleInitApp() {
+        addMesh();
+
         rootNode.attachChild(node);
+        rootNode.attachChild(new Gizmo(assetManager, null, 1.0f));
 
-        rootNode.addLight(new AmbientLight(ColorRGBA.White.mult(0.1f)));
-        rootNode.addLight(new DirectionalLight(new Vector3f(-0.7f, -1, -1.5f).normalizeLocal(), ColorRGBA.White));
-        //rootNode.addLight(new DirectionalLight(new Vector3f(0.7f, 1, 0.9f).normalizeLocal(), ColorRGBA.Yellow));
+        rootNode.addLight(new AmbientLight(ColorRGBA.White.mult(0.04f)));
+        rootNode.addLight(new DirectionalLight(new Vector3f(-0.7f, -1, -1.5f).normalizeLocal(), ColorRGBA.White.mult(1.0f)));
+        rootNode.addLight(new DirectionalLight(new Vector3f(0.7f, -1, 1.5f).normalizeLocal(), ColorRGBA.White.mult(0.07f)));
 
-        flyCam.setMoveSpeed(5);
-        cam.setLocation(new Vector3f(0, 1.2f, 4.5f));
-        cam.lookAt(obj.getWorldBound().getCenter(), Vector3f.UNIT_Y);
+        flyCam.setMoveSpeed(2);
+        viewPort.setBackgroundColor(ColorUtil.hsb(0.75f, 0.35f, 0.02f));
         cam.setFrustumPerspective(60, (float)cam.getWidth()/cam.getHeight(), 0.01f, 100f);
-        viewPort.setBackgroundColor(hsb(0.75f, 0.35f, 0.02f));
+        initCamera(25, 1.2f);
     }
 
 
@@ -89,18 +125,24 @@ public class Main extends SimpleApplication {
 
 
     private Geometry createMesh(BMesh bmesh) {
-        ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
+        ColorRGBA diffuse  = ColorUtil.hsb(0.16f, 0.25f, 0.7f);
+        ColorRGBA specular = ColorUtil.hsb(0.10f, 0.4f, 1.0f);
+        /*ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
         bmesh.vertices().addProperty(propVertexColor);
 
-        ColorRGBA color = hsb(0.18f, 0.28f, 0.8f);
         for(Vertex v : bmesh.vertices()) {
             //color = hsb((float)Math.random(), 0.8f, 0.8f);
             propVertexColor.set(v, color.r, color.g, color.b, color.a);
-        }
+        }*/
 
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
-        mat.setBoolean("UseVertexColor", true);
+        //mat.setBoolean("UseVertexColor", true);
+        mat.setBoolean("UseMaterialColors", true);
+        mat.setColor("Ambient", ColorRGBA.White);
+        mat.setColor("Diffuse", diffuse);
+        mat.setColor("Specular", specular);
+        mat.setFloat("Shininess", 120f);
 
         Export export = new TriangleExport(bmesh);
         //Export export = new LineExport(bmesh);
@@ -126,23 +168,38 @@ public class Main extends SimpleApplication {
     }
 
 
-    private Node createNormalVis(BMesh bmesh) {
-        Material matNormals = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        matNormals.setBoolean("VertexColor", true);
-        matNormals.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
 
-        Node node = new Node("Normals");
+    // Calculate camera distance where BoundingBox is fully visible
+    private void initCamera(float camElevation, float distanceFactor) {
+        BoundingBox bbox = (BoundingBox) rootNode.getWorldBound();
+        if(bbox == null)
+            return;
 
-        /*Geometry geomNormals = new Geometry("GeomNormals", DebugMeshExport.createNormals(bmesh, 0.1f));
-        geomNormals.setMaterial(matNormals);
-        node.attachChild(geomNormals);*/
+        float sign = Math.signum(camElevation);
+        camElevation *= FastMath.DEG_TO_RAD;
 
-        Geometry geomLoopNormals = new Geometry("GeomLoopNormals", DebugMeshExport.createLoopNormals(bmesh, 0.1f));
-        geomLoopNormals.setMaterial(matNormals);
-        geomLoopNormals.setQueueBucket(RenderQueue.Bucket.Translucent);
-        node.attachChild(geomLoopNormals);
+        float sin = FastMath.sin(camElevation);
+        float cos = FastMath.cos(camElevation);
 
-        return node;
+        float horizontal = bbox.getXExtent();
+        float vertical   = cos*bbox.getYExtent() + Math.abs(sin*bbox.getZExtent());
+
+        float distX = horizontal * cam.getFrustumNear() / cam.getFrustumRight();
+        float distY = vertical * cam.getFrustumNear() / cam.getFrustumTop();
+
+        float dist = Math.max(distX, distY);
+        dist *= distanceFactor;
+
+        Vector3f frontY = bbox.getCenter(new Vector3f()).addLocal(0, bbox.getYExtent()*sign, 0);
+        Vector3f frontZ = bbox.getCenter(new Vector3f()).addLocal(0, 0, bbox.getZExtent());
+        Vector3f front = FastMath.interpolateLinear(camElevation/FastMath.HALF_PI*sign, frontZ, frontY);
+
+        Vector3f p = front.clone();
+        p.y += dist * sin;
+        p.z += dist * cos;
+
+        cam.setLocation(p);
+        cam.lookAt(front, Vector3f.UNIT_Y);
     }
     
 
@@ -150,63 +207,7 @@ public class Main extends SimpleApplication {
     public void simpleUpdate(float tpf) {
         final float speed = 0.3f;
         //node.rotate(0, speed * tpf, 0);
-    }
-
-
-    private ColorRGBA hsb(float h, float s, float b) {
-        ColorRGBA color = new ColorRGBA();
-        color.a = 1.0f;
-
-		if (s == 0) {
-			// achromatic ( grey )
-			color.r = b;
-			color.g = b;
-			color.b = b;
-			return color;
-		}
-
-		//float hh = h / 60.0f;
-        float hh = h * 6f;
-		int i = (int) hh;
-		float f = hh - i;
-		float p = b * (1 - s);
-		float q = b * (1 - s * f);
-		float t = b * (1 - s * (1 - f));
-
-        switch(i) {
-            case 0:
-                color.r = b;
-                color.g = t;
-                color.b = p;
-                break;
-            case 1:
-                color.r = q;
-                color.g = b;
-                color.b = p;
-                break;
-            case 2:
-                color.r = p;
-                color.g = b;
-                color.b = t;
-                break;
-            case 3:
-                color.r = p;
-                color.g = q;
-                color.b = b;
-                break;
-            case 4:
-                color.r = t;
-                color.g = p;
-                color.b = b;
-                break;
-            default:
-                color.r = b;
-                color.g = p;
-                color.b = q;
-                break;
-        }
-
-        return color;
+        //addMesh();
     }
 
 
