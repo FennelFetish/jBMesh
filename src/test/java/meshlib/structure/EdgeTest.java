@@ -81,7 +81,7 @@ public class EdgeTest {
         assertFalse(edge.connects(null, null));
         assertFalse(edge.connects(v0, null));
         assertFalse(edge.isAdjacentTo(v0));
-        assertFalse(edge.isAdjacentTo(null));
+        assertFalse(edge.isAdjacentTo((Vertex)null));
 
         edge.vertex0 = v0;
         assertFalse(edge.connects(v0, null));
@@ -98,6 +98,6 @@ public class EdgeTest {
         assertTrue(edge.isAdjacentTo(v0));
         assertTrue(edge.isAdjacentTo(v1));
         assertFalse(edge.isAdjacentTo(v2));
-        assertFalse(edge.isAdjacentTo(null));
+        assertFalse(edge.isAdjacentTo((Vertex)null));
     }
 }

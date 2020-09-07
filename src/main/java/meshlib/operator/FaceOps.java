@@ -54,13 +54,17 @@ public class FaceOps {
 
 
     public Vector3f normalConvex(Face face) {
-        return normalConvex(face, new Vector3f());
+        return normalConvex(face.loop, new Vector3f());
     }
 
     public Vector3f normalConvex(Face face, Vector3f store) {
-        Vertex vertex = face.loop.vertex;
-        Vertex vNext = face.loop.nextFaceLoop.vertex;
-        Vertex vPrev = face.loop.prevFaceLoop.vertex;
+        return normalConvex(face.loop, store);
+    }
+
+    public Vector3f normalConvex(Loop loop, Vector3f store) {
+        Vertex vertex = loop.vertex;
+        Vertex vNext = loop.nextFaceLoop.vertex;
+        Vertex vPrev = loop.prevFaceLoop.vertex;
 
         Vector3f v1 = new Vector3f();
         propPosition.get(vertex, v1);

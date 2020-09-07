@@ -184,7 +184,7 @@ public class Edge extends Element {
 
 
     /**
-     * Removes this Edge from the disk cycle. Links the previous and the next element to eachother.
+     * Removes this Edge from the disk cycle. Links the previous and the next element to each other.
      * <pre>
      * Before: prev -&gt; this -&gt; next
      * After:  prev -&gt; next
@@ -220,11 +220,29 @@ public class Edge extends Element {
 
     /**
      * Checks whether this Edge is connected to Vertex <i>v</i>.
-     * @param v Vertex
+     * @param vertex Vertex
      * @return True if this Edge is adjacent to the supplied Vertex. False otherwise, or if the supplied Vertex is <i>null</i>.
      */
-    public boolean isAdjacentTo(Vertex v) {
-        return (v != null) && (vertex0 == v || vertex1 == v);
+    public boolean isAdjacentTo(Vertex vertex) {
+        return (vertex != null) && (vertex0 == vertex || vertex1 == vertex);
+    }
+
+    public boolean isAdjacentTo(Face face) {
+        for(Loop loop : loops()) {
+            if(loop.face == face)
+                return true;
+        }
+
+        return false;
+    }
+
+    public boolean isAdjacentTo(Edge edge) {
+        if(vertex0 == edge.vertex0 || vertex0 == edge.vertex1)
+            return true;
+        else if(vertex1 == edge.vertex0 || vertex1 == edge.vertex1)
+            return true;
+
+        return false;
     }
 
 
