@@ -1,4 +1,4 @@
-package meshlib.operator;
+package meshlib.conversion;
 
 import com.jme3.math.Vector3f;
 import com.jme3.scene.VertexBuffer;
@@ -15,15 +15,15 @@ import meshlib.structure.Face;
 import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
-public class Triangulate {
+public class TriangleIndices {
     private static class Triangle extends Element {
         @Override
         protected void releaseElement() {}
     }
 
 
-    private static final String PROPERTY_INDICES  = "Triangulate_Indices";
-    private static final String PROPERTY_TRILOOPS = "Triangulate_TriangleLoops";
+    private static final String PROPERTY_INDICES  = "TriangleIndices";
+    private static final String PROPERTY_TRILOOPS = "TriangleIndices_Loops";
 
 
     // Store triangulation in virtual Loops. Use their references to link them. They are not connected to the real structure.
@@ -51,7 +51,7 @@ public class Triangulate {
     private ShortBuffer shortBuffer;
 
 
-    public Triangulate(BMesh bmesh, ObjectProperty<Loop, Vertex> propLoopVertex) {
+    public TriangleIndices(BMesh bmesh, ObjectProperty<Loop, Vertex> propLoopVertex) {
         this.bmesh = bmesh;
         this.propLoopVertex = propLoopVertex;
 
@@ -166,9 +166,9 @@ public class Triangulate {
         int[] data = triangleData.getCompactData(propIndicesInt);
         if(intBuffer == null || intBuffer.capacity() < numIndices) {
             intBuffer = BufferUtils.createIntBuffer(data);
-            System.out.println("made new int index buffer");
+            //System.out.println("made new int index buffer");
         } else {
-            System.out.println("updating int index buffer");
+            //System.out.println("updating int index buffer");
             intBuffer.clear();
             intBuffer.put(data);
             intBuffer.flip();
@@ -196,9 +196,9 @@ public class Triangulate {
         short[] data = triangleData.getCompactData(propIndicesShort);
         if(shortBuffer == null || shortBuffer.capacity() < numIndices) {
             shortBuffer = BufferUtils.createShortBuffer(data);
-            System.out.println("made new short index buffer");
+            //System.out.println("made new short index buffer");
         } else {
-            System.out.println("updating short index buffer");
+            //System.out.println("updating short index buffer");
             shortBuffer.clear();
             shortBuffer.put(data);
             shortBuffer.flip();
@@ -216,7 +216,7 @@ public class Triangulate {
 
 
     public VertexBuffer getIndexBuffer() {
-        System.out.println("VertexBuffer[Index] size: " + indexBuffer.getData().limit());
+        //System.out.println("VertexBuffer[Index] size: " + indexBuffer.getData().limit());
         return indexBuffer;
     }
 }

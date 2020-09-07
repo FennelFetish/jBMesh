@@ -9,16 +9,15 @@ import meshlib.data.BMeshProperty;
 import meshlib.data.property.ColorProperty;
 import meshlib.data.property.ObjectProperty;
 import meshlib.data.property.Vec3Property;
-import meshlib.operator.Triangulate;
 import meshlib.structure.BMesh;
 import meshlib.structure.Edge;
 import meshlib.structure.Loop;
 import meshlib.structure.Vertex;
 
 public class TriangleExport extends Export<Loop> {
-    private final ObjectProperty<Loop, Vertex> propLoopVertex = new ObjectProperty<>(BMeshProperty.Loop.VERTEX_MAP, Vertex[]::new);
+    private final ObjectProperty<Loop, Vertex> propLoopVertex;// = new ObjectProperty<>(BMeshProperty.Loop.VERTEX_MAP, Vertex[]::new);
 
-    private final Triangulate triangulate;
+    private final TriangleIndices triangleIndices;
 
 
     public TriangleExport(BMesh bmesh) {
@@ -28,20 +27,26 @@ public class TriangleExport extends Export<Loop> {
     public TriangleExport(BMesh bmesh, DuplicationStrategy<Loop> duplicationStrategy) {
         super(bmesh, duplicationStrategy);
 
-        triangulate = new Triangulate(bmesh, propLoopVertex);
-
+        ObjectProperty<Loop, Vertex> propLoopVertex = ObjectProperty.get(BMeshProperty.Loop.VERTEX_MAP, Vertex[].class, bmesh.loops());
+        if(propLoopVertex == null) {
+            propLoopVertex = new ObjectProperty<>(BMeshProperty.Loop.VERTEX_MAP, Vertex[]::new);
+            bmesh.loops().addProperty(propLoopVertex);
+        }
         propLoopVertex.setComparable(false);
-        bmesh.loops().addProperty(propLoopVertex);
+        this.propLoopVertex = propLoopVertex;
+
+        triangleIndices = new TriangleIndices(bmesh, propLoopVertex);
 
         outputMesh.setMode(Mesh.Mode.Triangles);
     }
 
 
+    @Override
     protected void updateOutputMesh() {
-        triangulate.apply();
-        triangulate.update(); // Requires duplication / LoopVertex property
+        triangleIndices.apply();
+        triangleIndices.update(); // Requires duplication / LoopVertex property
 
-        outputMesh.setBuffer(triangulate.getIndexBuffer());
+        outputMesh.setBuffer(triangleIndices.getIndexBuffer());
     }
 
 

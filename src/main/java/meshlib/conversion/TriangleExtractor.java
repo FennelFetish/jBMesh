@@ -131,4 +131,12 @@ public class TriangleExtractor {
         store.y = positionBuffer[offset+1];
         store.z = positionBuffer[offset+2];
     }
+
+    public float[] getPositionArray() {
+        return positionBuffer;
+    }
+
+    public int[] getIndexArray() {
+        return indexBuffer;
+    }
 }

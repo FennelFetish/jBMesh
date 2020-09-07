@@ -3,6 +3,7 @@ package meshlib.conversion;
 import com.jme3.scene.Mesh;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import meshlib.structure.BMesh;
 import meshlib.structure.Vertex;
 
@@ -13,6 +14,8 @@ public abstract class Export<T> {
         void setBuffers(Mesh outputMesh);
     }
 
+
+    private static final Logger LOG = Logger.getLogger(Export.class.getName());
 
     protected final BMesh bmesh;
     protected final Mesh outputMesh = new Mesh();
@@ -40,6 +43,8 @@ public abstract class Export<T> {
 
         duplicationStrategy.setBuffers(outputMesh);
         outputMesh.updateBound();
+
+        LOG.fine("Exported " + bmesh.vertices().size() + " vertices");
     }
 
 

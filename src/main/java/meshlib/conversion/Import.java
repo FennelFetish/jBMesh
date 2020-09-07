@@ -35,7 +35,7 @@ public class Import {
 
     public static BMesh convertExactMapped(Mesh mesh) {
         BMesh bmesh = new BMesh();
-        return convertMapped(bmesh, mesh, new ExactHashDeduplication());
+        return convertMapped(bmesh, mesh, new ExactHashDeduplication(bmesh));
     }
 
     public static BMesh convertGridMapped(Mesh mesh) {
