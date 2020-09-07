@@ -7,6 +7,7 @@ import meshlib.structure.BMesh;
 import meshlib.structure.Vertex;
 
 public class SimpleVertexDeduplication implements VertexDeduplication {
+    private final BMesh bmesh;
     private final Vec3Property<Vertex> propPosition;
     private float epsilonSquared;
 
@@ -14,6 +15,7 @@ public class SimpleVertexDeduplication implements VertexDeduplication {
 
 
     public SimpleVertexDeduplication(BMesh bmesh, float range) {
+        this.bmesh = bmesh;
         propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
         setRange(range);
     }
@@ -27,15 +29,30 @@ public class SimpleVertexDeduplication implements VertexDeduplication {
         epsilonSquared = epsilon * epsilon;
     }
 
-    
+
     @Override
-    public Vertex getOrCreateVertex(BMesh bmesh, Vector3f location) {
+    public void addExisting(Vertex vertex) {
+        return;
+    }
+
+
+    @Override
+    public Vertex getVertex(Vector3f location) {
         for(Vertex vert : bmesh.vertices()) {
             propPosition.get(vert, tempPosition);
             if(tempPosition.distanceSquared(location) <= epsilonSquared)
                 return vert;
         }
 
-        return bmesh.createVertex(location);
+        return null;
+    }
+
+
+    @Override
+    public Vertex getOrCreateVertex(BMesh bmesh, Vector3f location) {
+        Vertex vertex = getVertex(location);
+        if(vertex == null)
+            vertex = bmesh.createVertex(location);
+        return vertex;
     }
 }

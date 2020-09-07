@@ -47,6 +47,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     private final Vec3Property<Vertex> propPosition;
     private final HashGrid<Cell> grid;
     private final float epsilonSquared;
+    private final Vector3f p = new Vector3f();
 
 
     public GridVertexDeduplication(BMesh bmesh) {
@@ -61,7 +62,50 @@ public class GridVertexDeduplication implements VertexDeduplication {
 
 
     @Override
-    public Vertex getOrCreateVertex(BMesh mesh, Vector3f location) {
+    public void addExisting(Vertex vertex) {
+        propPosition.get(vertex, p);
+
+        HashGrid.Index gridIndex = grid.getIndexForCoords(p);
+        Cell cell = grid.get(gridIndex);
+        if(cell == null) {
+            cell = new Cell();
+            grid.set(gridIndex, cell);
+        }
+
+        cell.vertices.add(vertex);
+    }
+
+    public void remove(Vertex vertex) {
+        propPosition.get(vertex, p);
+
+        HashGrid.Index gridIndex = grid.getIndexForCoords(p);
+        Cell cell = grid.get(gridIndex);
+        if(cell != null) {
+            cell.vertices.remove(vertex);
+            if(cell.vertices.isEmpty()) {
+                grid.remove(gridIndex);
+            }
+        }
+    }
+
+
+    @Override
+    public Vertex getVertex(Vector3f location) {
+        HashGrid.Index gridIndex = grid.getIndexForCoords(location);
+        Cell centerCell = grid.get(gridIndex);
+
+        if(centerCell != null) {
+            Vertex vertex = searchVertex(centerCell, location);
+            if(vertex != null)
+                return vertex;
+        }
+
+        return searchVertexWalk(gridIndex, location);
+    }
+
+
+    @Override
+    public Vertex getOrCreateVertex(BMesh bmesh, Vector3f location) {
         HashGrid.Index gridIndex = grid.getIndexForCoords(location);
         Cell centerCell = grid.get(gridIndex);
 
@@ -80,7 +124,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
             grid.set(gridIndex, centerCell);
         }
 
-        vertex = mesh.createVertex(location);
+        vertex = bmesh.createVertex(location);
         centerCell.vertices.add(vertex);
         return vertex;
     }
@@ -103,11 +147,10 @@ public class GridVertexDeduplication implements VertexDeduplication {
     
 
     private Vertex searchVertex(Cell cell, Vector3f location) {
-        Vector3f currentLocation = new Vector3f();
         for(Vertex vertex : cell.vertices) {
-            propPosition.get(vertex, currentLocation);
+            propPosition.get(vertex, p);
             
-            float dist = currentLocation.distanceSquared(location);
+            float dist = p.distanceSquared(location);
             if(dist <= epsilonSquared) {
                 return vertex;
             }
