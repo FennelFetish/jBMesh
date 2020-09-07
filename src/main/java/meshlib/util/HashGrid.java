@@ -1,8 +1,8 @@
 package meshlib.util;
 
 import com.jme3.math.Vector3f;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class HashGrid<T> {
@@ -34,6 +34,11 @@ public class HashGrid<T> {
         return grid.get(cellPos.key);
     }
 
+    public T getNeighbor(Index cellPos, int walkX, int walkY, int walkZ) {
+        long key = Index.key(cellPos.x + walkX, cellPos.y+walkY, cellPos.z+walkZ);
+        return grid.get(key);
+    }
+
     public T getAndSet(Index cellPos, T value) {
         if(value == null)
             return grid.remove(cellPos.key);
@@ -41,8 +46,12 @@ public class HashGrid<T> {
             return grid.put(cellPos.key, value);
     }
 
-    public void set(Index cellPos, T value) {
-        getAndSet(cellPos, value);
+    public T set(Index cellPos, T value) {
+        return getAndSet(cellPos, value);
+    }
+
+    public T remove(Index cellPos) {
+        return grid.remove(cellPos.key);
     }
 
 
@@ -51,7 +60,7 @@ public class HashGrid<T> {
     }
 
 
-    public void getAll(List<T> dest) {
+    public void getAll(Collection<T> dest) {
         dest.addAll(grid.values());
     }
 
