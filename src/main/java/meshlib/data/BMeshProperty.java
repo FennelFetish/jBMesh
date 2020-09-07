@@ -42,7 +42,7 @@ public abstract class BMeshProperty<E extends Element, TArray> {
 
     protected BMeshProperty(String name, int numComponents) {
         if(numComponents < 1)
-            throw new IllegalArgumentException("Number of components cannot be less than 1");
+            throw new IllegalArgumentException("Number of components must be at least 1");
 
         this.name = name;
         this.numComponents = numComponents;

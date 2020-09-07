@@ -1,5 +1,6 @@
 package meshlib.data;
 
+import java.lang.reflect.Array;
 import java.nio.Buffer;
 import java.util.*;
 
@@ -18,9 +19,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
         private ElementIterator() {
             expectedModCount = modCount;
-
-            // Skip to next listed element (alive and non-virtual)
-            while(++index < elements.size() && !elements.get(index).isListed()) {}
+            skipToNextListed();
         }
 
         @Override
@@ -37,8 +36,13 @@ public class BMeshData<E extends Element> implements Iterable<E> {
                 throw new ConcurrentModificationException();
 
             E element = elements.get(index);
-            while(++index < elements.size() && !elements.get(index).isListed()) {}
+            skipToNextListed();
             return element;
+        }
+
+        private void skipToNextListed() {
+            // Skip to next listed element (alive and non-virtual)
+            while(++index < elements.size() && !elements.get(index).isListed()) {}
         }
     }
 
@@ -83,6 +87,11 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         return numElementsAlive;
     }
 
+
+    public E get(int index) {
+        return elements.get(index);
+    }
+
     public void getAll(Collection<E> dest) {
         for(E e : this)
             dest.add(e);
@@ -113,7 +122,8 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         if(freeList.isEmpty()) {
             final int newIndex = elements.size();
             if(newIndex >= arraySize) {
-                int capacity = (int) Math.ceil(arraySize * GROW_FACTOR);
+                //int capacity = (int) Math.ceil(arraySize * GROW_FACTOR);
+                int capacity = arraySize + (arraySize >> 1) + 2;
                 ensureCapacity(capacity);
             }
 
@@ -165,6 +175,22 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         properties.put(property.name, property);
     }
 
+    public <TArray> void addProperty(BMeshProperty<E, TArray> property, TArray data) {
+        if(properties.containsKey(property.name))
+            throw new IllegalStateException("Property '" + property.name + "' already exists");
+
+        if(property.data != null)
+            throw new IllegalStateException("Property '" + property.name + "' already associated with another data set");
+
+        int len = Array.getLength(data);
+        if(len != arraySize * property.numComponents)
+            throw new IllegalArgumentException("Array length (" + (len/property.numComponents) + ") does not match managed length (" + arraySize + ")");
+
+        property.data = data;
+        properties.put(property.name, property);
+    }
+
+
     // getProperty(name, Vec3Property.class) should return Vec3Property<E> ?? to avoid casting at call site
     BMeshProperty<E, ?> getProperty(String name) {
         return properties.get(name);
@@ -197,6 +223,11 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         arraySize = size;
     }
 
+
+    // TODO: Instead of moving all segments of data, move elements at the back into free slots?
+    //    -> Doesn't matter because we have to copy all data into new array anyway.
+    //    -> But we wouldn't have to sort the free list.
+    //    -> It would not preserve the current vertex order.
 
     public void compactData() {
         if(arraySize == numElementsAlive)
@@ -334,7 +365,10 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     public void sort(Comparator<E> comparator) {
         // Sort backing arrays, reassign element indices
         // For optimizing OpenGL performance? Does this matter?
+        //   -> Yes because of vertex cache. The vertex shader may be called multipe times for the same vertex
+        //   if there's too much space between uses (indices).
         // e.g. sort vertices by face for better cache utilisation, sort loops by face
+        // https://gamedev.stackexchange.com/questions/59163/is-creating-vertex-index-buffer-optimized-this-way
 
         // Also provide back-to-front sorting for indices
     }

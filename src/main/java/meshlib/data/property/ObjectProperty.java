@@ -1,5 +1,6 @@
 package meshlib.data.property;
 
+import meshlib.data.BMeshData;
 import meshlib.data.BMeshProperty;
 import meshlib.data.Element;
 
@@ -37,4 +38,18 @@ public class ObjectProperty<E extends Element, T> extends BMeshProperty<E, T[]> 
     protected T[] alloc(int size) {
         return allocator.alloc(size);
     }
+
+
+    public static <E extends Element, T> ObjectProperty<E, T> get(String name, Class<T[]> arrayType, BMeshData<E> meshData) {
+        return (ObjectProperty<E, T>) getProperty(name, meshData, arrayType);
+    }
+
+    /*public static <E extends Element, T> ObjectProperty<E, T> getOrCreate(String name, Class<T[]> arrayType, BMeshData<E> meshData) {
+        ObjectProperty<E, T> prop = get(name, arrayType, meshData);
+        if(prop == null) {
+            prop = new ObjectProperty<E, T>(name, allocator);
+            meshData.addProperty(prop);
+        }
+        return prop;
+    }*/
 }
