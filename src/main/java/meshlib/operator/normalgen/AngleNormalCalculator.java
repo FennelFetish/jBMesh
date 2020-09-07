@@ -56,6 +56,16 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
             faceOps.normal(face1, tempV1);
             faceOps.normal(face2, tempV2);
+
+            /*if(tempV1.x == 0 && tempV1.y == 0 && tempV1.z == 0) {
+                propEdgeCrease.set(edge, true);
+                continue;
+            }
+            if(tempV2.x == 0 && tempV2.y == 0 && tempV2.z == 0) {
+                propEdgeCrease.set(edge, true);
+                continue;
+            }*/
+
             boolean crease = tempV1.angleBetween(tempV2) >= creaseAngle;
             propEdgeCrease.set(edge, crease);
         }
@@ -73,6 +83,9 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
     @Override
     public void getWeightedNormal(Loop loop, Vector3f store) {
+        // Use normal of triangle because faces are not always planar (?). Requires convex polygon.
+        // -> Compare with face normal to make it work for concave (flip normal in this case)? -> Make separate NormalCalculator for that
+
         Vertex vertex = loop.vertex;
         Vertex vNext = loop.nextFaceLoop.vertex;
         Vertex vPrev = loop.prevFaceLoop.vertex;
@@ -83,10 +96,13 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
         propPosition.subtract(vPrev, tempV2);
 
         store.set(tempV1);
-        store.crossLocal(tempV2);
-        // Use normal of triangle because faces are not always planar?
-        // Requires convex polygon -> Compare with face normal to make it work for concave (flip normal in this case)?
-        // Don't normalize cross product so it includes triangle area
+        store.crossLocal(tempV2); // Don't normalize cross product so it includes triangle area
+
+        // Degenerate faces? (happens for example after cutting)
+        if(store.x == 0 && store.y == 0 && store.z == 0) {
+            faceOps.normal(loop.face, store);
+            return;
+        }
 
         tempV1.normalizeLocal();
         tempV2.normalizeLocal();

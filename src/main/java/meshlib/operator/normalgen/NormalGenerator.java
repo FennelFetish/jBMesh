@@ -81,11 +81,12 @@ public class NormalGenerator {
         NormalAccumulator.Pool accumulators = new NormalAccumulator.Pool();
 
         for(Vertex vertex : bmesh.vertices()) {
-            if(vertex.edge == null || vertex.edge.loop == null) // TODO: There might be other edges with a loop
+            Edge startEdge = getEdgeWithLoop(vertex);
+            if(startEdge == null)
                 continue;
 
             accumulators.clear();
-            populateAccumulators(vertex, accumulators);
+            populateAccumulators(vertex, startEdge, accumulators);
 
             int lastIndex = accumulators.size()-1;
             NormalAccumulator last = accumulators.get(lastIndex);
@@ -112,17 +113,38 @@ public class NormalGenerator {
     }
 
 
-    private void populateAccumulators(Vertex vertex, NormalAccumulator.Pool accumulators) {
+    private Edge getEdgeWithLoop(Vertex vertex) {
+        //assert edgeSet.isEmpty();
+        /*edgeSet.clear();
+        vertex.edges().forEach(e -> edgeSet.add(e));
+        if(edgeSet.isEmpty())
+            continue;*/
+
+        Edge edge = vertex.edge;
+        if(edge == null)
+            return null;
+
+        do {
+            if(edge.loop != null)
+                return edge;
+            edge = edge.getNextEdge(vertex);
+        } while(edge != vertex.edge);
+
+        return null;
+    }
+
+
+    private void populateAccumulators(Vertex vertex, Edge startEdge, NormalAccumulator.Pool accumulators) {
         // Find outgoing loop that uses this vertex
-        Loop loop = vertex.edge.loop;
+        Loop loop = startEdge.loop;
         if(loop.vertex != vertex)
             loop = loop.nextFaceLoop;
 
         final Loop startLoop = loop;
         NormalAccumulator acc = accumulators.pushBack(startLoop);
 
-        // Iterate faces/edges of this Vertex, but without the disk cycle formed by Edges.
-        // This gives proper clockwise order, but can only work for manifolds.
+        // Iterate faces/edges around this Vertex by traversing the adjacent Loops (not the disk cycle formed by edges).
+        // This gives proper clockwise order, but can only work when each edge only has less than three adjacent faces (no T-structures).
         do {
             // Requires manifold (<=2 Loops per radial cycle of Edge)
             if(loop.nextEdgeLoop.nextEdgeLoop != loop)
@@ -133,7 +155,7 @@ public class NormalGenerator {
 
             // If the vertex lies on the border of a hole (equivalent to the border of a surface),
             // we may have to complete traversal in the other direction.
-            // TODO: Make this work with bowtie structures?
+            // TODO: Make this work with bowtie structures? -> Remove processed edges from a Set, continue until empty
             if(loop.nextEdgeLoop == loop) {
                 populateAccumulatorsCounterclockwise(vertex, accumulators);
                 break;
@@ -177,7 +199,7 @@ public class NormalGenerator {
         };
 
         // Sentinel indicates that last edge wasn't smooth
-        accumulators.pushBack(null);
+        accumulators.pushBack(null); // TODO: Can this cause NPE?
     }
 
 
@@ -190,6 +212,7 @@ public class NormalGenerator {
     private void applyAccumulator(NormalAccumulator acc, final Loop endLoop) {
         Loop loop = acc.firstLoop;
         acc.normal.normalizeLocal();
+        assert normalExists(acc.normal);
 
         do {
             propLoopNormal.set(loop, acc.normal);
@@ -199,5 +222,15 @@ public class NormalGenerator {
 
             loop = loop.nextEdgeLoop.nextFaceLoop;
         } while(loop != endLoop);
+    }
+
+
+    private boolean normalExists(Vector3f normal) {
+        if(normal.lengthSquared() < 0.9f) {
+            normal.set(5, 5, 5);
+            //return false;
+        }
+
+        return true;
     }
 }
