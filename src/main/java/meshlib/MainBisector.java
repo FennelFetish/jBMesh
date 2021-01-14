@@ -2,6 +2,7 @@ package meshlib;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.AssetManager;
+import com.jme3.input.CameraInput;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -18,13 +19,17 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
+import meshlib.conversion.DebugMeshExport;
 import meshlib.conversion.LineExport;
+import meshlib.operator.CollapseEdge;
+import meshlib.operator.ExtrudeFace;
 import meshlib.operator.PolygonOffset;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.ColorUtil;
 import meshlib.util.Gizmo;
+import sun.security.util.Debug;
 
 public class MainBisector extends SimpleApplication implements ActionListener {
     private final PolygonBuilder rectangle = new PolygonBuilder(
@@ -50,8 +55,19 @@ public class MainBisector extends SimpleApplication implements ActionListener {
         new Vector3f(0, 6, 0)
     );
 
-    private PolygonBuilder shape = rectangle;
-    private float distance = 0.0f;
+    private final PolygonBuilder cee = new PolygonBuilder(
+        new Vector3f(0, 0, 0),
+        new Vector3f(6, 0, 0),
+        new Vector3f(6, 2.5f, 0),
+        new Vector3f(2, 2.5f, 0),
+        new Vector3f(2, 3.5f, 0),
+        new Vector3f(6, 3.5f, 0),
+        new Vector3f(6, 6, 0),
+        new Vector3f(0, 6, 0)
+    );
+
+    private PolygonBuilder shape = cee;
+    private float distance = -1.0f;
     private final Node node = new Node();
 
 
@@ -71,6 +87,21 @@ public class MainBisector extends SimpleApplication implements ActionListener {
     }
 
 
+    private Geometry makeGeom2(BMesh bmesh, AssetManager assetManager) {
+        DebugMeshExport debugMeshExport = new DebugMeshExport();
+        debugMeshExport.apply(bmesh);
+        Mesh mesh = debugMeshExport.createMesh();
+
+        Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        mat.setBoolean("UseVertexColor", true);
+        mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
+
+        Geometry geom = new Geometry("Geom", mesh);
+        geom.setMaterial(mat);
+        return geom;
+    }
+
+
     private void recreateGeoms() {
         node.detachAllChildren();
 
@@ -79,6 +110,11 @@ public class MainBisector extends SimpleApplication implements ActionListener {
 
         BMesh result = new BMesh();
         Face resultFace = shape.build(result); // TODO: Clone face? (how to deal with connections? ignore?)
+
+        ExtrudeFace extrudeFace = new ExtrudeFace(orig);
+
+        // Test
+        //CollapseEdge.apply(result, resultFace.loop.edge);
 
         PolygonOffset offset = new PolygonOffset(result);
         offset.setDistance(distance);
@@ -92,10 +128,35 @@ public class MainBisector extends SimpleApplication implements ActionListener {
     }
 
 
+    private void recreateGeomsExtrude() {
+        node.detachAllChildren();
+
+        BMesh bmesh = new BMesh();
+        Face face = shape.build(bmesh);
+
+        ExtrudeFace extrudeFace = new ExtrudeFace(bmesh);
+        extrudeFace.apply(face);
+        extrudeFace.copyVertexProperties();
+
+        // Test
+        //CollapseEdge.apply(result, resultFace.loop.edge);
+
+        PolygonOffset offset = new PolygonOffset(bmesh);
+        offset.setDistance(distance);
+        offset.apply(face);
+
+        Geometry geomOrig = makeGeom(bmesh, assetManager);
+        node.attachChild(geomOrig);
+
+        /*Geometry geomResult = makeGeom(result, assetManager);
+        node.attachChild(geomResult);*/
+    }
+
+
 
     @Override
     public void simpleInitApp() {
-        recreateGeoms();
+        recreateGeomsExtrude();
 
         rootNode.attachChild(node);
         rootNode.attachChild(new Gizmo(assetManager, null, 1.0f));
@@ -113,26 +174,34 @@ public class MainBisector extends SimpleApplication implements ActionListener {
         inputManager.addMapping("POLY1", new KeyTrigger(KeyInput.KEY_1));
         inputManager.addMapping("POLY2", new KeyTrigger(KeyInput.KEY_2));
         inputManager.addMapping("POLY3", new KeyTrigger(KeyInput.KEY_3));
-        inputManager.addListener(this, "DISTANCE+", "DISTANCE-", "POLY1", "POLY2", "POLY3");
+        inputManager.addMapping("POLY4", new KeyTrigger(KeyInput.KEY_4));
+        inputManager.addListener(this, "DISTANCE+", "DISTANCE-", "POLY1", "POLY2", "POLY3", "POLY4");
     }
 
 
+    private boolean first = true;
 
     @Override
     public void simpleUpdate(float tpf) {
-
+        if(first) {
+            first = false;
+            inputManager.deleteMapping(CameraInput.FLYCAM_ZOOMIN);
+            inputManager.deleteMapping(CameraInput.FLYCAM_ZOOMOUT);
+        }
     }
 
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
+        final float distanceStep = 0.02f;
+
         switch(name) {
             case "DISTANCE+":
-                distance += 0.1f;
+                distance += distanceStep;
                 break;
 
             case "DISTANCE-":
-                distance -= 0.1f;
+                distance -= distanceStep;
                 break;
 
             case "POLY1":
@@ -146,11 +215,15 @@ public class MainBisector extends SimpleApplication implements ActionListener {
             case "POLY3":
                 shape = angle;
                 break;
+
+            case "POLY4":
+                shape = cee;
+                break;
         }
 
 
         System.out.println("Distance: " + distance);
-        recreateGeoms();
+        recreateGeomsExtrude();
     }
 
 

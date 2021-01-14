@@ -7,6 +7,7 @@ import java.util.List;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
 import meshlib.structure.BMesh;
+import meshlib.structure.Edge;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 
@@ -35,7 +36,7 @@ public class PolygonOffset {
         public final Vertex vertex;
         public final Vector2f p = new Vector2f();
         public final Vector2f bisector = new Vector2f(); // Length determines speed
-        public float edgeLengthChange = 0; // Outgoing edge, counterclock-wise
+        public float edgeLengthChange = 0; // Change amount when shrinking. Outgoing edge, counterclock-wise
         public boolean reflex = false;
 
         public ProjectedVertex(Vertex vertex) {
@@ -44,13 +45,18 @@ public class PolygonOffset {
     }
 
 
+    private static final float EPSILON = 0.001f;
+    private static final float EPSILON_SQUARED = EPSILON * EPSILON;
+
+    private final BMesh bmesh;
     private FaceOps faceOps;
     private Vec3Property<Vertex> propPosition;
 
-    private float distance = 1.0f; // Positive: Grow polygon, Negative: Shrink
+    private float distance = 0.0f; // Positive: Grow polygon, Negative: Shrink
 
 
     public PolygonOffset(BMesh bmesh) {
+        this.bmesh = bmesh;
         faceOps = new FaceOps(bmesh);
         propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
     }
@@ -72,18 +78,31 @@ public class PolygonOffset {
         CoordinateSystem coordSys = new CoordinateSystem(vertices, face);
         List<ProjectedVertex> projectedVertices = project(vertices, coordSys);
 
-        calcBisectors(projectedVertices);
-        float maxDistance = calcEdgeLengthChange(projectedVertices);
+        while(Math.abs(distance) > EPSILON)
+            loop(face, projectedVertices);
 
-        // TODO: Test - this seems wrong. Maximum can be positive or negative. We're interested in the same sign as 'distance' (?).
-        float dist = distance;
-        if(maxDistance < 0) {
-            dist = Math.max(maxDistance, distance);
-        }
+        unproject(coordSys, projectedVertices);
+    }
+
+
+    private void loop(Face face, List<ProjectedVertex> projectedVertices) {
+        System.out.println("--- loop ---");
+        calcBisectors(projectedVertices);
+        float edgeCollapse = getFirstEdgeCollapse(projectedVertices);
+
+        float dist;
+        if(distance < 0)
+            dist = Math.max(-edgeCollapse, distance);
+        else
+            dist = Math.min(edgeCollapse, distance);
 
         System.out.println("offsetting by distance: " + dist);
         scale(projectedVertices, dist);
-        unproject(coordSys, projectedVertices);
+        distance -= dist;
+        System.out.println("Distance remaining: " + distance);
+
+        collapseEdges(face, projectedVertices);
+        // TODO: Remove collinear edges -> it's the same check as checking for reflex intersections?
     }
 
 
@@ -130,11 +149,15 @@ public class PolygonOffset {
             current.bisector.multLocal(speed);
 
             // Calc edge length change (same for both adjacent edges)
-            last.edgeLengthChange    += current.bisector.dot(vLast);
-            current.edgeLengthChange += current.bisector.dot(vNext);
+            float edgeChange = current.bisector.dot(vLast);
+            last.edgeLengthChange    += edgeChange;
+            current.edgeLengthChange += edgeChange;
+            //last.edgeLengthChange    += current.bisector.dot(vLast);
+            //current.edgeLengthChange += current.bisector.dot(vNext);
 
             // Check for reflex vertices (concave corners)
-            current.reflex = vLast.determinant(vNext) > 0.0f; // vLast.cross(vNext).z > 0.0f
+            //current.reflex = vLast.determinant(vNext) > 0.0f; // cross(vLast, vNext).z > 0.0f
+            current.reflex = edgeChange > 0.0f;
 
             // Next iteration
             last = current;
@@ -143,34 +166,76 @@ public class PolygonOffset {
     }
 
 
-    private float calcEdgeLengthChange(List<ProjectedVertex> projectedVertices) {
+    /**
+     * @param projectedVertices
+     * @return Distance until edge collapse. Always positive.
+     */
+    private float getFirstEdgeCollapse(List<ProjectedVertex> projectedVertices) {
         ProjectedVertex current = projectedVertices.get(projectedVertices.size()-1);
         Vector2f edge = new Vector2f();
-
-        float maxDistance = Float.NEGATIVE_INFINITY;
+        float minDistance = Float.POSITIVE_INFINITY;
 
         for(int i=0; i<projectedVertices.size(); ++i) {
             ProjectedVertex next = projectedVertices.get(i);
 
-            edge.set(next.p).subtractLocal(current.p);
-            float edgeLength = edge.length();
-            edge.normalizeLocal();
+            // Look for shrinking edges.
+            // 'edgeLengthChange' is the change amount when shrinking.
+            // When 'distance' is positive (growing polygon), a positive 'edgeLengthChange' marks a shrinking edge.
+            if(sameSign(current.edgeLengthChange, distance)) {
+                edge.set(next.p).subtractLocal(current.p);
 
-            //current.edgeLengthChange = current.bisector.dot(edge);
-            //current.edgeLengthChange -= next.bisector.dot(edge);
-
-            float dist = edgeLength / current.edgeLengthChange;
-            if(dist > maxDistance)
-                maxDistance = dist;
-
-            System.out.println("EdgeLengthChange " + i + ": " + current.edgeLengthChange);
-            System.out.println("dist: " + dist);
+                float dist = edge.length() / Math.abs(current.edgeLengthChange);
+                if(dist < minDistance)
+                    minDistance = dist;
+            }
 
             current = next;
         }
 
-        System.out.println("dist until first edge collapse event: " + maxDistance);
-        return maxDistance;
+        System.out.println("dist until first edge collapse event: " + minDistance);
+        return minDistance;
+    }
+
+
+    private void collapseEdges(Face face, List<ProjectedVertex> projectedVertices) {
+        CollapseEdge collapseEdge = new CollapseEdge(bmesh);
+
+        // Search for edges with length 0
+        ProjectedVertex last = projectedVertices.get(projectedVertices.size()-1);
+        for(int i=0; i<projectedVertices.size(); ++i) {
+            ProjectedVertex current = projectedVertices.get(i);
+
+            if(current.p.distanceSquared(last.p) >= EPSILON_SQUARED) {
+                last = current;
+                continue;
+            }
+
+            Edge edge = current.vertex.getEdgeTo(last.vertex);
+            if(edge.vertex0 == current.vertex) {
+                projectedVertices.remove(last);
+                last = current;
+            }
+            else {
+                assert edge.vertex0 == last.vertex;
+                projectedVertices.remove(current);
+            }
+
+            collapseEdge.apply(edge);
+            System.out.println("edge collapsed");
+        }
+
+        // Delete face if num vertices < 3
+        if(projectedVertices.size() < 3) {
+            System.out.println("face collapsed to vertex");
+            //bmesh.removeFace(face); // TODO: Should collapse face into 1 single vertex
+        }
+
+        //System.out.println("Face vertices: " + face.getVertices().size());
+    }
+
+
+    private boolean sameSign(float a, float b) {
+        return (a >= 0) ^ (b < 0);
     }
 
 
@@ -197,87 +262,4 @@ public class PolygonOffset {
             propPosition.set(proj.vertex, result);
         }
     }
-
-
-
-
-    /*public void apply(Face face) {
-        List<Vertex> vertices = face.getVertices();
-        assert vertices.size() >= 3;
-
-        // Calc bisectors
-        Vector3f v0 = new Vector3f(); // last
-        Vector3f v1 = new Vector3f(); // next
-
-        Vector3f[] bisectors = new Vector3f[vertices.size()];
-        for(int i=0; i< bisectors.length; ++i)
-            bisectors[i] = new Vector3f();
-
-        Vertex lastVertex = vertices.get(vertices.size()-1);
-        Vertex currentVertex = vertices.get(0);
-
-        for(int i=0; i<bisectors.length; ++i) {
-            int nextIndex = (i+1) % vertices.size();
-            Vertex nextVertex = vertices.get(nextIndex);
-
-            propPosition.get(lastVertex, v0);
-            propPosition.get(currentVertex, bisectors[i]);
-            propPosition.get(nextVertex, v1);
-
-            v0.subtractLocal(bisectors[i]).normalizeLocal();
-            v1.subtractLocal(bisectors[i]).normalizeLocal();
-            bisectors[i].set(v0).addLocal(v1).normalizeLocal();
-
-            // TODO: Check for reflex vertices (concave corners)
-
-            // Calc speed, use sine of half the angle
-            float sin = v0.crossLocal(bisectors[i]).length();
-            float speed = 1.0f / sin;
-            bisectors[i].multLocal(speed);
-
-            lastVertex = currentVertex;
-            currentVertex = nextVertex;
-        }
-
-
-        debugApply(vertices, bisectors);
-    }*/
-
-
-    /*private void debugApply(List<Vertex> vertices, Vector3f[] bisectors) {
-        Vector3f temp = new Vector3f();
-        for(int i=0; i< bisectors.length; ++i) {
-            bisectors[i].multLocal(distance);
-
-            propPosition.get(vertices.get(i), temp);
-            temp.subtractLocal(bisectors[i]);
-
-            propPosition.set(vertices.get(i), temp);
-        }
-    }*/
-
-    /*private List<Vector2f> projectOntoPlane(Face face) {
-        List<Vertex> vertices = face.getVertices();
-        assert vertices.size() >= 3;
-
-        // Create coordinate system of plane
-        Vector3f p0 = propPosition.get(vertices.get(0));
-        Vector3f n = faceOps.normal(face);
-
-        Vector3f x = propPosition.get(vertices.get(1));
-        x.subtractLocal(p0).normalizeLocal();
-
-        Vector3f y = n.cross(x).normalizeLocal();
-
-        // Project vertices onto plane
-        List<Vector2f> projected = new ArrayList<>(vertices.size());
-        for(int i=0; i<vertices.size(); ++i) {
-            Vector3f v = propPosition.get(vertices.get(i));
-            v.subtractLocal(p0);
-
-            projected.add(new Vector2f(v.dot(x), v.dot(y)));
-        }
-
-        return projected;
-    }*/
 }
