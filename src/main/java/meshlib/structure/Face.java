@@ -19,17 +19,6 @@ public class Face extends Element {
     }
 
 
-    public int getVertexCount(Face face) {
-        int count = 0;
-        Loop current = loop;
-        do {
-            current = current.nextFaceLoop;
-            count++;
-        } while(current != loop);
-        return count;
-    }
-
-
     public Edge getAnyCommonEdge(Face face) {
         for(Loop l1 : loops()) {
             for(Loop l2 : face.loops()) {
@@ -63,6 +52,32 @@ public class Face extends Element {
         }
 
         return commonEdges;
+    }
+
+
+    public int getVertexCount(Face face) {
+        int count = 0;
+        Loop current = loop;
+        do {
+            current = current.nextFaceLoop;
+            count++;
+        } while(current != loop);
+        return count;
+    }
+
+
+    public List<Vertex> getVertices() {
+        return getVertices(new ArrayList<>(4));
+    }
+
+    public List<Vertex> getVertices(List<Vertex> list) {
+        Loop current = loop;
+        do {
+            list.add(current.vertex);
+            current = current.nextFaceLoop;
+        } while(current != loop);
+
+        return list;
     }
 
 

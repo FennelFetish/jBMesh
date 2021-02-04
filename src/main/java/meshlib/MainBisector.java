@@ -17,19 +17,17 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import meshlib.conversion.DebugMeshExport;
 import meshlib.conversion.LineExport;
-import meshlib.operator.CollapseEdge;
 import meshlib.operator.ExtrudeFace;
 import meshlib.operator.PolygonOffset;
+import meshlib.operator.skeleton.StraightSkeleton;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.ColorUtil;
 import meshlib.util.Gizmo;
-import sun.security.util.Debug;
 
 public class MainBisector extends SimpleApplication implements ActionListener {
     private final PolygonBuilder rectangle = new PolygonBuilder(
@@ -59,26 +57,30 @@ public class MainBisector extends SimpleApplication implements ActionListener {
         new Vector3f(0, 0, 0),
         new Vector3f(6, 0, 0),
         new Vector3f(6, 2.5f, 0),
-        new Vector3f(2, 2.5f, 0),
-        new Vector3f(2, 3.5f, 0),
+        new Vector3f(2, 2.2f, 0),
+        new Vector3f(2, 3.8f, 0),
         new Vector3f(6, 3.5f, 0),
         new Vector3f(6, 6, 0),
         new Vector3f(0, 6, 0)
     );
 
     private PolygonBuilder shape = cee;
-    private float distance = -1.0f;
+    private float distance = -0.9f;
     private final Node node = new Node();
 
 
     private Geometry makeGeom(BMesh bmesh, AssetManager assetManager) {
+        return makeGeom(bmesh, assetManager, new ColorRGBA(1, 0, 0, 1));
+    }
+
+    private Geometry makeGeom(BMesh bmesh, AssetManager assetManager, ColorRGBA color) {
         // TODO: Make util class "DebugLineExport"?
         LineExport origExport = new LineExport(bmesh);
         origExport.update();
         Mesh mesh = origExport.getMesh();
 
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", new ColorRGBA(1, 0, 0, 1));
+        mat.setColor("Color", color);
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
 
         Geometry geom = new Geometry("Geom", mesh);
@@ -120,11 +122,8 @@ public class MainBisector extends SimpleApplication implements ActionListener {
         offset.setDistance(distance);
         offset.apply(resultFace);
 
-        Geometry geomOrig = makeGeom(orig, assetManager);
-        node.attachChild(geomOrig);
-
-        Geometry geomResult = makeGeom(result, assetManager);
-        node.attachChild(geomResult);
+        node.attachChild( makeGeom(orig, assetManager) );
+        node.attachChild( makeGeom(result, assetManager) );
     }
 
 
@@ -145,18 +144,65 @@ public class MainBisector extends SimpleApplication implements ActionListener {
         offset.setDistance(distance);
         offset.apply(face);
 
+        node.attachChild( makeGeom(bmesh, assetManager) );
+
+        //node.attachChild( makeGeom(result, assetManager) );
+    }
+
+
+    /*private void recreateGeomsSkeleton() {
+        node.detachAllChildren();
+
+        BMesh bmesh = new BMesh();
+        Face face = shape.build(bmesh);
+
+        StraightSkeletonOld skeleton = new StraightSkeletonOld(bmesh);
+        skeleton.setDistance(distance);
+        skeleton.apply(face);
+
+        node.attachChild( makeGeom(bmesh, assetManager) );
+
+        BMesh skeletonBMesh = skeleton.createStraightSkeletonVis();
+        node.attachChild( makeGeom(skeletonBMesh, assetManager) );
+
+        //BMesh mappingMesh = skeleton.createMappingVis();
+        //node.attachChild( makeGeom(mappingMesh, assetManager) );
+    }*/
+
+
+    private void recreateGeomsNew() {
+        node.detachAllChildren();
+
+        BMesh bmesh = new BMesh();
+        Face face = shape.build(bmesh);
+
+        StraightSkeleton skeleton = new StraightSkeleton(bmesh);
+        skeleton.setDistance(distance);
+        skeleton.apply(face);
+
         Geometry geomOrig = makeGeom(bmesh, assetManager);
         node.attachChild(geomOrig);
 
-        /*Geometry geomResult = makeGeom(result, assetManager);
-        node.attachChild(geomResult);*/
+        BMesh skeletonBMesh = skeleton.createStraightSkeletonVis();
+        node.attachChild( makeGeom(skeletonBMesh, assetManager) );
+
+        /*BMesh mappingMesh = skeleton.createMappingVis();
+        node.attachChild( makeGeom(mappingMesh, assetManager) );*/
+
+        BMesh scaledMesh = skeleton.createMovingNodesVis();
+        node.attachChild( makeGeom(scaledMesh, assetManager, ColorRGBA.Cyan) );
+    }
+
+
+    private void recreateGeomsDispatch() {
+        recreateGeomsNew();
     }
 
 
 
     @Override
     public void simpleInitApp() {
-        recreateGeomsExtrude();
+        recreateGeomsDispatch();
 
         rootNode.attachChild(node);
         rootNode.attachChild(new Gizmo(assetManager, null, 1.0f));
@@ -223,7 +269,7 @@ public class MainBisector extends SimpleApplication implements ActionListener {
 
 
         System.out.println("Distance: " + distance);
-        recreateGeomsExtrude();
+        recreateGeomsDispatch();
     }
 
 
@@ -258,6 +304,4 @@ public class MainBisector extends SimpleApplication implements ActionListener {
         app.setShowSettings(false);
         app.start();
     }
-
-
 }
