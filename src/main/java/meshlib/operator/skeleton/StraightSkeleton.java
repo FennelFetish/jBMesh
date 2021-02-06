@@ -5,7 +5,6 @@ import com.jme3.math.Vector3f;
 import java.util.*;
 import meshlib.data.BMeshProperty;
 import meshlib.data.property.Vec3Property;
-import meshlib.lookup.ExactHashDeduplication;
 import meshlib.operator.FaceOps;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
@@ -23,6 +22,13 @@ public class StraightSkeleton {
     private float initialDistance = 0.0f; // Positive: Grow polygon, Negative: Shrink
     private float distanceSign = 1.0f;
 
+
+    /*class Result {
+        private PlanarCoordinateSystem coordSys;
+        private final ArrayList<SkeletonNode> initialNodes = new ArrayList<>();
+        private final ArrayList<MovingNode> movingNodes = new ArrayList<>();
+    }*/
+
     private PlanarCoordinateSystem coordSys;
     private final ArrayList<SkeletonNode> initialNodes = new ArrayList<>();
     private final ArrayList<MovingNode> movingNodes = new ArrayList<>();
@@ -30,6 +36,7 @@ public class StraightSkeleton {
     // TODO: This mapping adds the functionality for scaling polygons.
     //       It's not directly related to straight skeleton.
     //       --> Move to separate class?
+    //       And this map is not needed. The mapping already exists in directed skeleton graph.
     private final Map<Vertex, SkeletonNode> vertexMap = new HashMap<>();
 
     private final PriorityQueue<SkeletonEvent> eventQueue = new PriorityQueue<>();
@@ -94,6 +101,7 @@ public class StraightSkeleton {
         }
 
         // Reduce time of events
+        // TODO: Don't change time of events. Instead, keep track of used time so far?
         for(SkeletonEvent remainingEvent : eventQueue) {
             remainingEvent.time -= event.time;
             System.out.println("subtracting from " + remainingEvent + " time: " + event.time + ", now: " + remainingEvent.time);
@@ -126,12 +134,12 @@ public class StraightSkeleton {
 
             // Create moving node
             MovingNode movingNode = new MovingNode(nextNodeId++);
-            movingNode.node = new SkeletonNode();
-            movingNode.node.p.set(initialNode.p);
-            initialNode.addEdge(movingNode.node);
+            movingNode.skelNode = new SkeletonNode();
+            movingNode.skelNode.p.set(initialNode.p);
+            initialNode.addEdge(movingNode.skelNode);
 
             movingNodes.add(movingNode);
-            vertexMap.put(vertex, movingNode.node);
+            vertexMap.put(vertex, movingNode.skelNode);
         }
     }
 
@@ -174,9 +182,9 @@ public class StraightSkeleton {
 
         for(MovingNode node : movingNodes) {
             dir.set(node.bisector).multLocal(dist);
-            node.node.p.addLocal(dir);
+            node.skelNode.p.addLocal(dir);
 
-            if(isInvalid(node.node.p)) {
+            if(isInvalid(node.skelNode.p)) {
                 System.out.println("invalid after scale: bisector=" + node.bisector + ", dir=" + dir);
             }
         }
@@ -197,90 +205,12 @@ public class StraightSkeleton {
         return (a >= 0) ^ (b < 0);
     }
 
-
-
-    public BMesh createStraightSkeletonVis() {
-        BMesh bmesh = new BMesh();
-        ExactHashDeduplication dedup = new ExactHashDeduplication(bmesh);
-
-        for(SkeletonNode node : initialNodes) {
-            straightSkeletonVis_addEdge(bmesh, dedup, node);
-        }
-
-        return bmesh;
-    }
-
     private boolean isInvalid(Vector2f v) {
         return Float.isNaN(v.x) || Float.isInfinite(v.x);
     }
 
-    private Vertex getVertex(BMesh bmesh, ExactHashDeduplication dedup, Vector2f v) {
-        Vector2f pos = new Vector2f(v);
-        if(isInvalid(pos)) {
-            pos.set(-5, -5);
-        }
-        return dedup.getOrCreateVertex(bmesh, coordSys.unproject(pos));
-    }
 
-    private void straightSkeletonVis_addEdge(BMesh bmesh, ExactHashDeduplication dedup, SkeletonNode src) {
-        //Vertex v0 = dedup.getOrCreateVertex(bmesh, coordSys.unproject(src.p));
-        Vertex v0 = getVertex(bmesh, dedup, src.p);
-
-        for(SkeletonNode target : src.outgoingEdges) {
-            //Vertex v1 = dedup.getOrCreateVertex(bmesh, coordSys.unproject(target.p));
-            Vertex v1 = getVertex(bmesh, dedup, target.p);
-
-            if(v0 != v1 && v0.getEdgeTo(v1) == null)
-                bmesh.createEdge(v0, v1);
-
-            straightSkeletonVis_addEdge(bmesh, dedup, target);
-        }
-    }
-
-
-    public BMesh createMovingNodesVis() {
-        BMesh bmesh = new BMesh();
-        if(movingNodes.isEmpty())
-            return bmesh;
-
-        List<Vertex> vertices = new ArrayList<>();
-
-        MovingNode start = movingNodes.get(0);
-        MovingNode current = start;
-        do {
-            Vertex v = bmesh.createVertex( coordSys.unproject(current.node.p) );
-            vertices.add(v);
-
-            current = current.next;
-
-            if(current == null) {
-                System.out.println("NULL in StraightSkeletonNew.createMovingNodesVis()");
-                break;
-            }
-        } while(current != start);
-
-        for(int i=0; i<vertices.size(); ++i) {
-            int nextIndex = (i+1) % vertices.size();
-            bmesh.createEdge(vertices.get(i), vertices.get(nextIndex));
-        }
-
-        return bmesh;
-    }
-
-
-    public BMesh createBisectorVis() {
-        BMesh bmesh = new BMesh();
-
-        for(MovingNode movingNode : movingNodes) {
-            Vector2f p0 = movingNode.node.p;
-            Vector2f p1 = movingNode.bisector.mult(0.33f * distanceSign).addLocal(p0);
-
-            Vertex v0 = bmesh.createVertex( coordSys.unproject(p0) );
-            Vertex v1 = bmesh.createVertex( coordSys.unproject(p1) );
-
-            bmesh.createEdge(v0, v1);
-        }
-
-        return bmesh;
+    public SkeletonVisualization getVisualization() {
+        return new SkeletonVisualization(coordSys, initialNodes, movingNodes, distanceSign);
     }
 }

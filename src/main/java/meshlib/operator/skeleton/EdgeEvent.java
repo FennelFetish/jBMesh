@@ -15,12 +15,12 @@ class EdgeEvent extends SkeletonEvent {
         super(getTime(n0, n1));
         this.n0 = n0;
         this.n1 = n1;
-        p.set(n0.bisector).multLocal(time).addLocal(n0.node.p);
+        p.set(n0.bisector).multLocal(time).addLocal(n0.skelNode.p);
     }
 
 
     private static float getTime(MovingNode n0, MovingNode n1) {
-        Vector2f edge = n1.node.p.subtract(n0.node.p);
+        Vector2f edge = n1.skelNode.p.subtract(n0.skelNode.p);
         float time = edge.length() / Math.abs(n0.edgeLengthChange);
         return time;
     }
@@ -30,28 +30,55 @@ class EdgeEvent extends SkeletonEvent {
     public void handle(List<MovingNode> movingNodes, PriorityQueue<SkeletonEvent> eventQueue) {
         System.out.println("{{ handle " + this);
 
-        abortEvents(eventQueue, n0);
-        abortEvents(eventQueue, n1);
+        //abortEvents(eventQueue, n0); // TODO: This already happens in calcBisector_handleDegenerateAngle()
+        //abortEvents(eventQueue, n1); // TODO: Put this into removeNode()
 
-        // Keep n0, remove n1
+        // Merge nodes, keep n0, remove n1
         MovingNode next = n1.next;
         n0.next = next;
         next.prev = n0;
 
-        n1.next = null;
-        n1.prev = null;
-        System.out.println("removing MovingNode" + n1.id);
-        movingNodes.remove(n1);
-        System.out.println("num nodes: " + movingNodes.size());
+        n1.skelNode.remapIncoming(n0.skelNode);
+        removeNode(n1, movingNodes, eventQueue);
 
-        //remapEdges()
+        MovingNode node = n0;
+        while(!checkDegenerateTriangle(node, movingNodes, eventQueue)) {
+            node = calcBisector_handleDegenerateAngle(node, movingNodes, eventQueue);
+            if(node == null)
+                break;
+        }
+
+        System.out.println("num nodes: " + movingNodes.size());
+        System.out.println("}} handled");
+        printEvents(eventQueue);
+    }
+
+
+    public void handleOld(List<MovingNode> movingNodes, PriorityQueue<SkeletonEvent> eventQueue) {
+        System.out.println("{{ handle " + this);
+
+        abortEvents(eventQueue, n0);
+        abortEvents(eventQueue, n1);
+
+        // Merge nodes, keep n0, remove n1
+        MovingNode next = n1.next;
+        n0.next = next;
+        next.prev = n0;
+
+        n1.skelNode.remapIncoming(n0.skelNode);
+        removeNode(n1, movingNodes, eventQueue);
 
         // Leave a node at old place and create new one
-        leaveNode(n0);
+        //leaveNode(n0);
 
-        if(!checkDegenerate(n0, movingNodes)) {
+        if(checkDegenerateTriangle(n0, movingNodes, eventQueue)) {
+            //leaveNode(n0);
+        }
+        else {
             boolean degenerate = n0.calcBisector();
             if(!degenerate) {
+                leaveNode(n0);
+
                 System.out.println("EdgeEvent: not degenerated");
                 // Recalculate edge shrink rate of two adjacent edges
                 n0.calcEdgeLengthChange();
@@ -61,60 +88,78 @@ class EdgeEvent extends SkeletonEvent {
                 eventQueue.add(new EdgeEvent(n0, n0.next));
                 eventQueue.add(new EdgeEvent(n0.prev, n0));
             } else {
-                System.out.println("EdgeEvent: degenerated");
-                MovingNode o1 = n0.next;
-                MovingNode o2 = n0.prev;
-                assert o1.prev == n0;
-                assert o2.next == n0;
-                o1.prev = o2;
-                o2.next = o1;
-                o1.reset();
-                o2.reset();
-                //o1.bisector.zero();
-                //o2.bisector.zero();
+                // Remove n0, connect prev/next
+                MovingNode o1 = n0.prev;
+                MovingNode o2 = n0.next;
+                System.out.println("EdgeEvent: degenerated, connecting " + o1.id + " to " + o2.id);
+                assert o1.next == n0;
+                assert o2.prev == n0;
+                o1.next = o2;
+                o2.prev = o1;
+                //o1.reset();
+                //o2.reset();
 
-                // TODO: This is needed for rectangles, but fails in 'bug3', because of circular references in resulting skeleton graph
-                abortEvents(eventQueue, o1);
-                abortEvents(eventQueue, o2);
+                o1.calcBisector();
+                o2.calcBisector();
+                // TODO: check return value (degenerate?), calcEdgeLengthChange, addEvents ... like above?
 
-                // Create skeleton edge to near node
-                if(n0.node.p.distanceSquared(o1.node.p) < n0.node.p.distanceSquared(o2.node.p))
-                    n0.node.addEdge(o1.node);
-                else
-                    n0.node.addEdge(o2.node);
 
-                movingNodes.remove(n0);
-                checkDegenerate(o1, movingNodes);
+                // TODO: This is needed for rectangles (because of circular references in resulting skeleton graph)
+                //       but creates error (remaining triangle) in 'bug1',
+                //abortEvents(eventQueue, o1);
+                //abortEvents(eventQueue, o2);
+
+                // TODO: Create event for this new edge between o1/o2?
+
+                /*if(!checkDegenerate(o2, movingNodes))*/ {
+                    // Create skeleton edge to near node
+                    MovingNode connectionTarget;
+                    if(n0.skelNode.p.distanceSquared(o1.skelNode.p) < n0.skelNode.p.distanceSquared(o2.skelNode.p))
+                        connectionTarget = o1;
+                    else
+                        connectionTarget = o2;
+
+                    System.out.println("skel connection from " + n0 + " to " + connectionTarget);
+                    n0.skelNode.addEdge(connectionTarget.skelNode);
+                    removeNode(n0, movingNodes, eventQueue);
+
+                    // This would work.... but makes a stupid graph
+                    //n0.node.addEdge(o1.node);
+                    //n0.node.addEdge(o2.node);
+                }
+
+                checkDegenerateTriangle(o2, movingNodes, eventQueue);
             }
         }
 
+        System.out.println("num nodes: " + movingNodes.size());
         System.out.println("}} handled");
         printEvents(eventQueue);
     }
 
 
-    private void leaveNode(MovingNode node) {
-        // Leave a node at old place and create new one
-        SkeletonNode oldSkelNode = node.node;
-        node.node = new SkeletonNode();
-        node.node.p.set(oldSkelNode.p);
-        oldSkelNode.addEdge(node.node);
-    }
-
-
-    private boolean checkDegenerate(MovingNode node, List<MovingNode> movingNodes) {
-        if(node.next != node.prev)
+    /**
+     * // Handle case in which a triangle degenerates to a line
+     * @param node
+     * @param movingNodes
+     * @return Degenerated?
+     */
+    private boolean checkDegenerateTriangle(MovingNode node, List<MovingNode> movingNodes, PriorityQueue<SkeletonEvent> eventQueue) {
+        MovingNode next = node.next;
+        if(next != node.prev)
             return false;
 
-        // Handle case in which a triangle degenerates to a line
-        System.out.println("degenerate");
-        node.node.addEdge(node.next.node);
+        System.out.println("Degenerated triangle");
+        node.skelNode.addDegenerationEdge(next.skelNode);
 
-        node.reset();
-        node.next.reset();
+        removeNode(node, movingNodes, eventQueue);
+        removeNode(next, movingNodes, eventQueue);
+
+        /*node.reset();
+        next.reset();
 
         movingNodes.remove(node);
-        movingNodes.remove(node.next);
+        movingNodes.remove(next);*/
 
         // TODO: In this case it shouldn't scale any further (empty event queue?)
         //       thus making the above reset() unnecessary.
@@ -125,14 +170,70 @@ class EdgeEvent extends SkeletonEvent {
     }
 
 
-    private void remapEdges() {
-        // Re-map outgoingEdges with target 'n1.node' to 'n0.node'
-        /*for(SkeletonNode inc : n1.node.incomingEdges) {
-            inc.outgoingEdges.remove(n1.node);
-            inc.outgoingEdges.add(n0.node);
-            n0.node.incomingEdges.add(inc);
+    /**
+     * Always aborts events of 'node'.
+     * @param node
+     * @param movingNodes
+     * @param eventQueue
+     * @return
+     */
+    private MovingNode calcBisector_handleDegenerateAngle(MovingNode node, List<MovingNode> movingNodes, PriorityQueue<SkeletonEvent> eventQueue) {
+        boolean degenerate = node.calcBisector();
+        if(!degenerate) {
+            abortEvents(eventQueue, node);
+            leaveNode(node);
+
+            System.out.println("EdgeEvent: not degenerated");
+            // Recalculate edge shrink rate of two adjacent edges
+            node.calcEdgeLengthChange();
+            node.prev.calcEdgeLengthChange();
+
+            // TODO: Check if the events are needed (same sign as distanceSign)
+            eventQueue.add(new EdgeEvent(node, node.next));
+            eventQueue.add(new EdgeEvent(node.prev, node));
+
+            return null;
         }
-        n1.node.incomingEdges.clear();*/
+
+        // Remove n0, connect prev/next
+        MovingNode o1 = node.prev;
+        MovingNode o2 = node.next;
+        System.out.println("EdgeEvent: degenerated, connecting " + o1.id + " to " + o2.id);
+        assert o1.next == node;
+        assert o2.prev == node;
+        o1.next = o2;
+        o2.prev = o1;
+
+        MovingNode connectionTarget;
+        if(node.skelNode.p.distanceSquared(o1.skelNode.p) < node.skelNode.p.distanceSquared(o2.skelNode.p))
+            connectionTarget = o1;
+        else
+            connectionTarget = o2;
+
+        System.out.println("skel connection from " + node + " to " + connectionTarget);
+        node.skelNode.addDegenerationEdge(connectionTarget.skelNode);
+        removeNode(node, movingNodes, eventQueue);
+
+        return connectionTarget;
+    }
+
+
+    private void removeNode(MovingNode node, List<MovingNode> movingNodes, PriorityQueue<SkeletonEvent> eventQueue) {
+        System.out.println("removing MovingNode" + node.id);
+        node.next = null;
+        node.prev = null;
+        abortEvents(eventQueue, node);
+        movingNodes.remove(node);
+    }
+
+    private void leaveNode(MovingNode node) {
+        System.out.println("leaveNode " + node);
+
+        // Leave a node at old place and create new one
+        SkeletonNode oldSkelNode = node.skelNode;
+        node.skelNode = new SkeletonNode();
+        node.skelNode.p.set(oldSkelNode.p);
+        oldSkelNode.addEdge(node.skelNode);
     }
 
 

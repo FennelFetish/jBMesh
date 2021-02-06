@@ -6,10 +6,12 @@ import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
+import com.jme3.input.RawInputListener;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.input.event.*;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.*;
@@ -22,13 +24,17 @@ import com.jme3.scene.shape.Sphere;
 import com.jme3.system.AppSettings;
 import com.jme3.texture.Texture;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import meshlib.conversion.LineExport;
+import meshlib.operator.skeleton.SkeletonVisualization;
 import meshlib.operator.skeleton.StraightSkeleton;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
+import meshlib.util.Gizmo;
 
 public class PolygonEditor extends SimpleApplication {
     private static final String ACT_ADD_POINT    = "ACT_ADD_POINT";
@@ -39,21 +45,23 @@ public class PolygonEditor extends SimpleApplication {
 
     private static final String DEFAULT_EXPORT_PATH = "F:/jme/jBMesh/last.points";
     //private static final String IMPORT_PATH = "";
-    private static final String IMPORT_PATH = "F:/jme/jBMesh/bug1.points";
+    private static final String IMPORT_PATH = "F:/jme/jBMesh/bug4-2.points";
 
     private static final float BG_SIZE = 5000;
     private Geometry bg;
 
     private final Node pointNode = new Node("Points");
     private final Mesh pointMesh = new Sphere(8, 16, 0.1f);
+    private final Mesh nodeMesh  = new Sphere(8, 16, 0.03f);
     private Material pointMat;
+    private Material nodeMat;
     private BitmapFont font;
 
     private final Plane plane;
     private final List<Vector2f> points = new ArrayList<>();
 
-    private static final float SKEL_DISTANCE_STEP = 0.04f;
-    private float skeletonDistance = 0.0f;
+    private static final float SKEL_DISTANCE_STEP = 0.01f;
+    private float skeletonDistance = -0.0f;
 
 
     private PolygonEditor() {
@@ -69,7 +77,10 @@ public class PolygonEditor extends SimpleApplication {
         setupBackground();
 
         pointMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        pointMat.setColor("Color", new ColorRGBA(1.0f, 0.0f, 0.0f, 1.0f));
+        pointMat.setColor("Color", ColorRGBA.Red);
+
+        nodeMat = pointMat.clone();
+        nodeMat.setColor("Color", ColorRGBA.Black);
 
         font = assetManager.loadFont("Interface/Fonts/Default.fnt");
 
@@ -79,8 +90,12 @@ public class PolygonEditor extends SimpleApplication {
         inputManager.addMapping(ACT_DEC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
         inputManager.addMapping(ACT_RESET_DISTANCE, new KeyTrigger(KeyInput.KEY_0));
         inputManager.addListener(new ClickHandler(), ACT_ADD_POINT, ACT_RESET_POINTS, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE);
+        inputManager.addRawInputListener(new NumberListener());
 
         rootNode.attachChild(pointNode);
+
+        Gizmo gizmo = new Gizmo(assetManager, "", 1.0f);
+        rootNode.attachChild(gizmo);
 
         if(!IMPORT_PATH.isEmpty())
             importPoints(IMPORT_PATH);
@@ -157,17 +172,26 @@ public class PolygonEditor extends SimpleApplication {
             skeleton.setDistance(skeletonDistance);
             skeleton.apply(face);
 
-            BMesh skeletonBMesh = skeleton.createStraightSkeletonVis();
+            SkeletonVisualization skelVis = skeleton.getVisualization();
+
+            BMesh skeletonBMesh = skelVis.createStraightSkeletonVis();
             pointNode.attachChild( makeGeom(skeletonBMesh, ColorRGBA.Yellow) );
 
             /*BMesh mappingMesh = skeleton.createMappingVis();
             node.attachChild( makeGeom(mappingMesh, assetManager) );*/
 
-            BMesh scaledMesh = skeleton.createMovingNodesVis();
+            BMesh scaledMesh = skelVis.createMovingNodesVis();
             pointNode.attachChild( makeGeom(scaledMesh, ColorRGBA.Cyan) );
 
-            BMesh bisectorMesh = skeleton.createBisectorVis();
+            BMesh bisectorMesh = skelVis.createBisectorVis();
             pointNode.attachChild( makeGeom(bisectorMesh, ColorRGBA.Green) );
+
+            for(Vector3f nodePos : skelVis.getMovingNodesPos()) {
+                Geometry geom = new Geometry("MovingNode", nodeMesh);
+                geom.setMaterial(nodeMat);
+                geom.setLocalTranslation(nodePos);
+                pointNode.attachChild(geom);
+            }
         }
     }
 
@@ -208,6 +232,7 @@ public class PolygonEditor extends SimpleApplication {
 
     private void importPoints(String file) {
         points.clear();
+        skeletonDistance = 0;
 
         try(BufferedReader reader = new BufferedReader(new FileReader(file))) {
             for(String line; (line = reader.readLine()) != null; ) {
@@ -273,6 +298,41 @@ public class PolygonEditor extends SimpleApplication {
                     break;
             }
         }
+    }
+
+
+    private class NumberListener implements RawInputListener {
+        @Override
+        public void onKeyEvent(KeyInputEvent evt) {
+            int c = evt.getKeyCode() - KeyInput.KEY_1 + 1;
+            if(c >= 1 && c <= 9) {
+                String path = "F:/jme/jBMesh/bug" + c + ".points";
+                if(Files.exists(Paths.get(path)))
+                    importPoints(path);
+            }
+        }
+
+
+        @Override
+        public void beginInput() {}
+
+        @Override
+        public void endInput() {}
+
+        @Override
+        public void onJoyAxisEvent(JoyAxisEvent evt) {}
+
+        @Override
+        public void onJoyButtonEvent(JoyButtonEvent evt) {}
+
+        @Override
+        public void onMouseMotionEvent(MouseMotionEvent evt) {}
+
+        @Override
+        public void onMouseButtonEvent(MouseButtonEvent evt) {}
+
+        @Override
+        public void onTouchEvent(TouchEvent evt) {}
     }
 
 

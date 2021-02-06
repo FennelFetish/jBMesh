@@ -8,7 +8,7 @@ class MovingNode {
     public MovingNode next = null;
     public MovingNode prev = null;
 
-    public SkeletonNode node;
+    public SkeletonNode skelNode;
     public final Vector2f bisector = new Vector2f(); // Length determines speed
     public float edgeLengthChange = 0; // Change amount when shrinking. Outgoing edge from this vertex, counterclock-wise.
     public boolean reflex = false;
@@ -33,8 +33,8 @@ class MovingNode {
         if(next.next == this)
             return true;
 
-        Vector2f vPrev = prev.node.p.subtract(node.p).normalizeLocal();
-        Vector2f vNext = next.node.p.subtract(node.p).normalizeLocal();
+        Vector2f vPrev = prev.skelNode.p.subtract(skelNode.p).normalizeLocal();
+        Vector2f vNext = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
 
         System.out.println(this + " vPrev: " + vPrev);
         System.out.println(this + " vNext: " + vNext);
@@ -87,7 +87,7 @@ class MovingNode {
 
 
     public void calcEdgeLengthChange() {
-        Vector2f vDiff = next.node.p.subtract(node.p).normalizeLocal();
+        Vector2f vDiff = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
         edgeLengthChange = bisector.dot(vDiff);
 
         vDiff.negateLocal();

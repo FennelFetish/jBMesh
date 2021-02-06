@@ -13,6 +13,9 @@ import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 
 public class PanZoomState extends BaseAppState {
+    private static final int MOUSE_BACK = 3;
+    private static final int MOUSE_FORWARD = 4;
+
     private static final String ACT_PAN = "ACTION_PAN";
     private static final String ACT_ZOOM_IN = "ACT_ZOOM_IN";
     private static final String ACT_ZOOM_OUT = "ACT_ZOOM_OUT";
@@ -47,8 +50,8 @@ public class PanZoomState extends BaseAppState {
         inputManager.addMapping(ACT_PAN, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
         //inputManager.addMapping(ACT_ZOOM_IN, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
         //inputManager.addMapping(ACT_ZOOM_OUT, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
-        inputManager.addMapping(ACT_ZOOM_IN, new KeyTrigger(KeyInput.KEY_ADD));
-        inputManager.addMapping(ACT_ZOOM_OUT, new KeyTrigger(KeyInput.KEY_SUBTRACT));
+        inputManager.addMapping(ACT_ZOOM_IN, new KeyTrigger(KeyInput.KEY_ADD), new MouseButtonTrigger(MOUSE_FORWARD));
+        inputManager.addMapping(ACT_ZOOM_OUT, new KeyTrigger(KeyInput.KEY_SUBTRACT), new MouseButtonTrigger(MOUSE_BACK));
 
         inputHandler = new InputHandler();
         inputManager.addListener(inputHandler, ACT_PAN, ACT_ZOOM_IN, ACT_ZOOM_OUT);
