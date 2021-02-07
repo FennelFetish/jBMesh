@@ -9,6 +9,10 @@ class SkeletonNode {
     public final List<SkeletonNode> outgoingEdges = new ArrayList<>(1);
     public final List<SkeletonNode> incomingEdges = new ArrayList<>(2);
 
+
+    SkeletonNode() {}
+
+
     public void addEdge(SkeletonNode target) {
         outgoingEdges.add(target);
         target.incomingEdges.add(this);

@@ -22,6 +22,7 @@ import meshlib.conversion.DebugMeshExport;
 import meshlib.conversion.LineExport;
 import meshlib.operator.ExtrudeFace;
 import meshlib.operator.PolygonOffset;
+import meshlib.operator.skeleton.SkeletonVisualization;
 import meshlib.operator.skeleton.StraightSkeleton;
 import meshlib.structure.BMesh;
 import meshlib.structure.Face;
@@ -183,13 +184,15 @@ public class MainBisector extends SimpleApplication implements ActionListener {
         Geometry geomOrig = makeGeom(bmesh, assetManager);
         node.attachChild(geomOrig);
 
-        BMesh skeletonBMesh = skeleton.createStraightSkeletonVis();
+        SkeletonVisualization skelVis = skeleton.getVisualization();
+
+        BMesh skeletonBMesh = skelVis.createStraightSkeletonVis();
         node.attachChild( makeGeom(skeletonBMesh, assetManager) );
 
         /*BMesh mappingMesh = skeleton.createMappingVis();
         node.attachChild( makeGeom(mappingMesh, assetManager) );*/
 
-        BMesh scaledMesh = skeleton.createMovingNodesVis();
+        BMesh scaledMesh = skelVis.createMovingNodesVis();
         node.attachChild( makeGeom(scaledMesh, assetManager, ColorRGBA.Cyan) );
     }
 

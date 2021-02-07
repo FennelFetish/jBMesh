@@ -31,15 +31,10 @@ public class StraightSkeleton {
 
     private PlanarCoordinateSystem coordSys;
     private final ArrayList<SkeletonNode> initialNodes = new ArrayList<>();
-    private final ArrayList<MovingNode> movingNodes = new ArrayList<>();
+    //private final ArrayList<MovingNode> movingNodes = new ArrayList<>();
+    //private final PriorityQueue<SkeletonEvent> eventQueue = new PriorityQueue<>();
 
-    // TODO: This mapping adds the functionality for scaling polygons.
-    //       It's not directly related to straight skeleton.
-    //       --> Move to separate class?
-    //       And this map is not needed. The mapping already exists in directed skeleton graph.
-    private final Map<Vertex, SkeletonNode> vertexMap = new HashMap<>();
-
-    private final PriorityQueue<SkeletonEvent> eventQueue = new PriorityQueue<>();
+    private final SkeletonContext ctx = new SkeletonContext();
 
 
 
@@ -67,14 +62,17 @@ public class StraightSkeleton {
 
         // TODO: Remove duplicate vertices at same positions (or leave up to user?)
 
+        ctx.reset(distanceSign);
+
         Vector3f n = faceOps.normal(face);
         coordSys = new PlanarCoordinateSystem(propPosition.get(vertices.get(0)), propPosition.get(vertices.get(1)), n);
 
         project(vertices);
         calcAllBisectors();
 
-        eventQueue.clear();
+        //eventQueue.clear();
         createAllEdgeEvents();
+        createAllSplitEvents();
 
         float distance = initialDistance;
         while(Math.abs(distance) > EPSILON) {
@@ -85,7 +83,9 @@ public class StraightSkeleton {
 
 
     private float loop(float distance) {
-        SkeletonEvent event = eventQueue.poll();
+        //ctx.printEvents();
+
+        SkeletonEvent event = ctx.getQueue().poll();
         if(event == null) {
             scale(distance * distanceSign);
             System.out.println("no event, loop ended");
@@ -102,28 +102,26 @@ public class StraightSkeleton {
 
         // Reduce time of events
         // TODO: Don't change time of events. Instead, keep track of used time so far?
-        for(SkeletonEvent remainingEvent : eventQueue) {
+        for(SkeletonEvent remainingEvent : ctx.getQueue()) {
             remainingEvent.time -= event.time;
-            System.out.println("subtracting from " + remainingEvent + " time: " + event.time + ", now: " + remainingEvent.time);
+            //System.out.println("subtracting from " + remainingEvent + " time: " + event.time + ", now: " + remainingEvent.time);
         }
 
         scale(event.time * distanceSign);
-        event.handle(movingNodes, eventQueue);
+        event.handle(ctx);
         return distance - event.time;
     }
 
 
     private void project(List<Vertex> vertices) {
-        vertexMap.clear();
         initialNodes.clear();
         initialNodes.ensureCapacity(vertices.size());
 
-        movingNodes.clear();
-        movingNodes.ensureCapacity(vertices.size());
+        //movingNodes.clear();
+        ctx.movingNodes.ensureCapacity(vertices.size());
 
         Vector3f vertexPos = new Vector3f();
 
-        int nextNodeId = 1;
         for(Vertex vertex : vertices) {
             propPosition.get(vertex, vertexPos);
 
@@ -133,35 +131,32 @@ public class StraightSkeleton {
             initialNodes.add(initialNode);
 
             // Create moving node
-            MovingNode movingNode = new MovingNode(nextNodeId++);
+            MovingNode movingNode = ctx.createMovingNode();
             movingNode.skelNode = new SkeletonNode();
             movingNode.skelNode.p.set(initialNode.p);
             initialNode.addEdge(movingNode.skelNode);
-
-            movingNodes.add(movingNode);
-            vertexMap.put(vertex, movingNode.skelNode);
         }
     }
 
 
     private void calcAllBisectors() {
-        final int numVertices = movingNodes.size();
-        for(MovingNode node : movingNodes) {
+        final int numVertices = ctx.movingNodes.size();
+        for(MovingNode node : ctx.movingNodes) {
             node.edgeLengthChange = 0;
         }
 
-        MovingNode prev = movingNodes.get(numVertices-1);
-        MovingNode current = movingNodes.get(0);
+        MovingNode prev = ctx.movingNodes.get(numVertices-1);
+        MovingNode current = ctx.movingNodes.get(0);
 
         for(int i=0; i<numVertices; ++i) {
             int nextIndex = (i+1) % numVertices;
-            MovingNode next = movingNodes.get(nextIndex);
+            MovingNode next = ctx.movingNodes.get(nextIndex);
 
             // Link nodes
             current.next = next;
             current.prev = prev;
 
-            current.calcBisector();
+            current.calcBisector(distanceSign);
 
             // Next iteration
             prev = current;
@@ -171,16 +166,10 @@ public class StraightSkeleton {
 
 
     private void scale(float dist) {
-        if(dist == 0) {
-            //System.out.println("zero dist, not scaling");
-            //return;
-            System.out.println("zero dist, scaling anyway");
-        }
-
-        System.out.println("scaling " + movingNodes.size() + " nodes by " + dist);
+        System.out.println("scaling " + ctx.movingNodes.size() + " nodes by " + dist);
         Vector2f dir = new Vector2f();
 
-        for(MovingNode node : movingNodes) {
+        for(MovingNode node : ctx.movingNodes) {
             dir.set(node.bisector).multLocal(dist);
             node.skelNode.p.addLocal(dir);
 
@@ -195,11 +184,29 @@ public class StraightSkeleton {
         /*if(movingNodes.size() < 3)
             return;*/
 
-        for(MovingNode current : movingNodes) {
+        for(MovingNode current : ctx.movingNodes) {
             if(sameSign(distanceSign, current.prev.edgeLengthChange))
-                eventQueue.add(new EdgeEvent(current.prev, current));
+                ctx.enqueue(new EdgeEvent(current.prev, current));
         }
     }
+
+    private void createAllSplitEvents() {
+        for(MovingNode current : ctx.movingNodes) {
+            if(!current.isReflex())
+                continue;
+
+            MovingNode start = current.next;
+            MovingNode end = current.prev.prev;
+
+            MovingNode op0 = start;
+            while(op0 != end) {
+                SplitEvent splitEvent = new SplitEvent(current, op0, op0.next, distanceSign);
+                ctx.enqueue(splitEvent);
+                op0 = op0.next;
+            }
+        }
+    }
+
 
     private static boolean sameSign(float a, float b) {
         return (a >= 0) ^ (b < 0);
@@ -211,6 +218,6 @@ public class StraightSkeleton {
 
 
     public SkeletonVisualization getVisualization() {
-        return new SkeletonVisualization(coordSys, initialNodes, movingNodes, distanceSign);
+        return new SkeletonVisualization(coordSys, initialNodes, ctx);
     }
 }

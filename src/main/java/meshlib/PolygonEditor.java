@@ -44,8 +44,8 @@ public class PolygonEditor extends SimpleApplication {
     private static final String ACT_RESET_DISTANCE = "ACT_RESET_DISTANCE";
 
     private static final String DEFAULT_EXPORT_PATH = "F:/jme/jBMesh/last.points";
-    //private static final String IMPORT_PATH = "";
-    private static final String IMPORT_PATH = "F:/jme/jBMesh/bug4-2.points";
+    private static final String IMPORT_PATH = "";
+    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bug10.points";
 
     private static final float BG_SIZE = 5000;
     private Geometry bg;
@@ -343,6 +343,7 @@ public class PolygonEditor extends SimpleApplication {
         settings.setFrameRate(200);
         settings.setSamples(8);
         settings.setGammaCorrection(true);
+        settings.setResizable(true);
 
         PolygonEditor app = new PolygonEditor();
         app.setSettings(settings);
