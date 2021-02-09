@@ -45,7 +45,7 @@ public class PolygonEditor extends SimpleApplication {
 
     private static final String DEFAULT_EXPORT_PATH = "F:/jme/jBMesh/last.points";
     private static final String IMPORT_PATH = "";
-    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bug10.points";
+    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bug12.points";
 
     private static final float BG_SIZE = 5000;
     private Geometry bg;
@@ -60,7 +60,7 @@ public class PolygonEditor extends SimpleApplication {
     private final Plane plane;
     private final List<Vector2f> points = new ArrayList<>();
 
-    private static final float SKEL_DISTANCE_STEP = 0.01f;
+    private static final float SKEL_DISTANCE_STEP = 0.02f;
     private float skeletonDistance = -0.0f;
 
 
@@ -164,27 +164,19 @@ public class PolygonEditor extends SimpleApplication {
 
         if(points.size() >= 3) {
             Face face = bmesh.createFace(vertices);
-            pointNode.attachChild(makeGeom(bmesh, new ColorRGBA(1, 0, 0, 1)));
+            pointNode.attachChild(makeGeom(bmesh, ColorRGBA.Red));
 
-            //StraightSkeleton skeleton = new StraightSkeleton(bmesh);
-            //StraightSkeletonOld skeleton = new StraightSkeletonOld(bmesh);
             StraightSkeleton skeleton = new StraightSkeleton(bmesh);
             skeleton.setDistance(skeletonDistance);
             skeleton.apply(face);
 
             SkeletonVisualization skelVis = skeleton.getVisualization();
-
-            BMesh skeletonBMesh = skelVis.createStraightSkeletonVis();
-            pointNode.attachChild( makeGeom(skeletonBMesh, ColorRGBA.Yellow) );
+            pointNode.attachChild( makeGeom(skelVis.createStraightSkeletonVis(), ColorRGBA.Yellow) );
+            pointNode.attachChild( makeGeom(skelVis.createMovingNodesVis(), ColorRGBA.Cyan) );
+            pointNode.attachChild( makeGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
 
             /*BMesh mappingMesh = skeleton.createMappingVis();
             node.attachChild( makeGeom(mappingMesh, assetManager) );*/
-
-            BMesh scaledMesh = skelVis.createMovingNodesVis();
-            pointNode.attachChild( makeGeom(scaledMesh, ColorRGBA.Cyan) );
-
-            BMesh bisectorMesh = skelVis.createBisectorVis();
-            pointNode.attachChild( makeGeom(bisectorMesh, ColorRGBA.Green) );
 
             for(Vector3f nodePos : skelVis.getMovingNodesPos()) {
                 Geometry geom = new Geometry("MovingNode", nodeMesh);
@@ -340,6 +332,7 @@ public class PolygonEditor extends SimpleApplication {
     public static void main(String[] args) {
         AppSettings settings = new AppSettings(true);
         settings.setResolution(1280, 720);
+        //settings.setResolution(1900, 1000);
         settings.setFrameRate(200);
         settings.setSamples(8);
         settings.setGammaCorrection(true);

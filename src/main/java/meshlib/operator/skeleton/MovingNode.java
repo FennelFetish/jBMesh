@@ -13,6 +13,8 @@ class MovingNode {
     public float edgeLengthChange = 0; // Change amount when shrinking. Outgoing edge from this vertex, counterclock-wise.
     private boolean reflex = false;
 
+    // TODO: We could precalculate and store edgeDirection here because it stays the same until the node (or an adjacent node) is involved in event.
+
 
     MovingNode(String id) {
         this.id = id;
@@ -32,19 +34,20 @@ class MovingNode {
     }
 
 
+    // TODO: Include distanceSign into bisector?
     /**
-     * @return Degenerated?
+     * @return True if bisector is valid and polygon is not degenerated at this corner.
      */
     public boolean calcBisector(float distanceSign) {
         if(next.next == this)
-            return true;
+            return false;
 
         Vector2f vPrev = prev.skelNode.p.subtract(skelNode.p).normalizeLocal();
         Vector2f vNext = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
 
         // Check if edges point in opposite directions
         float cos = vPrev.dot(vNext);
-        if(cos < -0.999f) {
+        if(cos < SkeletonContext.EPSILON_MINUS_ONE) {
             // Rotate vPrev by 90° counterclockwise
             bisector.x = -vPrev.y;
             bisector.y = vPrev.x;
@@ -52,15 +55,13 @@ class MovingNode {
         }
         else {
             bisector.set(vPrev).addLocal(vNext).normalizeLocal();
-
-            float sin = vPrev.determinant(bisector); // cross(vPrev, bisector).length() -> but determinant can be negative!
-            //System.out.println(this + " sin = " + sin);
+            float sin = vPrev.determinant(bisector);
 
             // Check if degenerated
-            if(Math.abs(sin) < 0.001f) {
+            if(Math.abs(sin) < SkeletonContext.EPSILON) {
                 bisector.zero();
                 reflex = false;
-                return true;
+                return false;
             }
             else {
                 float speed = 1.0f / sin;
@@ -76,7 +77,7 @@ class MovingNode {
             }
         }
 
-        return false;
+        return true;
     }
 
 
@@ -84,8 +85,8 @@ class MovingNode {
         Vector2f vDiff = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
         edgeLengthChange = bisector.dot(vDiff);
 
-        vDiff.negateLocal();
-        edgeLengthChange += next.bisector.dot(vDiff);
+        // Equivalent to: edgeLengthChange += next.bisector.dot(vDiff.negate());
+        edgeLengthChange -= next.bisector.dot(vDiff);
     }
 
 

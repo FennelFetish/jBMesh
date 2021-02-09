@@ -22,29 +22,25 @@ public class PanZoomState extends BaseAppState {
 
     private static final float ZOOM_FACTOR_STEP = 1.33f;
 
-    private float initialZ = 5;
+    private Vector3f initialPos = new Vector3f(18, 9, 5);
     private Camera cam;
 
     private Vector2f panStart = null;
     private InputHandler inputHandler;
 
 
-    public PanZoomState() {
-        this(5);
-    }
+    public PanZoomState() {}
 
     public PanZoomState(float initialZ) {
-        this.initialZ = initialZ;
+        initialPos.z = initialZ;
     }
 
 
     @Override
     protected void initialize(Application app) {
         cam = app.getCamera();
-        Vector3f loc = cam.getLocation();
-        loc.z = initialZ;
-        cam.setLocation(loc);
-        cam.lookAt(Vector3f.ZERO, Vector3f.UNIT_Y);
+        cam.setLocation(initialPos);
+        cam.lookAt(new Vector3f(initialPos.x, initialPos.y, 0), Vector3f.UNIT_Y);
 
         InputManager inputManager = app.getInputManager();
         inputManager.addMapping(ACT_PAN, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
