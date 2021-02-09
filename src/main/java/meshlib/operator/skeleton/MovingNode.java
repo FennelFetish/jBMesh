@@ -21,15 +21,7 @@ class MovingNode {
     }
 
 
-    public void reset() {
-        bisector.zero();
-        edgeLengthChange = 0;
-        reflex = false;
-    }
-
-
     public boolean isReflex() {
-        //return (distanceSign<0) == reflex;
         return reflex;
     }
 
@@ -88,11 +80,6 @@ class MovingNode {
         // Equivalent to: edgeLengthChange += next.bisector.dot(vDiff.negate());
         edgeLengthChange -= next.bisector.dot(vDiff);
     }
-
-
-    /*private boolean isInvalid(Vector2f v) {
-        return Float.isNaN(v.x) || Float.isInfinite(v.x);
-    }*/
 
 
     @Override

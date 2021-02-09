@@ -29,6 +29,8 @@ class SplitEvent extends SkeletonEvent {
         // (Component of 'reflexRelative' orthogonal to edgeDir)
         Vector2f reflexRelative = reflexNode.skelNode.p.subtract(op0.skelNode.p);
         float sideDistance = reflexRelative.determinant(edgeDir);
+        if(sideDistance == 0)
+            return 0;
 
         // Negative speed means distance between reflex vertex and opposite edge increases with time
         if(correctSpeed(approachSpeed, sideDistance) <= 0)
@@ -39,9 +41,9 @@ class SplitEvent extends SkeletonEvent {
         return time;
     }
 
-    private static float correctSpeed(float approachSpeed, float side) {
-        // Adjust speed to side
-        return (side > 0) ? -approachSpeed : approachSpeed;
+    private static float correctSpeed(float approachSpeed, float sideDistance) {
+        // Adjust speed to side.
+        return (sideDistance > 0) ? -approachSpeed : approachSpeed;
     }
 
 
@@ -80,34 +82,6 @@ class SplitEvent extends SkeletonEvent {
 
     @Override
     public void handle(SkeletonContext ctx) {
-        // Check if reflexNode is between edge
-        Vector2f edge = op1.skelNode.p.subtract(op0.skelNode.p);
-        float edgeLength = edge.length();
-        Vector2f edgeDir = edge.divideLocal(edgeLength);
-        Vector2f reflexRelative = reflexNode.skelNode.p.subtract(op0.skelNode.p);
-        float t = reflexRelative.dot(edgeDir);
-
-        if(t < 0.0f-SkeletonContext.EPSILON || t > edgeLength+SkeletonContext.EPSILON) {
-        //if(t < 0.0f || t > edgeLength) {
-            System.out.println("not on edge");
-            assert false;
-            return;
-        }
-
-
-        // TODO: 'bug8' (when growing): REFLEX VERTEX MovingNode{5} NOT ON EDGE 2-3
-        // TODO: This doesn't happen anymore? But leave it here as assertion
-        Vector2f projection = edgeDir.mult(t).addLocal(op0.skelNode.p);
-        float projDist = reflexNode.skelNode.p.distanceSquared(projection);
-        if(projDist > SkeletonContext.EPSILON_SQUARED) {
-            System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> REFLEX VERTEX " + reflexNode + " NOT ON EDGE " + op0.id + "-" + op1.id);
-            assert false;
-            return;
-        }
-
-
-        assert op0.next == op1;
-        assert op1.prev == op0;
         ctx.abortEvents(op0, op1);
 
         MovingNode node0 = reflexNode;

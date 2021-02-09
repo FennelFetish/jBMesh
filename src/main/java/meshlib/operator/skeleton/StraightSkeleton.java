@@ -42,7 +42,7 @@ public class StraightSkeleton {
 
 
     public void apply(Face face) {
-        System.out.println("===== Apply StraightSkeleton, distance: " + (offsetDistance*distanceSign) + " =====");
+        //System.out.println("===== Apply StraightSkeleton, distance: " + (offsetDistance*distanceSign) + " =====");
         List<Vertex> vertices = face.getVertices();
         assert vertices.size() >= 3;
 
@@ -53,45 +53,20 @@ public class StraightSkeleton {
 
         project(vertices);
         initBisectors();
-        initEdgeEvents();
-        initSplitEvents();
 
-        loop();
+        if(offsetDistance != 0) {
+            initEdgeEvents();
+            initSplitEvents();
 
-        /*float time = 0;
-        while(time < offsetDistance) {
-            System.out.println("time = " + time);
-            time = loop(time);
-        }*/
-    }
-
-
-    private float loop(float time) {
-        //ctx.printEvents();
-
-        SkeletonEvent event = ctx.pollQueue();
-        if(event == null) {
-            scale((offsetDistance - time) * distanceSign);
-            return offsetDistance; // End loop
+            loop();
         }
-
-        scale((event.time - time) * distanceSign);
-        ctx.time = event.time;
-
-        System.out.println("{{ handle: " + event);
-        event.handle(ctx);
-        System.out.println("}} handled");
-
-        return event.time;
     }
 
 
     private void loop() {
         ctx.time = 0;
-        //while(ctx.time < offsetDistance) {
-        while(true) {
-            System.out.println("time = " + ctx.time);
 
+        while(true) {
             SkeletonEvent event = ctx.pollQueue();
             if(event == null) {
                 scale((offsetDistance - ctx.time) * distanceSign);
@@ -101,9 +76,9 @@ public class StraightSkeleton {
             scale((event.time - ctx.time) * distanceSign);
             ctx.time = event.time;
 
-            System.out.println("{{ handle: " + event);
+            //System.out.println("{{ handle: " + event);
             event.handle(ctx);
-            System.out.println("}} handled");
+            //System.out.println("}} handled");
         }
     }
 
@@ -111,23 +86,11 @@ public class StraightSkeleton {
     private void project(List<Vertex> vertices) {
         initialNodes.clear();
         initialNodes.ensureCapacity(vertices.size());
-
-        //movingNodes.clear();
         ctx.movingNodes.ensureCapacity(vertices.size());
 
         Vector3f vertexPos = new Vector3f();
-        Vector3f last = propPosition.get(vertices.get(vertices.size()-1));
-
         for(Vertex vertex : vertices) {
             propPosition.get(vertex, vertexPos);
-
-            float distSquared = last.distanceSquared(vertexPos);
-            last.set(vertexPos);
-            if(distSquared < SkeletonContext.EPSILON_SQUARED) {
-                System.out.println("Ignoring duplicate vertex at " + vertexPos);
-                // TODO: This messes with MovingNode IDs. They don't match text of original points in visualization.
-                continue;
-            }
 
             // Create initial node
             SkeletonNode initialNode = new SkeletonNode();
@@ -144,13 +107,15 @@ public class StraightSkeleton {
 
 
     private void initBisectors() {
-        final int numVertices = ctx.movingNodes.size();
+        int numVertices = ctx.movingNodes.size();
         for(MovingNode node : ctx.movingNodes) {
             node.edgeLengthChange = 0;
         }
 
         MovingNode prev = ctx.movingNodes.get(numVertices-1);
         MovingNode current = ctx.movingNodes.get(0);
+
+        List<MovingNode> degenerates = new ArrayList<>();
 
         for(int i=0; i<numVertices; ++i) {
             int nextIndex = (i+1) % numVertices;
@@ -160,32 +125,34 @@ public class StraightSkeleton {
             current.next = next;
             current.prev = prev;
 
-            // TODO: check if valid?
-            current.calcBisector(distanceSign);
+            boolean validBisector = current.calcBisector(distanceSign);
+            if(!validBisector)
+                degenerates.add(current);
 
             // Next iteration
             prev = current;
             current = next;
         }
+
+        for(MovingNode degenerate : degenerates) {
+            if(degenerate.next != null)
+                SkeletonEvent.handle(degenerate, ctx);
+        }
     }
 
 
     private void scale(float dist) {
-        if(dist == 0) {
-            System.out.println("=> scaling = 0, skip");
+        if(dist == 0)
             return;
-        }
 
-        System.out.println("=> scaling " + ctx.movingNodes.size() + " nodes by " + dist);
+        //System.out.println("=> scaling " + ctx.movingNodes.size() + " nodes by " + dist);
         Vector2f dir = new Vector2f();
 
         for(MovingNode node : ctx.movingNodes) {
             dir.set(node.bisector).multLocal(dist);
             node.skelNode.p.addLocal(dir);
 
-            if(isInvalid(node.skelNode.p)) {
-                System.out.println("invalid after scale: bisector=" + node.bisector + ", dir=" + dir);
-            }
+            assert !isInvalid(node.skelNode.p) : "Invalid position after scale: bisector=" + node.bisector + ", dir=" + dir;
         }
     }
 

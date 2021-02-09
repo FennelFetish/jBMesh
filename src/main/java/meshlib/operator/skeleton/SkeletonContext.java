@@ -7,7 +7,7 @@ import java.util.PriorityQueue;
 class SkeletonContext {
     static final float EPSILON = 0.0001f;
     static final float EPSILON_SQUARED = EPSILON * EPSILON;
-    static final float EPSILON_MINUS_ONE = -1f + EPSILON; // 0.999
+    static final float EPSILON_MINUS_ONE = EPSILON - 1f; // 0.9999
 
     private int nextMovingNodeId = 1;
 
@@ -52,7 +52,6 @@ class SkeletonContext {
     }
 
     protected void removeMovingNode(MovingNode node) {
-        System.out.println("removing MovingNode" + node.id);
         node.next = null;
         node.prev = null;
         abortEvents(node);
@@ -69,7 +68,7 @@ class SkeletonContext {
     }
 
     private void enqueue(SkeletonEvent event) {
-        assert event.time >= time;
+        assert event.time >= time : "time: " + time + ", event.time: " + event.time + " // " + event;
         eventQueue.offer(event);
     }
 

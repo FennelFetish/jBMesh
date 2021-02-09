@@ -4,14 +4,12 @@ import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 
 public class PlanarCoordinateSystem {
-    //private final Vector3f n = new Vector3f();
     private final Vector3f p = new Vector3f();
     private final Vector3f x = new Vector3f();
     private final Vector3f y = new Vector3f();
 
 
     public PlanarCoordinateSystem(Vector3f p0, Vector3f p1, Vector3f n) {
-        //this.n.set(n);
         this.p.set(p0);
 
         x.set(p1).subtractLocal(p0).normalizeLocal();
