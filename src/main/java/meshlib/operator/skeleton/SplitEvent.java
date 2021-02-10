@@ -70,6 +70,24 @@ class SplitEvent extends SkeletonEvent {
 
 
     @Override
+    protected int compareToEvent(SkeletonEvent o) {
+        if(o instanceof SplitEvent) {
+            SplitEvent other = (SplitEvent) o;
+            int cmp = String.CASE_INSENSITIVE_ORDER.compare(reflexNode.id, other.reflexNode.id);
+            if(cmp != 0)
+                return cmp;
+            cmp = String.CASE_INSENSITIVE_ORDER.compare(op0.id, other.op0.id);
+            if(cmp != 0)
+                return cmp;
+            return String.CASE_INSENSITIVE_ORDER.compare(op1.id, other.op1.id);
+        }
+        else {
+            return 1; // EdgeEvents first
+        }
+    }
+
+
+    @Override
     protected boolean shouldAbort(MovingNode adjacentNode) {
         return reflexNode == adjacentNode || op0 == adjacentNode || op1 == adjacentNode;
     }
@@ -89,7 +107,8 @@ class SplitEvent extends SkeletonEvent {
         MovingNode reflexPrev = reflexNode.prev;
 
         MovingNode node1 = ctx.createMovingNode(reflexNode.id + "+");
-        // Both MovingNodes use same SkeletonNode! If they receive a valid bisector, a new SkeletonNode is made for them.
+        // Both MovingNodes use same SkeletonNode which will stay at this place.
+        // If they receive a valid bisector, a new SkeletonNode is made for them later.
         node1.skelNode = node0.skelNode;
 
         // Update node0 links

@@ -36,8 +36,18 @@ public class PanZoomState extends BaseAppState {
     }
 
 
+    public void setPos(Vector2f pos) {
+        initialPos.x = pos.x;
+        initialPos.y = pos.y;
+
+        if(cam != null)
+            cam.setLocation(initialPos);
+    }
+
+
     @Override
     protected void initialize(Application app) {
+        System.out.println("PanZoomState initialize");
         cam = app.getCamera();
         cam.setLocation(initialPos);
         cam.lookAt(new Vector3f(initialPos.x, initialPos.y, 0), Vector3f.UNIT_Y);

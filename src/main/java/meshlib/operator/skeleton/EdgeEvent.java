@@ -22,6 +22,21 @@ class EdgeEvent extends SkeletonEvent {
 
 
     @Override
+    protected int compareToEvent(SkeletonEvent o) {
+        if(o instanceof EdgeEvent) {
+            EdgeEvent other = (EdgeEvent) o;
+            int cmp = String.CASE_INSENSITIVE_ORDER.compare(n0.id, other.n0.id);
+            if(cmp != 0)
+                return cmp;
+            return String.CASE_INSENSITIVE_ORDER.compare(n1.id, other.n1.id);
+        }
+        else {
+            return -1; // EdgeEvents first
+        }
+    }
+
+
+    @Override
     protected boolean shouldAbort(MovingNode adjacentNode) {
         return n0 == adjacentNode || n1 == adjacentNode;
     }

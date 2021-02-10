@@ -35,9 +35,11 @@ import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.Gizmo;
+import meshlib.util.Profiler;
 
 public class PolygonEditor extends SimpleApplication {
     private static final String ACT_ADD_POINT    = "ACT_ADD_POINT";
+    private static final String ACT_REMOVE_POINT = "ACT_REMOVE_POINT";
     private static final String ACT_RESET_POINTS = "ACT_RESET_POINTS";
     private static final String ACT_INC_DISTANCE = "ACT_INC_DISTANCE";
     private static final String ACT_DEC_DISTANCE = "ACT_DEC_DISTANCE";
@@ -45,7 +47,7 @@ public class PolygonEditor extends SimpleApplication {
 
     private static final String DEFAULT_EXPORT_PATH = "F:/jme/jBMesh/last.points";
     private static final String IMPORT_PATH = "";
-    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bug12.points";
+    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bug15.points";
 
     private static final float BG_SIZE = 5000;
     private Geometry bg;
@@ -60,8 +62,11 @@ public class PolygonEditor extends SimpleApplication {
     private final Plane plane;
     private final List<Vector2f> points = new ArrayList<>();
 
-    private static final float SKEL_DISTANCE_STEP = 0.02f;
-    private float skeletonDistance = -0.0f;
+    private static final float SKEL_DISTANCE_STEP = 0.05f;
+    private static final float DEFAULT_DISTANCE = 0.0f;
+    private float skeletonDistance = DEFAULT_DISTANCE;
+
+    private boolean snapToGrid = false;
 
 
     private PolygonEditor() {
@@ -85,11 +90,12 @@ public class PolygonEditor extends SimpleApplication {
         font = assetManager.loadFont("Interface/Fonts/Default.fnt");
 
         inputManager.addMapping(ACT_ADD_POINT, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        inputManager.addMapping(ACT_REMOVE_POINT, new KeyTrigger(KeyInput.KEY_DELETE));
         inputManager.addMapping(ACT_RESET_POINTS, new KeyTrigger(KeyInput.KEY_R));
         inputManager.addMapping(ACT_INC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
         inputManager.addMapping(ACT_DEC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
         inputManager.addMapping(ACT_RESET_DISTANCE, new KeyTrigger(KeyInput.KEY_0));
-        inputManager.addListener(new ClickHandler(), ACT_ADD_POINT, ACT_RESET_POINTS, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE);
+        inputManager.addListener(new ClickHandler(), ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE);
         inputManager.addRawInputListener(new NumberListener());
 
         rootNode.attachChild(pointNode);
@@ -128,7 +134,7 @@ public class PolygonEditor extends SimpleApplication {
     }
 
 
-    private void addPoint() {
+    private Vector2f pick() {
         Vector2f cursor = inputManager.getCursorPosition();
         Vector3f near = cam.getWorldCoordinates(cursor, 0.0f);
         Vector3f far = cam.getWorldCoordinates(cursor, 1.0f);
@@ -138,11 +144,29 @@ public class PolygonEditor extends SimpleApplication {
         Ray ray = new Ray(cam.getLocation(), dir);
         ray.intersectsWherePlane(plane, intersection);
 
-        // Snap to grid
-        intersection.x = Math.round(intersection.x);
-        intersection.y = Math.round(intersection.y);
+        if(snapToGrid) {
+            intersection.x = Math.round(intersection.x);
+            intersection.y = Math.round(intersection.y);
+        }
 
-        points.add(new Vector2f(intersection.x, intersection.y));
+        return new Vector2f(intersection.x, intersection.y);
+    }
+
+    private void addPoint() {
+        points.add(pick());
+        updateVis();
+        exportPoints(DEFAULT_EXPORT_PATH);
+    }
+
+    private void removePoint() {
+        final float e2 = 0.001f * 0.001f;
+        Vector2f pick = pick();
+        for(int i=0; i<points.size(); ++i) {
+            if(pick.distanceSquared(points.get(i)) < e2) {
+                points.remove(i);
+                break;
+            }
+        }
         updateVis();
         exportPoints(DEFAULT_EXPORT_PATH);
     }
@@ -168,21 +192,20 @@ public class PolygonEditor extends SimpleApplication {
 
             StraightSkeleton skeleton = new StraightSkeleton(bmesh);
             skeleton.setDistance(skeletonDistance);
-            skeleton.apply(face);
+
+            try(Profiler p = Profiler.start("StraightSkeleton.apply")) {
+                skeleton.apply(face);
+            }
 
             SkeletonVisualization skelVis = skeleton.getVisualization();
-            pointNode.attachChild( makeGeom(skelVis.createStraightSkeletonVis(), ColorRGBA.Yellow) );
+            pointNode.attachChild( makeGeom(skelVis.createSkeletonMappingVis(), ColorRGBA.Yellow) );
+            pointNode.attachChild( makeGeom(skelVis.createSkeletonDegeneracyVis(), ColorRGBA.Brown) );
             pointNode.attachChild( makeGeom(skelVis.createMovingNodesVis(), ColorRGBA.Cyan) );
             pointNode.attachChild( makeGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
+            //pointNode.attachChild( makeGeom(skelVis.createMappingVis(), ColorRGBA.Magenta) );
 
-            /*BMesh mappingMesh = skeleton.createMappingVis();
-            node.attachChild( makeGeom(mappingMesh, assetManager) );*/
-
-            for(Vector3f nodePos : skelVis.getMovingNodesPos()) {
-                Geometry geom = new Geometry("MovingNode", nodeMesh);
-                geom.setMaterial(nodeMat);
-                geom.setLocalTranslation(nodePos);
-                pointNode.attachChild(geom);
+            for(SkeletonVisualization.VisNode node : skelVis.getMovingNodes()) {
+                createMovingNodeVis(node.pos, node.name);
             }
         }
     }
@@ -204,19 +227,34 @@ public class PolygonEditor extends SimpleApplication {
         pointNode.attachChild(text);
     }
 
+    private void createMovingNodeVis(Vector3f v, String name) {
+        Geometry geom = new Geometry("Point", nodeMesh);
+        geom.setMaterial(nodeMat);
+        geom.setLocalTranslation(v);
+        pointNode.attachChild(geom);
+
+        BitmapText text = new BitmapText(font);
+        text.setText(name);
+        text.setSize(0.15f);
+        text.setColor(new ColorRGBA(0.0f, 0.6f, 0.6f, 1.0f));
+        text.setQueueBucket(RenderQueue.Bucket.Transparent);
+        text.setLocalTranslation(v);
+        text.move(0.05f, -0.05f, 0);
+        pointNode.attachChild(text);
+    }
+
 
     private Geometry makeGeom(BMesh bmesh, ColorRGBA color) {
         // TODO: Make util class "DebugLineExport"?
-        LineExport origExport = new LineExport(bmesh);
-        origExport.update();
-        Mesh mesh = origExport.getMesh();
+        LineExport export = new LineExport(bmesh);
+        export.update();
 
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat.setColor("Color", color);
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
         mat.getAdditionalRenderState().setLineWidth(2.0f);
 
-        Geometry geom = new Geometry("Geom", mesh);
+        Geometry geom = new Geometry("Geom", export.getMesh());
         geom.setMaterial(mat);
         return geom;
     }
@@ -224,7 +262,9 @@ public class PolygonEditor extends SimpleApplication {
 
     private void importPoints(String file) {
         points.clear();
-        skeletonDistance = 0;
+        skeletonDistance = DEFAULT_DISTANCE;
+
+        Vector2f center = new Vector2f();
 
         try(BufferedReader reader = new BufferedReader(new FileReader(file))) {
             for(String line; (line = reader.readLine()) != null; ) {
@@ -233,10 +273,16 @@ public class PolygonEditor extends SimpleApplication {
                 p.x = Float.parseFloat(split[0]);
                 p.y = Float.parseFloat(split[1]);
                 points.add(p);
+                center.addLocal(p);
             }
         }
         catch(IOException e) {
             e.printStackTrace();
+        }
+
+        if(!points.isEmpty()) {
+            center.divideLocal(points.size());
+            stateManager.getState(PanZoomState.class).setPos(center);
         }
 
         updateVis();
@@ -266,6 +312,10 @@ public class PolygonEditor extends SimpleApplication {
             switch(name) {
                 case ACT_ADD_POINT:
                     addPoint();
+                    break;
+
+                case ACT_REMOVE_POINT:
+                    removePoint();
                     break;
 
                 case ACT_RESET_POINTS:

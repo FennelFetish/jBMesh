@@ -9,6 +9,16 @@ import meshlib.structure.Vertex;
 import meshlib.util.PlanarCoordinateSystem;
 
 public class SkeletonVisualization {
+    public static class VisNode {
+        public final Vector3f pos = new Vector3f();
+        public final String name;
+
+        public VisNode(String name) {
+            this.name = name;
+        }
+    }
+
+
     private final PlanarCoordinateSystem coordSys;
     private final ArrayList<SkeletonNode> initialNodes ;
     private final SkeletonContext ctx;
@@ -21,16 +31,24 @@ public class SkeletonVisualization {
     }
 
 
-    public BMesh createStraightSkeletonVis() {
+    public BMesh createSkeletonMappingVis() {
+        return createStraightSkeletonVis(SkeletonNode.EdgeType.Mapping);
+    }
+
+    public BMesh createSkeletonDegeneracyVis() {
+        return createStraightSkeletonVis(SkeletonNode.EdgeType.Degeneracy);
+    }
+
+    private BMesh createStraightSkeletonVis(SkeletonNode.EdgeType edgeType) {
         BMesh bmesh = new BMesh();
         ExactHashDeduplication dedup = new ExactHashDeduplication(bmesh);
         Set<SkeletonNode> nodesDone = new HashSet<>();
 
         for(SkeletonNode node : initialNodes) {
-            straightSkeletonVis_addEdge(bmesh, dedup, nodesDone, node);
+            straightSkeletonVis_addEdge(bmesh, dedup, nodesDone, node, edgeType);
         }
 
-        System.out.println("Straight Skeleton Visualization: " + nodesDone.size() + " unique nodes");
+        //System.out.println("Straight Skeleton Visualization: " + nodesDone.size() + " unique nodes");
         return bmesh;
     }
 
@@ -46,19 +64,22 @@ public class SkeletonVisualization {
         return dedup.getOrCreateVertex(bmesh, coordSys.unproject(pos));
     }
 
-    private void straightSkeletonVis_addEdge(BMesh bmesh, ExactHashDeduplication dedup, Set<SkeletonNode> nodesDone, SkeletonNode src) {
+    private void straightSkeletonVis_addEdge(BMesh bmesh, ExactHashDeduplication dedup, Set<SkeletonNode> nodesDone, SkeletonNode src, SkeletonNode.EdgeType edgeType) {
         if(!nodesDone.add(src)) {
             //System.out.println("straightSkeletonVis: node duplicate at " + coordSys.unproject(src.p));
             return;
         }
 
         Vertex v0 = getVertex(bmesh, dedup, src.p);
-        for(SkeletonNode target : src.outgoingEdges) {
-            Vertex v1 = getVertex(bmesh, dedup, target.p);
-            if(v0 != v1 && v0.getEdgeTo(v1) == null)
-                bmesh.createEdge(v0, v1);
+        for(Map.Entry<SkeletonNode, SkeletonNode.EdgeType> entry : src.outgoingEdges.entrySet()) {
+            SkeletonNode target = entry.getKey();
+            if(entry.getValue() == edgeType) {
+                Vertex v1 = getVertex(bmesh, dedup, target.p);
+                if(v0 != v1 && v0.getEdgeTo(v1) == null)
+                    bmesh.createEdge(v0, v1);
+            }
 
-            straightSkeletonVis_addEdge(bmesh, dedup, nodesDone, target);
+            straightSkeletonVis_addEdge(bmesh, dedup, nodesDone, target, edgeType);
         }
     }
 
@@ -81,11 +102,8 @@ public class SkeletonVisualization {
     private void createMovingNodesVis(BMesh bmesh, MovingNode startNode, Set<MovingNode> nodesRemaining) {
         List<Vertex> vertices = new ArrayList<>();
 
-        //System.out.println("createMovingNodesVis: starting with " + startNode);
         MovingNode current = startNode;
         do {
-            //System.out.println("createMovingNodesVis: " + current);
-
             Vertex v = bmesh.createVertex( coordSys.unproject(current.skelNode.p) );
             vertices.add(v);
 
@@ -100,43 +118,15 @@ public class SkeletonVisualization {
     }
 
 
-    public BMesh createMovingNodesVis_old() {
-        BMesh bmesh = new BMesh();
-        if(ctx.movingNodes.isEmpty())
-            return bmesh;
-
-        List<Vertex> vertices = new ArrayList<>();
-
-        MovingNode start = ctx.movingNodes.get(0);
-        MovingNode current = start;
-        do {
-            Vertex v = bmesh.createVertex( coordSys.unproject(current.skelNode.p) );
-            vertices.add(v);
-
-            current = current.next;
-
-            if(current == null) {
-                System.out.println("NULL in StraightSkeletonNew.createMovingNodesVis()");
-                break;
-            }
-        } while(current != start);
-
-        for(int i=0; i<vertices.size(); ++i) {
-            int nextIndex = (i+1) % vertices.size();
-            bmesh.createEdge(vertices.get(i), vertices.get(nextIndex));
-        }
-
-        return bmesh;
-    }
-
-    public List<Vector3f> getMovingNodesPos() {
-        List<Vector3f> nodes = new ArrayList<>();
+    public List<VisNode> getMovingNodes() {
+        List<VisNode> nodes = new ArrayList<>();
         for(MovingNode movingNode : ctx.movingNodes) {
-            nodes.add( coordSys.unproject(movingNode.skelNode.p) );
+            VisNode node = new VisNode(movingNode.id);
+            coordSys.unproject(movingNode.skelNode.p, node.pos);
+            nodes.add(node);
         }
         return nodes;
     }
-
 
 
     public BMesh createBisectorVis() {
@@ -153,5 +143,41 @@ public class SkeletonVisualization {
         }
 
         return bmesh;
+    }
+
+
+    public BMesh createMappingVis() {
+        BMesh bmesh = new BMesh();
+
+        List<SkeletonNode> targets = new ArrayList<>();
+
+        for(SkeletonNode initial : initialNodes) {
+            targets.clear();
+            followGraph(initial, targets);
+
+            Vertex v0 = bmesh.createVertex( coordSys.unproject(initial.p) );
+            for(SkeletonNode target : targets) {
+                Vertex v1 = bmesh.createVertex( coordSys.unproject(target.p) );
+                bmesh.createEdge(v0, v1);
+            }
+        }
+
+        return bmesh;
+    }
+
+    private void followGraph(SkeletonNode node, List<SkeletonNode> targets) {
+        int numMappingEdges = 0;
+        for(Map.Entry<SkeletonNode, SkeletonNode.EdgeType> entry : node.outgoingEdges.entrySet()) {
+            if(entry.getValue() == SkeletonNode.EdgeType.Mapping) {
+                followGraph(entry.getKey(), targets);
+                numMappingEdges++;
+            } /*else {
+                targets.add(entry.getKey());
+            }*/
+        }
+
+        if(numMappingEdges == 0) {
+            targets.add(node);
+        }
     }
 }

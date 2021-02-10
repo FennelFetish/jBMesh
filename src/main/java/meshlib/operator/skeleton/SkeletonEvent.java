@@ -10,9 +10,13 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
 
     @Override
     public int compareTo(SkeletonEvent o) {
-        return Float.compare(this.time, o.time);
+        int cmp = Float.compare(this.time, o.time);
+        return cmp;
+        //return (cmp == 0) ? compareToEvent(o) : cmp;
     }
 
+
+    protected abstract int compareToEvent(SkeletonEvent o);
 
     protected abstract boolean shouldAbort(MovingNode adjacentNode);
     protected abstract boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1);
@@ -41,7 +45,7 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
 
 
     /**
-     * Check for valid polygon and handle case in which a triangle degenerates to a line.
+     * Check for valid polygon and handle case in which a polygon degenerates to a line.
      * @return True if polygon consists of >2 edges.
      */
     private static boolean ensureValidPolygon(MovingNode node, SkeletonContext ctx) {
@@ -112,6 +116,8 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
 
 
     private static MovingNode handleDegenerateAngle(MovingNode node, SkeletonContext ctx) {
+        //System.out.println(node + " degenerated");
+
         // Remove node, connect node.prev <-> node.next
         MovingNode o1 = node.prev;
         MovingNode o2 = node.next;

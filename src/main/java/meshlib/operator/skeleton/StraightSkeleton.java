@@ -57,7 +57,6 @@ public class StraightSkeleton {
         if(offsetDistance != 0) {
             initEdgeEvents();
             initSplitEvents();
-
             loop();
         }
     }
@@ -67,6 +66,7 @@ public class StraightSkeleton {
         ctx.time = 0;
 
         while(true) {
+            //ctx.printEvents();
             SkeletonEvent event = ctx.pollQueue();
             if(event == null) {
                 scale((offsetDistance - ctx.time) * distanceSign);
@@ -112,10 +112,10 @@ public class StraightSkeleton {
             node.edgeLengthChange = 0;
         }
 
+        List<MovingNode> degenerates = new ArrayList<>();
+
         MovingNode prev = ctx.movingNodes.get(numVertices-1);
         MovingNode current = ctx.movingNodes.get(0);
-
-        List<MovingNode> degenerates = new ArrayList<>();
 
         for(int i=0; i<numVertices; ++i) {
             int nextIndex = (i+1) % numVertices;

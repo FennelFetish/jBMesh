@@ -69,6 +69,7 @@ class SkeletonContext {
 
     private void enqueue(SkeletonEvent event) {
         assert event.time >= time : "time: " + time + ", event.time: " + event.time + " // " + event;
+        //System.out.println("Queued: " + event);
         eventQueue.offer(event);
     }
 
@@ -125,10 +126,7 @@ class SkeletonContext {
         float t = SplitEvent.calcTime(reflexNode, op0, op1, distanceSign);
         float eventTime = time + t;
 
-        if(eventTime > distance)
-            return;
-
-        if(SplitEvent.canHit(reflexNode, op0, op1, distanceSign, t))
+        if(eventTime <= distance && SplitEvent.canHit(reflexNode, op0, op1, distanceSign, t))
             enqueue(new SplitEvent(reflexNode, op0, op1, eventTime));
     }
 }

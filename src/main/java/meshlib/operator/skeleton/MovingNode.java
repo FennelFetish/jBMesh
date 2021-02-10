@@ -34,8 +34,24 @@ class MovingNode {
         if(next.next == this)
             return false;
 
-        Vector2f vPrev = prev.skelNode.p.subtract(skelNode.p).normalizeLocal();
-        Vector2f vNext = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
+        // Calc direction to neighbor nodes. Make sure there's enough distance for stable calculation.
+        Vector2f vPrev = prev.skelNode.p.subtract(skelNode.p);
+        float vPrevLength = vPrev.length();
+        if(vPrevLength < SkeletonContext.EPSILON) {
+            setDegenerate();
+            return false;
+        }
+
+        Vector2f vNext = next.skelNode.p.subtract(skelNode.p);
+        float vNextLength = vNext.length();
+        if(vNextLength < SkeletonContext.EPSILON) {
+            setDegenerate();
+            return false;
+        }
+
+        // Normalize
+        vPrev.divideLocal(vPrevLength);
+        vNext.divideLocal(vNextLength);
 
         // Check if edges point in opposite directions
         float cos = vPrev.dot(vNext);
@@ -51,8 +67,7 @@ class MovingNode {
 
             // Check if degenerated
             if(Math.abs(sin) < SkeletonContext.EPSILON) {
-                bisector.zero();
-                reflex = false;
+                setDegenerate();
                 return false;
             }
             else {
@@ -74,11 +89,17 @@ class MovingNode {
 
 
     public void calcEdgeLengthChange() {
-        Vector2f vDiff = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
-        edgeLengthChange = bisector.dot(vDiff);
+        Vector2f edgeDir = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
+        edgeLengthChange = bisector.dot(edgeDir);
 
-        // Equivalent to: edgeLengthChange += next.bisector.dot(vDiff.negate());
-        edgeLengthChange -= next.bisector.dot(vDiff);
+        // Equivalent to: edgeLengthChange += next.bisector.dot(edgeDir.negate());
+        edgeLengthChange -= next.bisector.dot(edgeDir);
+    }
+
+
+    private void setDegenerate() {
+        bisector.zero();
+        reflex = false;
     }
 
 
