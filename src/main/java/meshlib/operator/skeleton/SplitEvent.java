@@ -13,28 +13,31 @@ class SplitEvent extends SkeletonEvent {
         this.reflexNode = reflexNode;
         this.op0 = opposite0;
         this.op1 = opposite1;
+
+        assert reflexNode != op0;
+        assert reflexNode != op1;
+        assert op0 != op1;
+        assert op0.next == op1;
     }
 
 
-    public static float calcTime(MovingNode reflexNode, MovingNode op0, MovingNode op1, float distanceSign) {
-        Vector2f edgeDir = op1.skelNode.p.subtract(op0.skelNode.p).normalizeLocal();
-
+    public static float calcTime(MovingNode reflexNode, MovingNode edgeStart, float distanceSign) {
         // Calc component of bisector orthogonal to edge
-        float bisectorSpeed = reflexNode.bisector.determinant(edgeDir);
+        float bisectorSpeed = reflexNode.bisector.determinant(edgeStart.edgeDir);
         float edgeSpeed = -1.0f;
-        float approachSpeed = (bisectorSpeed+edgeSpeed) * distanceSign;
+        float approachSpeed = (bisectorSpeed + edgeSpeed) * distanceSign;
 
         // Check on which side the reflex node lies, relative to directed edge.
         // The determinant's sign indicates the side. Its magnitude is the orthogonal distance of the reflex node to the edge.
         // (Component of 'reflexRelative' orthogonal to edgeDir)
-        Vector2f reflexRelative = reflexNode.skelNode.p.subtract(op0.skelNode.p);
-        float sideDistance = reflexRelative.determinant(edgeDir);
+        Vector2f reflexRelative = reflexNode.skelNode.p.subtract(edgeStart.skelNode.p);
+        float sideDistance = reflexRelative.determinant(edgeStart.edgeDir);
         if(sideDistance == 0)
             return 0;
 
         // Negative speed means distance between reflex vertex and opposite edge increases with time
         if(correctSpeed(approachSpeed, sideDistance) <= 0)
-            return Float.POSITIVE_INFINITY;
+            return INVALID_TIME;
 
         // One of these values will be negative. The resulting time is always positive.
         float time = -sideDistance / approachSpeed;
@@ -53,7 +56,7 @@ class SplitEvent extends SkeletonEvent {
      */
     public static boolean canHit(MovingNode reflexNode, MovingNode op0, MovingNode op1, float distanceSign, float time) {
         // Check on which side 'reflexFuture' lies relative to bisectors of op0 and op1
-        Vector2f reflexFuture = reflexNode.bisector.mult(distanceSign*time).addLocal(reflexNode.skelNode.p);
+        Vector2f reflexFuture = reflexNode.bisector.mult(distanceSign * time).addLocal(reflexNode.skelNode.p);
 
         Vector2f reflexRelative = reflexFuture.subtract(op0.skelNode.p);
         float side0 = op0.bisector.determinant(reflexRelative);
@@ -70,36 +73,19 @@ class SplitEvent extends SkeletonEvent {
 
 
     @Override
-    protected int compareToEvent(SkeletonEvent o) {
-        if(o instanceof SplitEvent) {
-            SplitEvent other = (SplitEvent) o;
-            int cmp = String.CASE_INSENSITIVE_ORDER.compare(reflexNode.id, other.reflexNode.id);
-            if(cmp != 0)
-                return cmp;
-            cmp = String.CASE_INSENSITIVE_ORDER.compare(op0.id, other.op0.id);
-            if(cmp != 0)
-                return cmp;
-            return String.CASE_INSENSITIVE_ORDER.compare(op1.id, other.op1.id);
-        }
-        else {
-            return 1; // EdgeEvents first
-        }
-    }
-
-
-    @Override
-    protected boolean shouldAbort(MovingNode adjacentNode) {
+    public boolean shouldAbort(MovingNode adjacentNode) {
         return reflexNode == adjacentNode || op0 == adjacentNode || op1 == adjacentNode;
     }
 
     @Override
-    protected boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1) {
+    public boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1) {
         return op0 == edgeNode0 && op1 == edgeNode1;
     }
 
 
     @Override
     public void handle(SkeletonContext ctx) {
+        assert op0.next == op1;
         ctx.abortEvents(op0, op1);
 
         MovingNode node0 = reflexNode;

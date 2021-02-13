@@ -1,7 +1,8 @@
 package meshlib.operator.skeleton;
 
 abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
-    public float time; // Always positive
+    public static final float INVALID_TIME = Float.NaN;
+    public final float time; // Always positive
 
 
     protected SkeletonEvent(float time) {
@@ -10,16 +11,12 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
 
     @Override
     public int compareTo(SkeletonEvent o) {
-        int cmp = Float.compare(this.time, o.time);
-        return cmp;
-        //return (cmp == 0) ? compareToEvent(o) : cmp;
+        return Float.compare(this.time, o.time);
     }
 
 
-    protected abstract int compareToEvent(SkeletonEvent o);
-
-    protected abstract boolean shouldAbort(MovingNode adjacentNode);
-    protected abstract boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1);
+    public abstract boolean shouldAbort(MovingNode adjacentNode);
+    public abstract boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1);
 
     public abstract void handle(SkeletonContext ctx);
 
@@ -32,10 +29,25 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
         while(ensureValidPolygon(node, ctx)) {
             boolean validBisector = node.calcBisector(ctx.distanceSign);
             if(validBisector) {
-                leaveNode(node);
-                node.calcEdgeLengthChange();
-                node.prev.calcEdgeLengthChange();
+                node.leaveSkeletonNode();
+
+                node.calcEdgeLengthChange(ctx.distanceSign);
+                node.prev.calcEdgeLengthChange(ctx.distanceSign);
+
                 createEvents(node, ctx);
+                break;
+            }
+
+            node = handleDegenerateAngle(node, ctx);
+        }
+    }
+
+    static void handleInit(MovingNode node, SkeletonContext ctx) {
+        while(ensureValidPolygon(node, ctx)) {
+            boolean validBisector = node.calcBisector(ctx.distanceSign);
+            if(validBisector) {
+                node.calcEdgeLengthChange(ctx.distanceSign);
+                node.prev.calcEdgeLengthChange(ctx.distanceSign);
                 break;
             }
 
@@ -64,15 +76,6 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
     }
 
 
-    protected static void leaveNode(MovingNode node) {
-        // Leave a node at old place and create new one
-        SkeletonNode oldSkelNode = node.skelNode;
-        node.skelNode = new SkeletonNode();
-        node.skelNode.p.set(oldSkelNode.p);
-        oldSkelNode.addEdge(node.skelNode);
-    }
-
-
     private static void createEvents(MovingNode node, SkeletonContext ctx) {
         ctx.abortEvents(node);
 
@@ -80,44 +83,56 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
         ctx.tryQueueEdgeEvent(node, node.next);
         ctx.tryQueueEdgeEvent(node.prev, node);
 
-        // Create SplitEvents: Test both adjacent edges against all reflex vertices (distanceSign dependent) in current MovingNode loop.
-        createSplitEvents_forEdge(node, node.next, ctx);
-        createSplitEvents_forEdge(node.prev, node, ctx);
-
-        // If 'node' is reflex (distanceSign dependent), test against all edges in current MovingNode loop.
-        if(node.isReflex())
-            createSplitEvents_forVertex(node, ctx);
+        createSplitEvents(node, ctx);
     }
 
-    private static void createSplitEvents_forEdge(MovingNode op0, MovingNode op1, SkeletonContext ctx) {
-        assert op0.next == op1;
-        assert op1.prev == op0;
 
-        MovingNode current = op1.next;
-        MovingNode end = op0.prev;
+    /**
+     * Tests adjacent edges of 'node' against other eligible reflex vertices in MovingNodes-loop.
+     * If 'node' is reflex, tests it against all eligible edges.
+     * Eligible tests: Minimum distance between reflex node and candidate edge = 2 edges in between
+     *
+     * A triangle cannot be concave. A concave quadrilateral (arrowhead) doesn't need split events.
+     * Minimum vertices for split events = 5.
+     */
+    private static void createSplitEvents(MovingNode node, SkeletonContext ctx) {
+        MovingNode current = node.next.next;   // processed in first step before loop
+        final MovingNode end = node.prev.prev; // excluded from loop, but processed in last step after loop
 
-        while(current != end) {
-            if(current.isReflex())
-                ctx.tryQueueSplitEvent(current, op0, op1);
+        // Ignore triangles and quads
+        if(current == end.next || current == end)
+            return;
 
-            current = current.next;
+        final boolean nodeIsReflex = node.isReflex();
+
+        // First step: Test 'current' vertex only against first adjacent edge (node.prev->node).
+        //             Test 'node' against current edge.
+        if(current.isReflex())
+            ctx.tryQueueSplitEvent(current, node.prev, node);
+
+        if(nodeIsReflex)
+            ctx.tryQueueSplitEvent(node, current, current.next);
+
+        // Intermediate steps, all tests
+        current = current.next;
+        for(; current != end; current = current.next) {
+            if(current.isReflex()) {
+                ctx.tryQueueSplitEvent(current, node, node.next);
+                ctx.tryQueueSplitEvent(current, node.prev, node);
+            }
+
+            if(nodeIsReflex) // Condition is constant. Manual optimization (loop unswitching) not worth it.
+                ctx.tryQueueSplitEvent(node, current, current.next);
         }
-    }
 
-    private static void createSplitEvents_forVertex(MovingNode reflexNode, SkeletonContext ctx) {
-        MovingNode current = reflexNode.next;
-        MovingNode end = reflexNode.prev.prev;
-
-        while(current != end) {
-            ctx.tryQueueSplitEvent(reflexNode, current, current.next);
-            current = current.next;
-        }
+        // Last step: Test 'current' only against second adjacent edge (node->node.next)
+        //            Don't test 'node' against this last edge.
+        if(current.isReflex())
+            ctx.tryQueueSplitEvent(current, node, node.next);
     }
 
 
     private static MovingNode handleDegenerateAngle(MovingNode node, SkeletonContext ctx) {
-        //System.out.println(node + " degenerated");
-
         // Remove node, connect node.prev <-> node.next
         MovingNode o1 = node.prev;
         MovingNode o2 = node.next;

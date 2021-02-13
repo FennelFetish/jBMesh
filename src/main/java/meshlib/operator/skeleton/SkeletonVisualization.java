@@ -86,10 +86,7 @@ public class SkeletonVisualization {
 
     public BMesh createMovingNodesVis() {
         BMesh bmesh = new BMesh();
-        if(ctx.movingNodes.isEmpty())
-            return bmesh;
-
-        Set<MovingNode> nodesRemaining = new HashSet<>(ctx.movingNodes);
+        Set<MovingNode> nodesRemaining = new HashSet<>(ctx.getNodes());
 
         while(!nodesRemaining.isEmpty()) {
             Optional<MovingNode> any = nodesRemaining.stream().findAny();
@@ -120,7 +117,7 @@ public class SkeletonVisualization {
 
     public List<VisNode> getMovingNodes() {
         List<VisNode> nodes = new ArrayList<>();
-        for(MovingNode movingNode : ctx.movingNodes) {
+        for(MovingNode movingNode : ctx.getNodes()) {
             VisNode node = new VisNode(movingNode.id);
             coordSys.unproject(movingNode.skelNode.p, node.pos);
             nodes.add(node);
@@ -132,7 +129,7 @@ public class SkeletonVisualization {
     public BMesh createBisectorVis() {
         BMesh bmesh = new BMesh();
 
-        for(MovingNode movingNode : ctx.movingNodes) {
+        for(MovingNode movingNode : ctx.getNodes()) {
             Vector2f p0 = movingNode.skelNode.p;
             Vector2f p1 = movingNode.bisector.mult(0.33f * ctx.distanceSign).addLocal(p0);
 

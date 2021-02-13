@@ -44,10 +44,11 @@ public class PolygonEditor extends SimpleApplication {
     private static final String ACT_INC_DISTANCE = "ACT_INC_DISTANCE";
     private static final String ACT_DEC_DISTANCE = "ACT_DEC_DISTANCE";
     private static final String ACT_RESET_DISTANCE = "ACT_RESET_DISTANCE";
+    private static final String ACT_BENCHMARK = "ACT_BENCHMARK";
 
     private static final String DEFAULT_EXPORT_PATH = "F:/jme/jBMesh/last.points";
     private static final String IMPORT_PATH = "";
-    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bug15.points";
+    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bench.points";
 
     private static final float BG_SIZE = 5000;
     private Geometry bg;
@@ -66,7 +67,7 @@ public class PolygonEditor extends SimpleApplication {
     private static final float DEFAULT_DISTANCE = 0.0f;
     private float skeletonDistance = DEFAULT_DISTANCE;
 
-    private boolean snapToGrid = false;
+    private boolean snapToGrid = true;
 
 
     private PolygonEditor() {
@@ -95,7 +96,9 @@ public class PolygonEditor extends SimpleApplication {
         inputManager.addMapping(ACT_INC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
         inputManager.addMapping(ACT_DEC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
         inputManager.addMapping(ACT_RESET_DISTANCE, new KeyTrigger(KeyInput.KEY_0));
-        inputManager.addListener(new ClickHandler(), ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE);
+        inputManager.addMapping(ACT_BENCHMARK, new KeyTrigger(KeyInput.KEY_B));
+        inputManager.addListener(new ClickHandler(),
+            ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE, ACT_BENCHMARK);
         inputManager.addRawInputListener(new NumberListener());
 
         rootNode.attachChild(pointNode);
@@ -172,8 +175,7 @@ public class PolygonEditor extends SimpleApplication {
     }
 
 
-    private void updateVis() {
-        BMesh bmesh = new BMesh();
+    private Face createBMeshFace(BMesh bmesh) {
         Vertex[] vertices = new Vertex[points.size()];
 
         pointNode.detachAllChildren();
@@ -186,8 +188,17 @@ public class PolygonEditor extends SimpleApplication {
             vertices[i] = bmesh.createVertex(v);
         }
 
-        if(points.size() >= 3) {
-            Face face = bmesh.createFace(vertices);
+        if(points.size() >= 3)
+            return bmesh.createFace(vertices);
+
+        return null;
+    }
+
+    private void updateVis() {
+        BMesh bmesh = new BMesh();
+        Face face = createBMeshFace(bmesh);
+
+        if(face != null) {
             pointNode.attachChild(makeGeom(bmesh, ColorRGBA.Red));
 
             StraightSkeleton skeleton = new StraightSkeleton(bmesh);
@@ -303,6 +314,31 @@ public class PolygonEditor extends SimpleApplication {
     }
 
 
+    private void benchmark() {
+        skeletonDistance = Float.NEGATIVE_INFINITY;
+
+        BMesh bmesh = new BMesh();
+        Face face = createBMeshFace(bmesh);
+
+        StraightSkeleton skeleton = new StraightSkeleton(bmesh);
+        skeleton.setDistance(skeletonDistance);
+
+        for(int i=0; i<200; ++i) {
+            skeleton.apply(face);
+        }
+
+        try(Profiler p0 = Profiler.start("StraightSkeleton Benchmark")) {
+            for(int i = 0; i < 2000; ++i) {
+                try(Profiler p = Profiler.start("StraightSkeleton.apply")) {
+                    skeleton.apply(face);
+                }
+            }
+        }
+
+        updateVis();
+    }
+
+
     private class ClickHandler implements ActionListener {
         @Override
         public void onAction(String name, boolean isPressed, float tpf) {
@@ -337,6 +373,10 @@ public class PolygonEditor extends SimpleApplication {
                 case ACT_RESET_DISTANCE:
                     skeletonDistance = 0;
                     updateVis();
+                    break;
+
+                case ACT_BENCHMARK:
+                    benchmark();
                     break;
             }
         }

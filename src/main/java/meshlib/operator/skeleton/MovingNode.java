@@ -4,16 +4,16 @@ import com.jme3.math.Vector2f;
 
 class MovingNode {
     public final String id;
+    public SkeletonNode skelNode;
 
     public MovingNode next = null;
     public MovingNode prev = null;
 
-    public SkeletonNode skelNode;
-    public final Vector2f bisector = new Vector2f(); // Length determines speed. Points outwards (in growing direction).
-    public float edgeLengthChange = 0; // Change amount when shrinking. Outgoing edge from this vertex, counterclock-wise.
-    private boolean reflex = false;
+    public final Vector2f edgeDir = new Vector2f();
+    public float edgeCollapseTime = 0;
 
-    // TODO: We could precalculate and store edgeDirection here because it stays the same until the node (or an adjacent node) is involved in event.
+    public final Vector2f bisector = new Vector2f(); // Length determines speed. Points outwards (in growing direction).
+    private boolean reflex = false;
 
 
     MovingNode(String id) {
@@ -74,13 +74,8 @@ class MovingNode {
                 float speed = 1.0f / sin;
                 bisector.multLocal(speed);
 
-                // Calc edge length change (same for both adjacent edges)
-                float edgeChange = bisector.dot(vPrev);
-                prev.edgeLengthChange += edgeChange;
-                edgeLengthChange      += edgeChange;
-
-                // Check for reflex vertices (concave corners)
-                reflex = ((edgeChange > 0.0f) == (distanceSign < 0.0f));
+                float edgeLengthChange = bisector.dot(vPrev);
+                reflex = !sameSign(edgeLengthChange, distanceSign);
             }
         }
 
@@ -88,18 +83,40 @@ class MovingNode {
     }
 
 
-    public void calcEdgeLengthChange() {
-        Vector2f edgeDir = next.skelNode.p.subtract(skelNode.p).normalizeLocal();
-        edgeLengthChange = bisector.dot(edgeDir);
+    public void calcEdgeLengthChange(float distanceSign) {
+        edgeDir.set(next.skelNode.p).subtractLocal(skelNode.p);
+        float edgeLength = edgeDir.length();
+        edgeDir.normalizeLocal();
+
+        // Change amount when shrinking. Outgoing edge from this vertex, counterclock-wise.
+        float edgeLengthChange = bisector.dot(edgeDir);
 
         // Equivalent to: edgeLengthChange += next.bisector.dot(edgeDir.negate());
         edgeLengthChange -= next.bisector.dot(edgeDir);
+
+        if(sameSign(edgeLengthChange, distanceSign))
+            edgeCollapseTime = edgeLength / Math.abs(edgeLengthChange);
+        else
+            edgeCollapseTime = SkeletonEvent.INVALID_TIME;
+    }
+
+    private static boolean sameSign(float a, float b) {
+        return (a >= 0) ^ (b < 0);
     }
 
 
     private void setDegenerate() {
         bisector.zero();
         reflex = false;
+    }
+
+
+    public void leaveSkeletonNode() {
+        // Leave a SkeletonNode at old place and create new one
+        SkeletonNode oldSkelNode = skelNode;
+        skelNode = new SkeletonNode();
+        skelNode.p.set(oldSkelNode.p);
+        oldSkelNode.addEdge(skelNode);
     }
 
 

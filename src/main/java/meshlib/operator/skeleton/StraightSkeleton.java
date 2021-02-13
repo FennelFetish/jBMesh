@@ -10,6 +10,7 @@ import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.PlanarCoordinateSystem;
+import meshlib.util.Profiler;
 
 public class StraightSkeleton {
     private final BMesh bmesh;
@@ -51,13 +52,18 @@ public class StraightSkeleton {
         Vector3f n = faceOps.normal(face);
         coordSys = new PlanarCoordinateSystem(propPosition.get(vertices.get(0)), propPosition.get(vertices.get(1)), n);
 
-        project(vertices);
-        initBisectors();
+        createNodes(vertices);
 
         if(offsetDistance != 0) {
-            initEdgeEvents();
-            initSplitEvents();
-            loop();
+            initBisectors();
+
+            try(Profiler p = Profiler.start("StraightSkeleton.initEvents")) {
+                initEvents();
+            }
+
+            try(Profiler p = Profiler.start("StraightSkeleton.loop")) {
+                loop();
+            }
         }
     }
 
@@ -76,68 +82,92 @@ public class StraightSkeleton {
             scale((event.time - ctx.time) * distanceSign);
             ctx.time = event.time;
 
-            //System.out.println("{{ handle: " + event);
-            event.handle(ctx);
-            //System.out.println("}} handled");
+            //try(Profiler p = Profiler.start("StraightSkeleton.loop.handle")) {
+                //System.out.println("{{ handle: " + event);
+                event.handle(ctx);
+                //System.out.println("}} handled");
+            //}
         }
     }
 
 
-    private void project(List<Vertex> vertices) {
+    private void createNodes(List<Vertex> vertices) {
         initialNodes.clear();
         initialNodes.ensureCapacity(vertices.size());
-        ctx.movingNodes.ensureCapacity(vertices.size());
 
         Vector3f vertexPos = new Vector3f();
-        for(Vertex vertex : vertices) {
-            propPosition.get(vertex, vertexPos);
+        MovingNode first = createNode(vertices.get(0), vertexPos);
+        MovingNode prev = first;
 
-            // Create initial node
-            SkeletonNode initialNode = new SkeletonNode();
-            coordSys.project(vertexPos, initialNode.p);
-            initialNodes.add(initialNode);
+        for(int i=1; i<vertices.size(); ++i) {
+            MovingNode movingNode = createNode(vertices.get(i), vertexPos);
+            movingNode.prev = prev;
+            prev.next = movingNode;
 
-            // Create moving node
-            MovingNode movingNode = ctx.createMovingNode();
-            movingNode.skelNode = new SkeletonNode();
-            movingNode.skelNode.p.set(initialNode.p);
-            initialNode.addEdge(movingNode.skelNode);
+            prev = movingNode;
         }
+
+        first.prev = prev;
+        prev.next = first;
+    }
+
+    private MovingNode createNode(Vertex vertex, Vector3f vertexPos) {
+        propPosition.get(vertex, vertexPos);
+
+        SkeletonNode initialNode = new SkeletonNode();
+        coordSys.project(vertexPos, initialNode.p);
+        initialNodes.add(initialNode);
+
+        MovingNode movingNode = ctx.createMovingNode();
+        movingNode.skelNode = initialNode;
+        return movingNode;
     }
 
 
     private void initBisectors() {
-        int numVertices = ctx.movingNodes.size();
-        for(MovingNode node : ctx.movingNodes) {
-            node.edgeLengthChange = 0;
-        }
-
         List<MovingNode> degenerates = new ArrayList<>();
 
-        MovingNode prev = ctx.movingNodes.get(numVertices-1);
-        MovingNode current = ctx.movingNodes.get(0);
-
-        for(int i=0; i<numVertices; ++i) {
-            int nextIndex = (i+1) % numVertices;
-            MovingNode next = ctx.movingNodes.get(nextIndex);
-
-            // Link nodes
-            current.next = next;
-            current.prev = prev;
-
-            boolean validBisector = current.calcBisector(distanceSign);
+        for(MovingNode node : ctx.getNodes()) {
+            boolean validBisector = node.calcBisector(distanceSign);
             if(!validBisector)
-                degenerates.add(current);
-
-            // Next iteration
-            prev = current;
-            current = next;
+                degenerates.add(node);
         }
 
         for(MovingNode degenerate : degenerates) {
+            // Check if 'degenerate' was already removed in previous handleInit() calls
             if(degenerate.next != null)
-                SkeletonEvent.handle(degenerate, ctx);
+                SkeletonEvent.handleInit(degenerate, ctx);
         }
+    }
+
+
+    private void initEvents() {
+        List<MovingNode> reflexNodes = new ArrayList<>();
+
+        for(MovingNode current : ctx.getNodes()) {
+            current.leaveSkeletonNode();
+
+            current.calcEdgeLengthChange(distanceSign);
+            ctx.tryQueueEdgeEvent(current, current.next);
+
+            if(current.isReflex())
+                reflexNodes.add(current);
+        }
+
+        for(MovingNode reflex : reflexNodes)
+            initSplitEvents(reflex);
+    }
+
+    private void initSplitEvents(MovingNode reflexNode) {
+        MovingNode current = reflexNode.next.next;
+        MovingNode end = reflexNode.prev.prev; // exclusive
+
+        // Ignore triangles, quads will also be ignored by the loop condition below
+        if(current == end.next)
+            return;
+
+        for(; current != end; current = current.next)
+            ctx.tryQueueSplitEvent(reflexNode, current, current.next);
     }
 
 
@@ -145,38 +175,17 @@ public class StraightSkeleton {
         if(dist == 0)
             return;
 
-        //System.out.println("=> scaling " + ctx.movingNodes.size() + " nodes by " + dist);
-        Vector2f dir = new Vector2f();
+        //try(Profiler p = Profiler.start("StraightSkeleton.scale")) {
+            //System.out.println("=> scaling " + ctx.movingNodes.size() + " nodes by " + dist);
+            Vector2f dir = new Vector2f();
 
-        for(MovingNode node : ctx.movingNodes) {
-            dir.set(node.bisector).multLocal(dist);
-            node.skelNode.p.addLocal(dir);
+            for(MovingNode node : ctx.getNodes()) {
+                dir.set(node.bisector).multLocal(dist);
+                node.skelNode.p.addLocal(dir);
 
-            assert !isInvalid(node.skelNode.p) : "Invalid position after scale: bisector=" + node.bisector + ", dir=" + dir;
-        }
-    }
-
-
-    private void initEdgeEvents() {
-        for(MovingNode current : ctx.movingNodes) {
-            ctx.tryQueueEdgeEvent(current.prev, current);
-        }
-    }
-
-    private void initSplitEvents() {
-        for(MovingNode current : ctx.movingNodes) {
-            if(!current.isReflex())
-                continue;
-
-            MovingNode start = current.next;
-            MovingNode end = current.prev.prev;
-
-            MovingNode op0 = start;
-            while(op0 != end) {
-                ctx.tryQueueSplitEvent(current, op0, op0.next);
-                op0 = op0.next;
+                assert !isInvalid(node.skelNode.p) : "Invalid position after scale: bisector=" + node.bisector + ", dir=" + dir;
             }
-        }
+        //}
     }
 
 
