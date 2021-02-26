@@ -44,11 +44,15 @@ public class PolygonEditor extends SimpleApplication {
     private static final String ACT_INC_DISTANCE = "ACT_INC_DISTANCE";
     private static final String ACT_DEC_DISTANCE = "ACT_DEC_DISTANCE";
     private static final String ACT_RESET_DISTANCE = "ACT_RESET_DISTANCE";
+    private static final String ACT_MAX_DISTANCE = "ACT_MAX_DISTANCE";
+    private static final String ACT_AUTODRAW = "ACT_AUTODRAW";
     private static final String ACT_BENCHMARK = "ACT_BENCHMARK";
+    private static final String ACT_RELOAD_FILE = "ACT_RELOAD_FILE";
 
-    private static final String DEFAULT_EXPORT_PATH = "F:/jme/jBMesh/last.points";
-    private static final String IMPORT_PATH = "";
-    //private static final String IMPORT_PATH = "F:/jme/jBMesh/bench.points";
+    private static final String BASE_POINTS_PATH = "F:/jme/jBMesh/points/";
+    private static final String DEFAULT_EXPORT_PATH = BASE_POINTS_PATH + "last.points";
+    //private static final String IMPORT_PATH = "";
+    private static final String IMPORT_PATH = BASE_POINTS_PATH + "bench1000.points";
 
     private static final float BG_SIZE = 5000;
     private Geometry bg;
@@ -67,7 +71,11 @@ public class PolygonEditor extends SimpleApplication {
     private static final float DEFAULT_DISTANCE = 0.0f;
     private float skeletonDistance = DEFAULT_DISTANCE;
 
-    private boolean snapToGrid = true;
+    private boolean snapToGrid = false;
+    private boolean autoDraw = false;
+
+    private static final float DRAW_INTERVAL = 0.2f;
+    private float tDraw = 0;
 
 
     private PolygonEditor() {
@@ -80,6 +88,7 @@ public class PolygonEditor extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         assetManager.registerLocator("F:/jme/jBMesh/assets", FileLocator.class);
+        cam.setFrustumFar(3000);
         setupBackground();
 
         pointMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -96,9 +105,14 @@ public class PolygonEditor extends SimpleApplication {
         inputManager.addMapping(ACT_INC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
         inputManager.addMapping(ACT_DEC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
         inputManager.addMapping(ACT_RESET_DISTANCE, new KeyTrigger(KeyInput.KEY_0));
+        inputManager.addMapping(ACT_MAX_DISTANCE, new KeyTrigger(KeyInput.KEY_M));
+        inputManager.addMapping(ACT_AUTODRAW, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(ACT_BENCHMARK, new KeyTrigger(KeyInput.KEY_B));
+        inputManager.addMapping(ACT_RELOAD_FILE, new KeyTrigger(KeyInput.KEY_HOME));
         inputManager.addListener(new ClickHandler(),
-            ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE, ACT_BENCHMARK);
+            ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS,
+            ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE, ACT_MAX_DISTANCE,
+            ACT_AUTODRAW, ACT_BENCHMARK, ACT_RELOAD_FILE);
         inputManager.addRawInputListener(new NumberListener());
 
         rootNode.attachChild(pointNode);
@@ -110,6 +124,19 @@ public class PolygonEditor extends SimpleApplication {
             importPoints(IMPORT_PATH);
         else
             importPoints(DEFAULT_EXPORT_PATH);
+    }
+
+
+    @Override
+    public void simpleUpdate(float tpf) {
+        if(!autoDraw)
+            return;
+
+        tDraw += tpf;
+        if(tDraw >= DRAW_INTERVAL) {
+            tDraw = 0;
+            addPoint();
+        }
     }
 
 
@@ -162,7 +189,8 @@ public class PolygonEditor extends SimpleApplication {
     }
 
     private void removePoint() {
-        final float e2 = 0.001f * 0.001f;
+        final float e = 0.5f; //0.001f;
+        final float e2 = e*e;
         Vector2f pick = pick();
         for(int i=0; i<points.size(); ++i) {
             if(pick.distanceSquared(points.get(i)) < e2) {
@@ -212,7 +240,7 @@ public class PolygonEditor extends SimpleApplication {
             pointNode.attachChild( makeGeom(skelVis.createSkeletonMappingVis(), ColorRGBA.Yellow) );
             pointNode.attachChild( makeGeom(skelVis.createSkeletonDegeneracyVis(), ColorRGBA.Brown) );
             pointNode.attachChild( makeGeom(skelVis.createMovingNodesVis(), ColorRGBA.Cyan) );
-            pointNode.attachChild( makeGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
+            //pointNode.attachChild( makeGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
             //pointNode.attachChild( makeGeom(skelVis.createMappingVis(), ColorRGBA.Magenta) );
 
             for(SkeletonVisualization.VisNode node : skelVis.getMovingNodes()) {
@@ -296,6 +324,8 @@ public class PolygonEditor extends SimpleApplication {
             stateManager.getState(PanZoomState.class).setPos(center);
         }
 
+        //scalePoints(0.2f);
+        //reversePoints();
         updateVis();
     }
 
@@ -328,7 +358,7 @@ public class PolygonEditor extends SimpleApplication {
         }
 
         try(Profiler p0 = Profiler.start("StraightSkeleton Benchmark")) {
-            for(int i = 0; i < 2000; ++i) {
+            for(int i = 0; i < 1000; ++i) {
                 try(Profiler p = Profiler.start("StraightSkeleton.apply")) {
                     skeleton.apply(face);
                 }
@@ -339,9 +369,37 @@ public class PolygonEditor extends SimpleApplication {
     }
 
 
+    private void scalePoints(float scale) {
+        // Find center
+        Vector2f center = new Vector2f();
+        for(Vector2f p : points)
+            center.addLocal(p);
+        center.divideLocal(points.size());
+
+        for(Vector2f p : points) {
+            p.subtractLocal(center);
+            p.multLocal(scale);
+            p.addLocal(center);
+        }
+    }
+
+    private void reversePoints() {
+        List<Vector2f> copy = new ArrayList<>(points);
+        points.clear();
+        for(int i=copy.size()-1; i>=0; --i)
+            points.add(copy.get(i));
+    }
+
+
     private class ClickHandler implements ActionListener {
         @Override
         public void onAction(String name, boolean isPressed, float tpf) {
+            if(name.equals(ACT_AUTODRAW)) {
+                autoDraw = isPressed;
+                tDraw = 0;
+                return;
+            }
+
             if(!isPressed)
                 return;
 
@@ -375,8 +433,17 @@ public class PolygonEditor extends SimpleApplication {
                     updateVis();
                     break;
 
+                case ACT_MAX_DISTANCE:
+                    skeletonDistance = Float.NEGATIVE_INFINITY;
+                    updateVis();
+                    break;
+
                 case ACT_BENCHMARK:
                     benchmark();
+                    break;
+
+                case ACT_RELOAD_FILE:
+                    importPoints(IMPORT_PATH);
                     break;
             }
         }
@@ -388,7 +455,7 @@ public class PolygonEditor extends SimpleApplication {
         public void onKeyEvent(KeyInputEvent evt) {
             int c = evt.getKeyCode() - KeyInput.KEY_1 + 1;
             if(c >= 1 && c <= 9) {
-                String path = "F:/jme/jBMesh/bug" + c + ".points";
+                String path = BASE_POINTS_PATH + "bug" + c + ".points";
                 if(Files.exists(Paths.get(path)))
                     importPoints(path);
             }

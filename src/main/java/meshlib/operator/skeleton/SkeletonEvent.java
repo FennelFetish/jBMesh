@@ -9,14 +9,23 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
         this.time = time;
     }
 
+
     @Override
     public int compareTo(SkeletonEvent o) {
-        return Float.compare(this.time, o.time);
+        if(this.time < o.time)
+            return -1;
+        if(this.time > o.time)
+            return 1;
+
+        // A TreeSet as event queue doesn't allow duplicate keys (time values).
+        // Compare the hashes so compareTo() won't return 0 if events happen at the same time.
+        return Integer.compare(hashCode(), o.hashCode());
     }
 
 
-    public abstract boolean shouldAbort(MovingNode adjacentNode);
-    public abstract boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1);
+    public abstract void onEventQueued();
+    public abstract void onEventAborted(MovingNode adjacentNode, SkeletonContext ctx);
+    public abstract void onEventAborted(MovingNode edgeNode0, MovingNode edgeNode1, SkeletonContext ctx);
 
     public abstract void handle(SkeletonContext ctx);
 
@@ -24,32 +33,30 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
     /**
      * Always aborts events of 'node'.
      */
-    static void handle(MovingNode node, SkeletonContext ctx) {
+    protected static void handle(MovingNode node, SkeletonContext ctx) {
         //System.out.println("handle " + node);
         while(ensureValidPolygon(node, ctx)) {
             boolean validBisector = node.calcBisector(ctx.distanceSign);
             if(validBisector) {
                 node.leaveSkeletonNode();
 
-                node.calcEdgeLengthChange(ctx.distanceSign);
-                node.prev.calcEdgeLengthChange(ctx.distanceSign);
+                node.updateEdge();
+                node.prev.updateEdge();
 
                 createEvents(node, ctx);
-                break;
+                return;
             }
 
             node = handleDegenerateAngle(node, ctx);
         }
     }
 
+
     static void handleInit(MovingNode node, SkeletonContext ctx) {
         while(ensureValidPolygon(node, ctx)) {
             boolean validBisector = node.calcBisector(ctx.distanceSign);
-            if(validBisector) {
-                node.calcEdgeLengthChange(ctx.distanceSign);
-                node.prev.calcEdgeLengthChange(ctx.distanceSign);
-                break;
-            }
+            if(validBisector)
+                return;
 
             node = handleDegenerateAngle(node, ctx);
         }
@@ -83,10 +90,11 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
         ctx.tryQueueEdgeEvent(node, node.next);
         ctx.tryQueueEdgeEvent(node.prev, node);
 
-        createSplitEvents(node, ctx);
+        createAllSplitEvents(node, ctx);
     }
 
 
+    // TODO: Test reflex nodes against all edges in other loops too? That would allow multiple disconnected initial loops.
     /**
      * Tests adjacent edges of 'node' against other eligible reflex vertices in MovingNodes-loop.
      * If 'node' is reflex, tests it against all eligible edges.
@@ -95,7 +103,7 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
      * A triangle cannot be concave. A concave quadrilateral (arrowhead) doesn't need split events.
      * Minimum vertices for split events = 5.
      */
-    private static void createSplitEvents(MovingNode node, SkeletonContext ctx) {
+    private static void createAllSplitEvents(MovingNode node, SkeletonContext ctx) {
         MovingNode current = node.next.next;   // processed in first step before loop
         final MovingNode end = node.prev.prev; // excluded from loop, but processed in last step after loop
 
@@ -104,6 +112,7 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
             return;
 
         final boolean nodeIsReflex = node.isReflex();
+        SplitEvent nearestSplit = null;
 
         // First step: Test 'current' vertex only against first adjacent edge (node.prev->node).
         //             Test 'node' against current edge.
@@ -111,7 +120,7 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
             ctx.tryQueueSplitEvent(current, node.prev, node);
 
         if(nodeIsReflex)
-            ctx.tryQueueSplitEvent(node, current, current.next);
+            nearestSplit = ctx.tryReplaceNearestSplitEvent(node, current, current.next, nearestSplit);
 
         // Intermediate steps, all tests
         current = current.next;
@@ -122,13 +131,33 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
             }
 
             if(nodeIsReflex) // Condition is constant. Manual optimization (loop unswitching) not worth it.
-                ctx.tryQueueSplitEvent(node, current, current.next);
+                nearestSplit = ctx.tryReplaceNearestSplitEvent(node, current, current.next, nearestSplit);
         }
 
         // Last step: Test 'current' only against second adjacent edge (node->node.next)
-        //            Don't test 'node' against this last edge.
+        //            Don't test "nodeIsReflex" against this last edge.
         if(current.isReflex())
             ctx.tryQueueSplitEvent(current, node, node.next);
+
+        if(nearestSplit != null)
+            ctx.enqueue(nearestSplit);
+    }
+
+
+    static void createSplitEvents(MovingNode reflexNode, SkeletonContext ctx) {
+        MovingNode current = reflexNode.next.next;
+        MovingNode end = reflexNode.prev.prev; // exclusive
+
+        // Ignore triangles, quads will also be ignored by the loop condition below
+        if(current == end.next)
+            return;
+
+        SplitEvent nearestSplit = null;
+        for(; current != end; current = current.next)
+            nearestSplit = ctx.tryReplaceNearestSplitEvent(reflexNode, current, current.next, nearestSplit);
+
+        if(nearestSplit != null)
+            ctx.enqueue(nearestSplit);
     }
 
 

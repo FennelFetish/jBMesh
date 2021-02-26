@@ -24,8 +24,8 @@ class SplitEvent extends SkeletonEvent {
     public static float calcTime(MovingNode reflexNode, MovingNode edgeStart, float distanceSign) {
         // Calc component of bisector orthogonal to edge
         float bisectorSpeed = reflexNode.bisector.determinant(edgeStart.edgeDir);
-        float edgeSpeed = -1.0f;
-        float approachSpeed = (bisectorSpeed + edgeSpeed) * distanceSign;
+        float edgeSpeed = -distanceSign;
+        float approachSpeed = bisectorSpeed + edgeSpeed;
 
         // Check on which side the reflex node lies, relative to directed edge.
         // The determinant's sign indicates the side. Its magnitude is the orthogonal distance of the reflex node to the edge.
@@ -33,7 +33,7 @@ class SplitEvent extends SkeletonEvent {
         Vector2f reflexRelative = reflexNode.skelNode.p.subtract(edgeStart.skelNode.p);
         float sideDistance = reflexRelative.determinant(edgeStart.edgeDir);
         if(sideDistance == 0)
-            return 0;
+            return canHit(reflexNode, edgeStart, distanceSign, 0);
 
         // Negative speed means distance between reflex vertex and opposite edge increases with time
         if(correctSpeed(approachSpeed, sideDistance) <= 0)
@@ -41,7 +41,7 @@ class SplitEvent extends SkeletonEvent {
 
         // One of these values will be negative. The resulting time is always positive.
         float time = -sideDistance / approachSpeed;
-        return time;
+        return canHit(reflexNode, edgeStart, distanceSign, time);
     }
 
     private static float correctSpeed(float approachSpeed, float sideDistance) {
@@ -52,34 +52,77 @@ class SplitEvent extends SkeletonEvent {
 
     /**
      * Check if reflex actually collides with opposite edge in the future.
-     * Do this to avoid creating unnecessary events which would introduce superfluous scaling steps and hence rounding errors.
+     * Do this before creating the event and not inside of handle() to avoid creating unnecessary events
+     * which would slow down the queue and introduce superfluous scaling steps and hence rounding errors.
      */
-    public static boolean canHit(MovingNode reflexNode, MovingNode op0, MovingNode op1, float distanceSign, float time) {
-        // Check on which side 'reflexFuture' lies relative to bisectors of op0 and op1
-        Vector2f reflexFuture = reflexNode.bisector.mult(distanceSign * time).addLocal(reflexNode.skelNode.p);
+    private static float canHit(MovingNode reflexNode, MovingNode edgeStart, float distanceSign, float time) {
+        // Check if edge collapses before split occurs. If edge grows (invalid edgeCollapseTime = NaN), this will evaluate to false.
+        if(time >= edgeStart.edgeCollapseTime)
+            return INVALID_TIME;
 
-        Vector2f reflexRelative = reflexFuture.subtract(op0.skelNode.p);
-        float side0 = op0.bisector.determinant(reflexRelative);
-        if(side0 < 0)
-            return false;
+        //
+        // This check is not reliable because there could be another event that prevents the collapse of neighboring edges.
+        //
+            //reflexNode.updateEdge();
+            //reflexNode.prev.updateEdge();
 
-        reflexRelative.set(reflexFuture).subtractLocal(op1.skelNode.p);
-        float side1 = op1.bisector.determinant(reflexRelative);
-        if(side1 > 0)
-            return false;
+            // Check if reflexNode's neighbor edges collapse before split occurs. This would abort the SplitEvent anyway, making it superfluous.
+            //if((reflexNode.edgeCollapseTime != INVALID_TIME && time >= reflexNode.edgeCollapseTime) || (reflexNode.prev.edgeCollapseTime != INVALID_TIME && time >= reflexNode.prev.edgeCollapseTime)) {
+            //if(time >= reflexNode.edgeCollapseTime || time >= reflexNode.prev.edgeCollapseTime) {
+            //    System.out.println("  reflex' neighbor edges collapse before split, time="+time);
+            //    System.out.println("  reflexNode.edgeCollapseTime=" + reflexNode.edgeCollapseTime + "(" + reflexNode.id + "-" + reflexNode.next.id + ")");
+            //    System.out.println("  reflexNode.prev.edgeCollapseTime=" + reflexNode.prev.edgeCollapseTime + "(" + reflexNode.prev.id + "-" + reflexNode.id + ")");
+            //    return INVALID_TIME;
+            //}
 
-        return true;
+        // Check on which side 'reflexFuture' lies relative to the bisectors at start and end of this edge
+        Vector2f reflexFuture = reflexNode.bisector.mult(time).addLocal(reflexNode.skelNode.p);
+
+        Vector2f reflexRelative = reflexFuture.subtract(edgeStart.skelNode.p);
+        float side0 = edgeStart.bisector.determinant(reflexRelative);
+        if(side0 * distanceSign < 0)
+            return INVALID_TIME;
+
+        MovingNode edgeEnd = edgeStart.next;
+        reflexRelative.set(reflexFuture).subtractLocal(edgeEnd.skelNode.p);
+        float side1 = edgeEnd.bisector.determinant(reflexRelative);
+        if(side1 * distanceSign > 0)
+            return INVALID_TIME;
+
+        return time;
     }
 
 
     @Override
-    public boolean shouldAbort(MovingNode adjacentNode) {
-        return reflexNode == adjacentNode || op0 == adjacentNode || op1 == adjacentNode;
+    public void onEventQueued() {
+        reflexNode.addEvent(this);
+        op0.addEvent(this);
+        op1.addEvent(this);
     }
 
     @Override
-    public boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1) {
-        return op0 == edgeNode0 && op1 == edgeNode1;
+    public void onEventAborted(MovingNode adjacentNode, SkeletonContext ctx) {
+        ctx.addAbortedReflex(reflexNode);
+
+        if(adjacentNode == reflexNode) {
+            op0.removeEvent(this);
+            op1.removeEvent(this);
+        }
+        else if(adjacentNode == op0) {
+            reflexNode.removeEvent(this);
+            op1.removeEvent(this);
+        }
+        else {
+            assert adjacentNode == op1;
+            reflexNode.removeEvent(this);
+            op0.removeEvent(this);
+        }
+    }
+
+    @Override
+    public void onEventAborted(MovingNode edgeNode0, MovingNode edgeNode1, SkeletonContext ctx) {
+        ctx.addAbortedReflex(reflexNode);
+        reflexNode.removeEvent(this);
     }
 
 
@@ -94,7 +137,7 @@ class SplitEvent extends SkeletonEvent {
 
         MovingNode node1 = ctx.createMovingNode(reflexNode.id + "+");
         // Both MovingNodes use same SkeletonNode which will stay at this place.
-        // If they receive a valid bisector, a new SkeletonNode is made for them later.
+        // If they receive a valid bisector, a new SkeletonNode is made for them later in handle().
         node1.skelNode = node0.skelNode;
 
         // Update node0 links
@@ -111,7 +154,7 @@ class SplitEvent extends SkeletonEvent {
         node1.prev = reflexPrev;
         reflexPrev.next = node1;
 
-        handle(node0, ctx);
+        handle(node0, ctx); // Aborts events of reflexNode
         handle(node1, ctx);
     }
 

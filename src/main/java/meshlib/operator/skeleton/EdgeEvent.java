@@ -15,23 +15,23 @@ class EdgeEvent extends SkeletonEvent {
     }
 
 
-    /*public static float calcTime(MovingNode n0, MovingNode n1) {
-        //return n0.edgeCollapseTime;
-        Vector2f edge = n1.skelNode.p.subtract(n0.skelNode.p);
-        float time = edge.length() / Math.abs(n0.edgeLengthChange);
-        return time;
-    }*/
-
-
     @Override
-    public boolean shouldAbort(MovingNode adjacentNode) {
-        return n0 == adjacentNode || n1 == adjacentNode;
+    public void onEventQueued() {
+        n0.addEvent(this);
+        n1.addEvent(this);
     }
 
     @Override
-    public boolean shouldAbort(MovingNode edgeNode0, MovingNode edgeNode1) {
-        return n0 == edgeNode0 && n1 == edgeNode1;
+    public void onEventAborted(MovingNode adjacentNode, SkeletonContext ctx) {
+        // Remove other
+        if(adjacentNode == n0)
+            n1.removeEvent(this);
+        else
+            n0.removeEvent(this);
     }
+
+    @Override
+    public void onEventAborted(MovingNode edgeNode0, MovingNode edgeNode1, SkeletonContext ctx) {}
 
 
     @Override

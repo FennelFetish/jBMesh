@@ -131,7 +131,7 @@ public class SkeletonVisualization {
 
         for(MovingNode movingNode : ctx.getNodes()) {
             Vector2f p0 = movingNode.skelNode.p;
-            Vector2f p1 = movingNode.bisector.mult(0.33f * ctx.distanceSign).addLocal(p0);
+            Vector2f p1 = movingNode.bisector.mult(0.33f).addLocal(p0);
 
             Vertex v0 = bmesh.createVertex( coordSys.unproject(p0) );
             Vertex v1 = bmesh.createVertex( coordSys.unproject(p1) );

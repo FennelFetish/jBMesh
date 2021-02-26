@@ -10,7 +10,7 @@ class SkeletonNode {
     }
 
     public final Vector2f p = new Vector2f();
-    public final Map<SkeletonNode, EdgeType> outgoingEdges = new HashMap<>(1);
+    public final Map<SkeletonNode, EdgeType> outgoingEdges = new HashMap<>(2);
     public final Map<SkeletonNode, EdgeType> incomingEdges = new HashMap<>(2);
 
 

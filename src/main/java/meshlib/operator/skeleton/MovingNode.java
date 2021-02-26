@@ -1,6 +1,7 @@
 package meshlib.operator.skeleton;
 
 import com.jme3.math.Vector2f;
+import java.util.ArrayList;
 
 class MovingNode {
     public final String id;
@@ -12,8 +13,11 @@ class MovingNode {
     public final Vector2f edgeDir = new Vector2f();
     public float edgeCollapseTime = 0;
 
-    public final Vector2f bisector = new Vector2f(); // Length determines speed. Points outwards (in growing direction).
+    // Bisector points in move direction which depends on whether we're growing or shrinking. Length determines speed.
+    public final Vector2f bisector = new Vector2f();
     private boolean reflex = false;
+
+    private final ArrayList<SkeletonEvent> events = new ArrayList<>();
 
 
     MovingNode(String id) {
@@ -26,7 +30,28 @@ class MovingNode {
     }
 
 
-    // TODO: Include distanceSign into bisector?
+    public void addEvent(SkeletonEvent event) {
+        events.add(event);
+    }
+
+    public void removeEvent(SkeletonEvent event) {
+        boolean removed = events.remove(event);
+        assert removed;
+    }
+
+    public boolean tryRemoveEvent(SkeletonEvent event) {
+        return events.remove(event);
+    }
+
+    public void clearEvents() {
+        events.clear();
+    }
+
+    public Iterable<SkeletonEvent> events() {
+        return events;
+    }
+
+
     /**
      * @return True if bisector is valid and polygon is not degenerated at this corner.
      */
@@ -57,8 +82,8 @@ class MovingNode {
         float cos = vPrev.dot(vNext);
         if(cos < SkeletonContext.EPSILON_MINUS_ONE) {
             // Rotate vPrev by 90° counterclockwise
-            bisector.x = -vPrev.y;
-            bisector.y = vPrev.x;
+            bisector.x = -vPrev.y * distanceSign;
+            bisector.y = vPrev.x * distanceSign;
             reflex = false;
         }
         else {
@@ -71,11 +96,9 @@ class MovingNode {
                 return false;
             }
             else {
-                float speed = 1.0f / sin;
+                float speed = distanceSign / sin;
                 bisector.multLocal(speed);
-
-                float edgeLengthChange = bisector.dot(vPrev);
-                reflex = !sameSign(edgeLengthChange, distanceSign);
+                reflex = (bisector.dot(vPrev) < 0);
             }
         }
 
@@ -83,25 +106,18 @@ class MovingNode {
     }
 
 
-    public void calcEdgeLengthChange(float distanceSign) {
+    public void updateEdge() {
         edgeDir.set(next.skelNode.p).subtractLocal(skelNode.p);
         float edgeLength = edgeDir.length();
-        edgeDir.normalizeLocal();
+        edgeDir.divideLocal(edgeLength); // Normalize
 
-        // Change amount when shrinking. Outgoing edge from this vertex, counterclock-wise.
-        float edgeLengthChange = bisector.dot(edgeDir);
+        float edgeShrinkSpeed = bisector.dot(edgeDir);
+        edgeShrinkSpeed -= next.bisector.dot(edgeDir); // equivalent to: edgeShrinkSpeed += next.bisector.dot(edgeDir.negate());
 
-        // Equivalent to: edgeLengthChange += next.bisector.dot(edgeDir.negate());
-        edgeLengthChange -= next.bisector.dot(edgeDir);
-
-        if(sameSign(edgeLengthChange, distanceSign))
-            edgeCollapseTime = edgeLength / Math.abs(edgeLengthChange);
+        if(edgeShrinkSpeed > 0)
+            edgeCollapseTime = edgeLength / edgeShrinkSpeed;
         else
             edgeCollapseTime = SkeletonEvent.INVALID_TIME;
-    }
-
-    private static boolean sameSign(float a, float b) {
-        return (a >= 0) ^ (b < 0);
     }
 
 
@@ -122,6 +138,9 @@ class MovingNode {
 
     @Override
     public String toString() {
-        return "MovingNode{" + id + "}";
+        if(reflex)
+            return "MovingNode{" + id + " (reflex)}";
+        else
+            return "MovingNode{" + id + "}";
     }
 }
