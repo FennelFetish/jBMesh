@@ -1,2 +1,4 @@
 rootProject.name = 'jBMesh'
 
+include 'jbmesh-lib'
+include 'jbmesh-tools'

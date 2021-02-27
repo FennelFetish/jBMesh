@@ -5,3 +5,6 @@
 /.gradle/
 /.idea/
 /*.log
+
+/jbmesh-lib/build/
+/jbmesh-tools/build/

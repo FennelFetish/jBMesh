@@ -1,64 +1,25 @@
 plugins {
-    id 'application'
-    id 'java'
-}
-
-description = 'jBMesh'
-
-group 'meshlib'
-version '0.1-SNAPSHOT'
-
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
-
-ext.jmonkeyengineVersion = '3.3.2-stable' // from jCenter
-
-
-tasks.withType(JavaCompile) { // compile-time options:
-    options.compilerArgs << '-Xdiags:verbose'
-    options.compilerArgs << '-Xlint:unchecked'
-    options.deprecation = true
-    options.encoding = 'UTF-8'
-}
-
-tasks.withType(JavaExec) { // runtime options:
-    args = []
-    classpath sourceSets.main.runtimeClasspath
-    //debug true
-    enableAssertions true
-    //jvmArgs '-verbose:gc'
-    //jvmArgs '-Xbatch'
-    jvmArgs '-Xms512m', '-Xmx2048m'
-    //jvmArgs '-XX:+PrintCompilation'
-    //jvmArgs '-XX:+UseConcMarkSweepGC'
-    jvmArgs '-XX:+UseG1GC', '-XX:MaxGCPauseMillis=10'
+    id 'distribution'
 }
 
 
-mainClassName = 'meshlib.Main'
-if (!hasProperty('mainClass')) {
-    ext.mainClass = mainClassName
-}
-jar.manifest.attributes('Main-Class': mainClassName)
+allprojects {
+    group = 'jBMesh'
+    version = '0.1'
 
-
-repositories {
-    jcenter()
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'org.jmonkeyengine:jme3-core:'    + jmonkeyengineVersion
-    implementation 'org.jmonkeyengine:jme3-desktop:' + jmonkeyengineVersion
-    implementation 'org.jmonkeyengine:jme3-plugins:' + jmonkeyengineVersion
-    
-    runtimeOnly 'org.jmonkeyengine:jme3-lwjgl3:'     + jmonkeyengineVersion
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+    ext.jmonkeyengineVersion = '3.3.2-stable'
+    ext.junitVersion = '5.7.1'
+   
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
 }
 
 
-test {
-    useJUnitPlatform()
+subprojects {
+    apply plugin: 'java'
 }
+
+
+description = 'jBMesh - Java Mesh Processing Library'

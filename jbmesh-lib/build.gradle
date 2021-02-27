@@ -1,0 +1,21 @@
+// jbmesh-lib
+
+tasks.withType(JavaCompile) { // compile-time options:
+    options.compilerArgs << '-Xdiags:verbose'
+    options.compilerArgs << '-Xlint:unchecked'
+    options.deprecation = true
+    options.encoding = 'UTF-8'
+}
+
+
+dependencies {
+    implementation 'org.jmonkeyengine:jme3-core:' + jmonkeyengineVersion
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:' + junitVersion
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + junitVersion
+}
+
+
+test {
+    useJUnitPlatform()
+}
