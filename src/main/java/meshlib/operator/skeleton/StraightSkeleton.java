@@ -12,7 +12,6 @@ import meshlib.structure.BMesh;
 import meshlib.structure.Face;
 import meshlib.structure.Vertex;
 import meshlib.util.PlanarCoordinateSystem;
-import meshlib.util.Profiler;
 
 public class StraightSkeleton {
     private final BMesh bmesh;
@@ -39,13 +38,16 @@ public class StraightSkeleton {
      *                 Positive: Grow face. Negative: Shrink face.
      */
     public void setDistance(float distance) {
+        if(distance == Float.POSITIVE_INFINITY) {
+            throw new IllegalArgumentException("Cannot scale outwards to infinity.");
+        }
+
         distanceSign = Math.signum(distance);
         offsetDistance = Math.abs(distance);
     }
 
 
     public void apply(Face face) {
-        //System.out.println("===== Apply StraightSkeleton, distance: " + (offsetDistance*distanceSign) + " =====");
         List<Vertex> vertices = face.getVertices();
         assert vertices.size() >= 3;
 
@@ -58,21 +60,13 @@ public class StraightSkeleton {
 
         // When shrinking to infinity, use polygon's bounding rectangle to determine max distance (less events queued = speed up)
         if(distanceSign < 0 && offsetDistance == Float.POSITIVE_INFINITY) {
-            float dist = diagonalSize * 0.51f;
-            //System.out.println("Set distance to: " + dist);
-            ctx.distance = dist;
+            ctx.distance = diagonalSize * 0.51f;
         }
 
         if(ctx.distance != 0) {
             initBisectors();
-
-            try(Profiler p = Profiler.start("StraightSkeleton.initEvents")) {
-                initEvents();
-            }
-
-            try(Profiler p = Profiler.start("StraightSkeleton.loop")) {
-                loop();
-            }
+            initEvents();
+            loop();
         }
     }
 
@@ -80,7 +74,6 @@ public class StraightSkeleton {
     private void loop() {
         ctx.time = 0;
 
-        // TODO: Somehow prevent unnecessary events when offsetDistance is infinite? Incremental steps until no MovingNodes are left?
         while(true) {
             //ctx.printNodes();
             //ctx.printEvents();
@@ -93,16 +86,8 @@ public class StraightSkeleton {
 
             scale(event.time - ctx.time);
             ctx.time = event.time;
-
-            try(Profiler p = Profiler.start("StraightSkeleton.loop.handle")) {
-                //System.out.println("{{ handle: " + event + ", time=" + ctx.time);
-                event.handle(ctx);
-                //System.out.println("}} handled");
-            }
-
-            try(Profiler p = Profiler.start("StraightSkeleton.loop.recheckAbortedReflexNodes")) {
-                ctx.recheckAbortedReflexNodes();
-            }
+            event.handle(ctx);
+            ctx.recheckAbortedReflexNodes();
         }
     }
 
@@ -194,15 +179,13 @@ public class StraightSkeleton {
         if(dist == 0)
             return;
 
-        try(Profiler p = Profiler.start("StraightSkeleton.scale")) {
-            Vector2f dir = new Vector2f();
+        Vector2f dir = new Vector2f();
 
-            for(MovingNode node : ctx.getNodes()) {
-                dir.set(node.bisector).multLocal(dist);
-                node.skelNode.p.addLocal(dir);
+        for(MovingNode node : ctx.getNodes()) {
+            dir.set(node.bisector).multLocal(dist);
+            node.skelNode.p.addLocal(dir);
 
-                assert !isInvalid(node.skelNode.p) : "Invalid position after scale: bisector=" + node.bisector + ", dir=" + dir;
-            }
+            assert !isInvalid(node.skelNode.p) : "Invalid position after scale: bisector=" + node.bisector + ", dir=" + dir;
         }
     }
 

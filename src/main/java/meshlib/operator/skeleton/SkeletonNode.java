@@ -35,12 +35,6 @@ class SkeletonNode {
     }
 
 
-    public void removeEdge(SkeletonNode target) {
-        outgoingEdges.remove(target);
-        target.incomingEdges.remove(this);
-    }
-
-
     public void remapIncoming(SkeletonNode newTarget) {
         assert outgoingEdges.isEmpty();
 

@@ -60,20 +60,13 @@ class SplitEvent extends SkeletonEvent {
         if(time >= edgeStart.edgeCollapseTime)
             return INVALID_TIME;
 
-        //
         // This check is not reliable because there could be another event that prevents the collapse of neighboring edges.
-        //
-            //reflexNode.updateEdge();
-            //reflexNode.prev.updateEdge();
-
+            /*
             // Check if reflexNode's neighbor edges collapse before split occurs. This would abort the SplitEvent anyway, making it superfluous.
-            //if((reflexNode.edgeCollapseTime != INVALID_TIME && time >= reflexNode.edgeCollapseTime) || (reflexNode.prev.edgeCollapseTime != INVALID_TIME && time >= reflexNode.prev.edgeCollapseTime)) {
-            //if(time >= reflexNode.edgeCollapseTime || time >= reflexNode.prev.edgeCollapseTime) {
-            //    System.out.println("  reflex' neighbor edges collapse before split, time="+time);
-            //    System.out.println("  reflexNode.edgeCollapseTime=" + reflexNode.edgeCollapseTime + "(" + reflexNode.id + "-" + reflexNode.next.id + ")");
-            //    System.out.println("  reflexNode.prev.edgeCollapseTime=" + reflexNode.prev.edgeCollapseTime + "(" + reflexNode.prev.id + "-" + reflexNode.id + ")");
-            //    return INVALID_TIME;
-            //}
+            if(time >= reflexNode.edgeCollapseTime || time >= reflexNode.prev.edgeCollapseTime) {
+                return INVALID_TIME;
+            }
+            */
 
         // Check on which side 'reflexFuture' lies relative to the bisectors at start and end of this edge
         Vector2f reflexFuture = reflexNode.bisector.mult(time).addLocal(reflexNode.skelNode.p);

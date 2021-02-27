@@ -1,11 +1,9 @@
 package meshlib.operator.skeleton;
 
 import java.util.*;
-import meshlib.util.Profiler;
 
 class SkeletonContext {
     static final float EPSILON = 0.0001f;
-    static final float EPSILON_SQUARED = EPSILON * EPSILON;
     static final float EPSILON_MINUS_ONE = EPSILON - 1f; // 0.9999
 
     private int nextMovingNodeId = 1;
@@ -39,6 +37,7 @@ class SkeletonContext {
 
         movingNodes.clear();
         eventQueue.clear();
+        abortedReflex.clear();
     }
 
 
@@ -76,7 +75,6 @@ class SkeletonContext {
 
     public void enqueue(SkeletonEvent event) {
         assert event.time >= time : "time: " + time + ", event.time: " + event.time + " // " + event;
-        //System.out.println("Queued: " + event + " (time: " + event.time + ")");
 
         boolean added = eventQueue.add(event);
         assert added;
@@ -88,72 +86,33 @@ class SkeletonContext {
     }
 
 
+    /**
+     * Node invalidated.
+     */
     public void abortEvents(MovingNode adjacentNode) {
-        try(Profiler p = Profiler.start("SkeletonContext.abortEvents(node)")) {
-            // TODO: This is the bottleneck of the algorithm. Can we reduce number of events or make this less than O(n)?
-            //eventQueue.removeIf(event -> event.shouldAbort(adjacentNode));
+        for(SkeletonEvent event : adjacentNode.events()) {
+            event.onEventAborted(adjacentNode, this);
+            eventQueue.remove(event);
+        }
 
-            //System.out.println("Aborting events for adjacent node: " + adjacentNode);
-            /*for(Iterator<SkeletonEvent> it = eventQueue.iterator(); it.hasNext(); ) {
-                SkeletonEvent event = it.next();
-                if(event.shouldAbort(adjacentNode)) {
-                    //System.out.println("  - abort " + event);
-                    it.remove();
-                }
-            }*/
+        adjacentNode.clearEvents();
+    }
 
-            //eventQueue.removeAll(adjacentNode.events);
-            //adjacentNode.events.clear();
-
-
-            //System.out.println("Aborting events for adjacent node: " + adjacentNode);
-            for(SkeletonEvent event : adjacentNode.events()) {
-                //System.out.println("  - abort " + event);
-                event.onEventAborted(adjacentNode, this);
+    /**
+     * Edge invalidated.
+     */
+    public void abortEvents(MovingNode edgeNode0, MovingNode edgeNode1) {
+        // Abort all events that exist in both edgeNode0's and edgeNode1's list
+        for(Iterator<SkeletonEvent> it0=edgeNode0.events().iterator(); it0.hasNext(); ) {
+            SkeletonEvent event = it0.next();
+            if(edgeNode1.tryRemoveEvent(event)) {
+                it0.remove();
+                event.onEventAborted(edgeNode0, edgeNode1, this);
                 eventQueue.remove(event);
             }
-            adjacentNode.clearEvents();
         }
     }
 
-    public void abortEvents(MovingNode edgeNode0, MovingNode edgeNode1) {
-        try(Profiler p = Profiler.start("SkeletonContext.abortEvents(node, node)")) {
-            //eventQueue.removeIf(event -> event.shouldAbort(edgeNode0, edgeNode1));
-
-            //System.out.println("Aborting events for edge: " + edgeNode0 + "-" + edgeNode1);
-            /*for(Iterator<SkeletonEvent> it = eventQueue.iterator(); it.hasNext(); ) {
-                SkeletonEvent event = it.next();
-                if(event.shouldAbort(edgeNode0, edgeNode1)) {
-                    //System.out.println("  - abort " + event);
-                    it.remove();
-                }
-            }*/
-
-
-            // HashSet
-            /*for(Iterator<SkeletonEvent> it=edgeNode0.events.iterator(); it.hasNext(); ) {
-                SkeletonEvent event = it.next();
-                if(edgeNode1.events.remove(event)) {
-                    it.remove();
-                    event.onEventAborted(edgeNode0, edgeNode1);
-                    eventQueue.remove(event);
-                }
-            }*/
-
-
-            // ArrayList / LinkedList
-            //System.out.println("Aborting events for edge: " + edgeNode0 + "-" + edgeNode1);
-            for(Iterator<SkeletonEvent> it0=edgeNode0.events().iterator(); it0.hasNext(); ) {
-                SkeletonEvent event = it0.next();
-                if(edgeNode1.tryRemoveEvent(event)) {
-                    //System.out.println("  - abort " + event);
-                    it0.remove();
-                    event.onEventAborted(edgeNode0, edgeNode1, this);
-                    eventQueue.remove(event);
-                }
-            }
-        }
-    }
 
     public void printEvents() {
         System.out.println("Events:");
@@ -168,7 +127,6 @@ class SkeletonContext {
             System.out.println(" - " + node);
         }
     }
-
 
 
     //
@@ -197,7 +155,6 @@ class SkeletonContext {
     }
 
 
-    // Optimized: Keep only nearest, only create, don't enqueue
     public SplitEvent tryReplaceNearestSplitEvent(MovingNode reflexNode, MovingNode op0, MovingNode op1, SplitEvent nearest) {
         assert reflexNode.isReflex();
 
