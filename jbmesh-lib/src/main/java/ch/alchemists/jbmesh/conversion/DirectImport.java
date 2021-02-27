@@ -1,7 +1,5 @@
 package ch.alchemists.jbmesh.conversion;
 
-import com.jme3.math.Vector3f;
-import com.jme3.scene.Mesh;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.ObjectProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
@@ -11,6 +9,8 @@ import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
+import com.jme3.scene.Mesh;
 
 public class DirectImport {
     public static BMesh importTriangles(Mesh inputMesh) {

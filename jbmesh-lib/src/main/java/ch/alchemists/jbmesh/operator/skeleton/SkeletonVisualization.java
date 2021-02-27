@@ -1,12 +1,12 @@
 package ch.alchemists.jbmesh.operator.skeleton;
 
-import com.jme3.math.Vector2f;
-import com.jme3.math.Vector3f;
-import java.util.*;
 import ch.alchemists.jbmesh.lookup.ExactHashDeduplication;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
+import com.jme3.math.Vector2f;
+import com.jme3.math.Vector3f;
+import java.util.*;
 
 public class SkeletonVisualization {
     public static class VisNode {

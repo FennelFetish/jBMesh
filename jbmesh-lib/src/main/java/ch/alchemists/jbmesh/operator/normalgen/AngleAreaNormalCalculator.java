@@ -1,11 +1,11 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
-import com.jme3.math.Vector3f;
 import ch.alchemists.jbmesh.data.property.FloatProperty;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
+import com.jme3.math.Vector3f;
 
 @Deprecated
 public class AngleAreaNormalCalculator extends AngleNormalCalculator {

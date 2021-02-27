@@ -1,14 +1,14 @@
 package ch.alchemists.jbmesh.operator.meshgen;
 
+import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
+import ch.alchemists.jbmesh.lookup.VertexDeduplication;
+import ch.alchemists.jbmesh.structure.BMesh;
+import ch.alchemists.jbmesh.util.HashGrid;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.math.Vector3f;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
-import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
-import ch.alchemists.jbmesh.lookup.VertexDeduplication;
-import ch.alchemists.jbmesh.structure.BMesh;
-import ch.alchemists.jbmesh.util.HashGrid;
 
 public class MarchingCubeBuilder {
     private static final float DEDUP_EPSILON = 0.0001f;

@@ -1,11 +1,14 @@
 package ch.alchemists.jbmesh.operator.bool;
 
-import com.jme3.math.Vector3f;
-import java.util.*;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.operator.meshgen.DistanceFunction;
 import ch.alchemists.jbmesh.structure.*;
+import com.jme3.math.Vector3f;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 // TODO: Create vertices inside intersecting faces when distance function makes a sharp corner? (Box)
 public abstract class Cut {

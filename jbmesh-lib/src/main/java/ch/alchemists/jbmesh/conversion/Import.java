@@ -1,10 +1,10 @@
 package ch.alchemists.jbmesh.conversion;
 
-import com.jme3.math.Vector3f;
-import com.jme3.scene.Mesh;
 import ch.alchemists.jbmesh.lookup.*;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
+import com.jme3.scene.Mesh;
 
 // https://www.researchgate.net/publication/4070748_Efficient_topology_construction_from_triangle_soup
 // Instead:

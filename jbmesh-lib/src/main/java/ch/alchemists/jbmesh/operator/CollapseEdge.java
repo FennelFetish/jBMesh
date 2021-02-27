@@ -1,10 +1,10 @@
 package ch.alchemists.jbmesh.operator;
 
+import ch.alchemists.jbmesh.structure.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import ch.alchemists.jbmesh.structure.*;
 
 // TODO: Should be done only through euler operators but this seems unnecessarily difficult in this case (when considering non-manifold T-structures for example).
 //       Maybe turn this into an euler operator itself?

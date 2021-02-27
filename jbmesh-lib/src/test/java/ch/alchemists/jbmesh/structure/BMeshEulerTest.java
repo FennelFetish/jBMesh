@@ -1,7 +1,7 @@
 package ch.alchemists.jbmesh.structure;
 
-import java.util.Iterator;
 import ch.alchemists.jbmesh.TestUtil;
+import java.util.Iterator;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 

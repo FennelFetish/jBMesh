@@ -1,8 +1,8 @@
 package ch.alchemists.jbmesh.data.property;
 
-import com.jme3.math.ColorRGBA;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.Element;
+import com.jme3.math.ColorRGBA;
 
 public class ColorProperty<E extends Element> extends FloatTupleProperty<E> {
     public ColorProperty(String name) {

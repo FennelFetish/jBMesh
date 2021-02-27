@@ -1,9 +1,9 @@
 package ch.alchemists.jbmesh.data.property;
 
-import com.jme3.math.Vector3f;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.Element;
 import ch.alchemists.jbmesh.util.Func;
+import com.jme3.math.Vector3f;
 
 public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
     private final Vector3f tempA = new Vector3f();

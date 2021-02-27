@@ -1,8 +1,5 @@
 package ch.alchemists.jbmesh.operator.bool;
 
-import com.jme3.bounding.BoundingBox;
-import com.jme3.math.Vector3f;
-import java.util.*;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
@@ -16,6 +13,9 @@ import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.HashGrid;
+import com.jme3.bounding.BoundingBox;
+import com.jme3.math.Vector3f;
+import java.util.*;
 
 public class Subtract extends Cut {
     private final List<Face> insideFaces = new ArrayList<>();

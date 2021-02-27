@@ -1,10 +1,5 @@
 package ch.alchemists.jbmesh.operator.skeleton;
 
-import com.jme3.math.Vector2f;
-import com.jme3.math.Vector3f;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.operator.FaceOps;
@@ -12,6 +7,11 @@ import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
+import com.jme3.math.Vector2f;
+import com.jme3.math.Vector3f;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 public class StraightSkeleton {
     private final BMesh bmesh;

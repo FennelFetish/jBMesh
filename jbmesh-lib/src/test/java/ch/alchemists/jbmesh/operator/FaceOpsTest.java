@@ -1,10 +1,10 @@
 package ch.alchemists.jbmesh.operator;
 
-import com.jme3.math.Vector3f;
 import ch.alchemists.jbmesh.TestUtil;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 

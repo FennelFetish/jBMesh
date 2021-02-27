@@ -1,9 +1,9 @@
 package ch.alchemists.jbmesh.structure;
 
+import ch.alchemists.jbmesh.data.Element;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import ch.alchemists.jbmesh.data.Element;
 
 public class Face extends Element {
     // Never NULL

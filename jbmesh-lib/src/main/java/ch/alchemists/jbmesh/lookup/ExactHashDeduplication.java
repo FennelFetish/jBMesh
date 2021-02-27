@@ -1,12 +1,12 @@
 package ch.alchemists.jbmesh.lookup;
 
-import com.jme3.math.Vector3f;
-import java.util.HashMap;
-import java.util.Map;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExactHashDeduplication implements VertexDeduplication {
     private final Map<Vector3f, Vertex> map = new HashMap<>();

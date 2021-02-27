@@ -1,13 +1,9 @@
 package ch.alchemists.jbmesh.lookup;
 
-import com.jme3.math.Vector3f;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
+import java.util.*;
 
 // TODO: Use insertion sort or TreeSet instead
 public class SortedVertexDeduplication {

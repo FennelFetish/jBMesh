@@ -1,13 +1,13 @@
 package ch.alchemists.jbmesh.lookup;
 
-import com.jme3.math.Vector3f;
-import java.util.ArrayList;
-import java.util.List;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.HashGrid;
+import com.jme3.math.Vector3f;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GridVertexDeduplication implements VertexDeduplication {
 

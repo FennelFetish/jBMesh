@@ -1,9 +1,9 @@
 package ch.alchemists.jbmesh;
 
-import java.util.ArrayList;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
+import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

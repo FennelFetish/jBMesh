@@ -1,11 +1,5 @@
 package ch.alchemists.jbmesh.conversion;
 
-import com.jme3.math.Vector3f;
-import com.jme3.scene.VertexBuffer;
-import com.jme3.util.BufferUtils;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
-import java.util.ArrayList;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.Element;
@@ -14,6 +8,12 @@ import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
+import com.jme3.scene.VertexBuffer;
+import com.jme3.util.BufferUtils;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
+import java.util.ArrayList;
 
 public class TriangleIndices {
     private static class Triangle extends Element {

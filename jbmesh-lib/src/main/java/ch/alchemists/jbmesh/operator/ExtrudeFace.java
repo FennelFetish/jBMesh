@@ -1,11 +1,11 @@
 package ch.alchemists.jbmesh.operator;
 
-import java.util.ArrayList;
-import java.util.List;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
+import java.util.ArrayList;
+import java.util.List;
 
 // extrudeVertex        -> new edge
 // extrudeEdgeQuad      -> new face

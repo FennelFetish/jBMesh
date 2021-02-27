@@ -1,12 +1,10 @@
 package ch.alchemists.jbmesh.operator;
 
-import com.jme3.math.Vector3f;
-import java.util.Comparator;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
-import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
 
 public class VertexOps {
     private final BMesh bmesh;

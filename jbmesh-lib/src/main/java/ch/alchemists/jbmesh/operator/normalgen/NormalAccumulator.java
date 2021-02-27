@@ -1,8 +1,8 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
+import ch.alchemists.jbmesh.structure.Loop;
 import com.jme3.math.Vector3f;
 import java.util.ArrayList;
-import ch.alchemists.jbmesh.structure.Loop;
 
 class NormalAccumulator {
     /**

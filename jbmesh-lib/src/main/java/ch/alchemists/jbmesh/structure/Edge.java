@@ -1,8 +1,8 @@
 package ch.alchemists.jbmesh.structure;
 
+import ch.alchemists.jbmesh.data.Element;
 import java.util.Iterator;
 import java.util.Objects;
-import ch.alchemists.jbmesh.data.Element;
 
 /**
  * Has no specific direction.
