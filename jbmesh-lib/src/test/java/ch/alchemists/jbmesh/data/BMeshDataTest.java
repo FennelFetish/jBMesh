@@ -2,16 +2,29 @@ package ch.alchemists.jbmesh.data;
 
 import ch.alchemists.jbmesh.data.property.FloatProperty;
 import ch.alchemists.jbmesh.data.property.IntTupleProperty;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 public class BMeshDataTest {
     private static class TestElement extends Element {
         @Override
         protected void releaseElement() {}
+    }
+
+
+    @Test
+    public void testElementReference() {
+        BMeshData<TestElement> data = new BMeshData<>(TestElement::new);
+
+        TestElement e1 = data.create();
+        data.destroy(e1);
+        TestElement e2 = data.create();
+
+        assertFalse(e1.isAlive());
+        assertNotEquals(e1, e2);
+
+        data.destroy(e1);
+        assertTrue(e2.isAlive());
     }
     
 

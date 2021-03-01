@@ -5,59 +5,17 @@ import java.nio.Buffer;
 import java.util.*;
 
 public class BMeshData<E extends Element> implements Iterable<E> {
-    // TODO: Functionality to compact single property arrays? With a Property.isCompact flag that is set to false on add/remove
-    //       Or check if the length of the array = numElementsAlive
-
     public static interface ElementFactory<E extends Element> {
         E createElement();
     }
 
 
-    private class ElementIterator implements Iterator<E> {
-        private final int expectedModCount;
-        private int index = -1;
-
-        private ElementIterator() {
-            expectedModCount = modCount;
-            skipToNextListed();
-        }
-
-        @Override
-        public boolean hasNext() {
-            if(modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-
-            return index < elements.size();
-        }
-
-        @Override
-        public E next() {
-            if(modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-
-            E element = elements.get(index);
-            skipToNextListed();
-            return element;
-        }
-
-        private void skipToNextListed() {
-            // Skip to next listed element (alive and non-virtual)
-            while(++index < elements.size() && !elements.get(index).isListed()) {}
-        }
-    }
-
-
     private final ElementFactory<E> factory;
-    private ArrayList<E> elements = new ArrayList<>();
-    private final Deque<Integer> freeList = new ArrayDeque<>(); // PriorityQueue?
-    // A sorted TreeSet could be used in iterator to optimize skipping? No, it would need to additionally iterate through tree, since it stores single elements.
-    // A sorted Set that stores non-intersecting ranges could be used: [3] [4] [5-7] [9] [12] [27-60] [82]   SegmentTree? IntervalTree? --> no...? but RangeTree?
-    // Or store the range (a link to the next active element) in the elements themselves. Similar to a skip list.
+    private final ArrayList<E> elements = new ArrayList<>();
 
     private static final int INITIAL_ARRAY_SIZE = 32;
     private static final float GROW_FACTOR = 1.5f;
     private int arraySize = INITIAL_ARRAY_SIZE;
-    private int numElementsAlive = 0;
     private int numVirtual = 0;
 
     private int modCount = 0;
@@ -76,7 +34,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
     public int size() {
-        return numElementsAlive - numVirtual;
+        return elements.size() - numVirtual;
     }
 
     /**
@@ -84,7 +42,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
      * @return
      */
     public int totalSize() {
-        return numElementsAlive;
+        return elements.size();
     }
 
 
@@ -98,46 +56,33 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
     public List<E> getAll() {
-        List<E> list = new ArrayList<E>(size());
-        getAll(list);
-        return list;
+        return new ArrayList<>(elements);
     }
 
 
     public void clear() {
         for(E element : elements) {
-            freeList.add(element.getIndex());
             element.release();
         }
 
-        numElementsAlive = 0;
+        elements.clear();
+
         numVirtual = 0;
         modCount++;
     }
 
 
     public E create() {
-        E element;
-        
-        if(freeList.isEmpty()) {
-            final int newIndex = elements.size();
-            if(newIndex >= arraySize) {
-                //int capacity = (int) Math.ceil(arraySize * GROW_FACTOR);
-                int capacity = arraySize + (arraySize >> 1) + 2;
-                ensureCapacity(capacity);
-            }
-
-            element = factory.createElement();
-            element.setIndex(newIndex);
-            elements.add(element);
-        }
-        else {
-            int index = freeList.poll();
-            element = elements.get(index);
-            element.setIndex(index);
+        int newIndex = elements.size();
+        if(newIndex >= arraySize) {
+            int capacity = (int) Math.ceil(arraySize * GROW_FACTOR);
+            ensureCapacity(capacity);
         }
 
-        numElementsAlive++;
+        E element = factory.createElement();
+        element.setIndex(newIndex);
+        elements.add(element);
+
         modCount++;
         return element;
     }
@@ -150,16 +95,27 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
     public void destroy(E element) {
-        if(element.getIndex() < 0)
+        final int index = element.getIndex();
+        if(index < 0)
             return;
 
         if(element.checkFlags(Element.FLAG_VIRTUAL))
             numVirtual--;
 
-        freeList.add(element.getIndex());
+        // Move last element into this slot
+        int lastIndex = elements.size() - 1;
+        if(index != lastIndex) {
+            E lastElement = elements.get(lastIndex);
+            copyProperties(lastElement, element);
+            elements.set(index, lastElement);
+            lastElement.setIndex(index);
+        }
+
+        elements.remove(lastIndex);
         element.release();
-        numElementsAlive--;
         modCount++;
+
+        // TODO: Reset property values?
     }
 
 
@@ -204,14 +160,25 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
 
+    /**
+     * Increases the capacity of the underlying data structures, if necessary,
+     * to ensure that it can hold at least the number of elements specified by the minimum capacity argument.
+     * @param minCapacity the desired minimum capacity
+     */
     public void ensureCapacity(int minCapacity) {
-        minCapacity -= freeList.size();
+        elements.ensureCapacity(minCapacity);
+
         if(arraySize < minCapacity)
             resize(minCapacity, arraySize);
     }
 
-    public void reserve(int count) {
-        ensureCapacity(numElementsAlive + count);
+    /**
+     * Ensures that at least <i>count</i> more elements can be created before further reallocations
+     * of the underlying data structures become necessary.
+     * @param count the desired number of elements to reserve space for
+     */
+    public void reserveCapacity(int count) {
+        ensureCapacity(elements.size() + count);
     }
 
 
@@ -224,134 +191,25 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
 
-    // TODO: Instead of moving all segments of data, move elements at the back into free slots?
-    //    -> Doesn't matter because we have to copy all data into new array anyway.
-    //    -> But we wouldn't have to sort the free list.
-    //    -> It would not preserve the current vertex order.
-
+    // TODO: Rename to trimToSize()?
+    // TODO: The arrays don't really need to be trimmed after each change. The size of the target OpenGL buffers matters more.
+    //         -> Only write necessary data but allow arrays to be longer.
     public void compactData() {
-        if(arraySize == numElementsAlive)
-            return;
+        int numElements = elements.size();
+        //elements.trimToSize();
 
-        if(freeList.isEmpty()) {
-            resize(numElementsAlive, numElementsAlive);
-            return;
-        }
-
-        List<CompactOp> compactOps = buildCompactOps();
-        for(BMeshProperty property : properties.values()) {
-            Object oldArray = property.allocReplace(numElementsAlive);
-            for(CompactOp op : compactOps)
-                op.copy(property.numComponents, oldArray, property.data);
-        }
-
-        for(CompactOp op : compactOps) {
-            for(int i=op.firstIndex; i<=op.lastIndex; ++i)
-                elements.get(i).setIndex(i-op.shift);
-        }
-
-        // Remove dead elements (index = -1).
-        // TODO: Can be optimized since we have free list
-        // Much faster to replace the array instead of (re-)moving elements
-        ArrayList<E> newElements = new ArrayList<>(numElementsAlive);
-        for(E e : elements) {
-            if(e.isAlive()) {
-                assert e.getIndex() == newElements.size();
-                newElements.add(e);
-            }
-        }
-
-        elements = newElements;
-        freeList.clear();
-        arraySize = numElementsAlive;
-
-        modCount++;
-    }
-
-
-    public void compactDataWithoutResize() {
-        // ...
-
-        // Or make a compact() and trim() method?
-        // compact: Process free list
-        // trim: shrink arrays
-    }
-
-
-    private List<CompactOp> buildCompactOps() {
-        int[] free = new int[freeList.size()];
-        for(int i=0; !freeList.isEmpty(); ++i)
-            free[i] = freeList.poll();
-        Arrays.sort(free); // TODO: Most time is spend here -> Use sorted data structure?
-
-        List<CompactOp> ops = new ArrayList<>(free.length + 1);
-
-        // CompactOp for copying up until the first free slot
-        if(free.length == 0 || free[0] > 0) {
-            CompactOp op = new CompactOp();
-            op.firstIndex = 0;
-            op.lastIndex = (free.length > 0) ? free[0]-1 : elements.size()-1;
-            op.shift = 0;
-            ops.add(op);
-        }
-
-        int shift = 0;
-        for(int f=0; f<free.length; ++f) {
-            shift++;
-
-            int copyLastIndex;
-            if(f+1 >= free.length)
-                copyLastIndex = elements.size()-1;
-            else if(free[f+1] == free[f]+1)
-                continue;
-            else
-                copyLastIndex = free[f+1] - 1;
-
-            CompactOp op = new CompactOp();
-            op.firstIndex = free[f] + 1;
-            op.lastIndex = copyLastIndex;
-            op.shift = shift;
-            ops.add(op);
-        }
-
-        return ops;
-    }
-
-
-    private static final class CompactOp {
-        private int firstIndex;
-        private int lastIndex;
-        private int shift;
-
-        public void copy(int numComponents, Object srcArray, Object destArray) {
-            int copyStartIndex = firstIndex * numComponents;
-            int copyLength = (lastIndex-firstIndex + 1) * numComponents;
-            int copyShift = shift * numComponents;
-
-            System.arraycopy(srcArray, copyStartIndex, destArray, copyStartIndex-copyShift, copyLength);
-        }
-
-        @Override
-        public String toString() {
-            return String.format("op: %s-%s by %s", firstIndex, lastIndex, shift);
+        if(arraySize != numElements) {
+            resize(numElements, numElements);
+            arraySize = numElements;
+            modCount++;
         }
     }
 
 
     public <TArray> TArray getCompactData(BMeshProperty<E, TArray> property) {
-        final int size = numElementsAlive * property.numComponents;
+        final int size = elements.size() * property.numComponents;
         TArray array = property.alloc(size);
-
-        if(arraySize == numElementsAlive || freeList.isEmpty()) {
-            System.arraycopy(property.data, 0, array, 0, size);
-            return array;
-        }
-
-        List<CompactOp> compactOps = buildCompactOps();
-        for(CompactOp op : compactOps) {
-            op.copy(property.numComponents, property.data, array);
-        }
-
+        System.arraycopy(property.data, 0, array, 0, size);
         return array;
     }
 
@@ -365,7 +223,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     public void sort(Comparator<E> comparator) {
         // Sort backing arrays, reassign element indices
         // For optimizing OpenGL performance? Does this matter?
-        //   -> Yes because of vertex cache. The vertex shader may be called multipe times for the same vertex
+        //   -> Yes because of vertex cache. The vertex shader may be called multiple times for the same vertex
         //   if there's too much space between uses (indices).
         // e.g. sort vertices by face for better cache utilisation, sort loops by face
         // https://gamedev.stackexchange.com/questions/59163/is-creating-vertex-index-buffer-optimized-this-way
@@ -387,6 +245,41 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     public void copyProperties(E from, E to) {
         for(BMeshProperty<E, ?> prop : properties.values()) {
             prop.copy(from, to);
+        }
+    }
+
+
+
+    private class ElementIterator implements Iterator<E> {
+        private final int expectedModCount;
+        private int index = -1;
+
+        private ElementIterator() {
+            expectedModCount = modCount;
+            skipToNextListed();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if(modCount != expectedModCount)
+                throw new ConcurrentModificationException();
+
+            return index < elements.size();
+        }
+
+        @Override
+        public E next() {
+            if(modCount != expectedModCount)
+                throw new ConcurrentModificationException();
+
+            E element = elements.get(index);
+            skipToNextListed();
+            return element;
+        }
+
+        private void skipToNextListed() {
+            // Skip to next listed element (alive and non-virtual)
+            while(++index < elements.size() && !elements.get(index).isListed()) {}
         }
     }
 }
