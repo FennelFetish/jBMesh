@@ -1,4 +1,4 @@
-package ch.alchemists.jbmesh.tools;
+package ch.alchemists.jbmesh.util;
 
 import com.jme3.app.Application;
 import com.jme3.app.state.BaseAppState;
@@ -51,6 +51,7 @@ public class PanZoomState extends BaseAppState {
         cam = app.getCamera();
         cam.setLocation(initialPos);
         cam.lookAt(new Vector3f(initialPos.x, initialPos.y, 0), Vector3f.UNIT_Y);
+        cam.setFrustumPerspective(45.0f, (float)cam.getWidth()/cam.getHeight(), 1.0f, 10000);
 
         InputManager inputManager = app.getInputManager();
         inputManager.addMapping(ACT_PAN, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
