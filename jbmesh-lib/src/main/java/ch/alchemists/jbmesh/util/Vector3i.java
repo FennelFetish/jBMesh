@@ -118,9 +118,9 @@ public final class Vector3i {
             return true;
 
         Vector3i comp = (Vector3i) o;
-        if(Integer.compare(x, comp.x) != 0) return false;
-        if(Integer.compare(y, comp.y) != 0) return false;
-        if(Integer.compare(z, comp.z) != 0) return false;
+        if(x != comp.x) return false;
+        if(y != comp.y) return false;
+        if(z != comp.z) return false;
         return true;
     }
 

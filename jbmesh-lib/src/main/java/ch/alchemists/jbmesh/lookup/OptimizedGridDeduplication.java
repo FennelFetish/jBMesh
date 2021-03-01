@@ -115,7 +115,7 @@ public class OptimizedGridDeduplication implements VertexDeduplication {
     }
 
 
-    private int[][] walkDirections(HashGrid.Index gridIndex, Vector3f location) {
+    private int[][] getWalkDirections(HashGrid.Index gridIndex, Vector3f location) {
         float pivotX = (gridIndex.x * cellSize) - epsilon;
         float pivotY = (gridIndex.y * cellSize) - epsilon;
         float pivotZ = (gridIndex.z * cellSize) - epsilon;
@@ -130,11 +130,9 @@ public class OptimizedGridDeduplication implements VertexDeduplication {
 
 
     private Vertex searchVertexWalk(HashGrid.Index gridIndex, Vector3f location) {
-        int[][] directions = walkDirections(gridIndex, location);
+        int[][] directions = getWalkDirections(gridIndex, location);
 
         for(int[] dir : directions) {
-            //HashGrid.Index walkIndex = gridIndex.walk(dir[0], dir[1], dir[2]);
-            //List<Vertex> vertices = grid.get(walkIndex);
             List<Vertex> vertices = grid.getNeighbor(gridIndex, dir[0], dir[1], dir[2]);
             if(vertices == null)
                 continue;

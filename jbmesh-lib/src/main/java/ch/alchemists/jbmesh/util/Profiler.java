@@ -11,6 +11,7 @@ public final class Profiler implements AutoCloseable {
         public final String name;
         public final int order;
         public long time = 0;
+        public long min = Long.MAX_VALUE;
         public long max = 0;
         public long runs = 0;
         
@@ -89,10 +90,11 @@ public final class Profiler implements AutoCloseable {
         synchronized(ROOT) {
             entry.time += duration;
             entry.runs++;
-            
-            if(duration > entry.max) {
+
+            if(duration < entry.min)
+                entry.min = duration;
+            if(duration > entry.max)
                 entry.max = duration;
-            }
 
             CURRENT.set(parent);
         }
@@ -107,10 +109,11 @@ public final class Profiler implements AutoCloseable {
         for(Entry e : entries) {
             double timeMs  = NANO2MILLI * e.time;
             double avgMs   = NANO2MILLI * e.time / (double)e.runs;
+            double minMs   = NANO2MILLI * e.min;
             double maxMs   = NANO2MILLI * e.max;
             double percent = 100.0 * e.time / (double)entry.time;
 
-            print(level, e.name, timeMs, percent, avgMs, maxMs, e.runs);
+            print(level, e.name, timeMs, percent, avgMs, minMs, maxMs, e.runs);
             printEntry(level+1, e);
         }
     }
@@ -126,21 +129,21 @@ public final class Profiler implements AutoCloseable {
     }
 
 
-    private static void print(int level, String name, double timeMs, double percent, double avgMs, double maxMs, long runs) {
+    private static void print(int level, String name, double timeMs, double percent, double avgMs, double minMs, double maxMs, long runs) {
         for(int i=0; i<level; ++i) {
             name = "·   " + name;
         }
 
-        System.out.printf("%-50.50s     %-12.12s  %-7.7s%%     %-10.10s  %-10.10s  %-12.12s %n",
-            name, formatDouble(timeMs), formatPercent(percent), formatDouble(avgMs), formatDouble(maxMs), runs);
+        System.out.printf("%-50.50s     %-12.12s  %-7.7s%%     %-10.10s  %-10.10s  %-10.10s  %-12.12s %n",
+            name, formatDouble(timeMs), formatPercent(percent), formatDouble(avgMs), formatDouble(minMs), formatDouble(maxMs), runs);
     }
 
 
     static {
         if(ENABLED) {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.printf("%-50.50s     %-12.12s  %s  %-10.10s  %-10.10s  %-12.12s %n",
-                        "===== Profiler =====", "Total [ms]", "% of Parent", "Avg [ms]", "Max [ms]", "Runs");
+                System.out.printf("%-50.50s     %-12.12s  %s  %-10.10s  %-10.10s  %-10.10s  %-12.12s %n",
+                        "===== Profiler =====", "Total [ms]", "% of Parent", "Avg [ms]", "Min [ms]", "Max [ms]", "Runs");
                 
                 synchronized(ROOT) {
                     printEntry(0, ROOT);

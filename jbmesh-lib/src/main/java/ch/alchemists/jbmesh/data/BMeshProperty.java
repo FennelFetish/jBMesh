@@ -59,11 +59,11 @@ public abstract class BMeshProperty<E extends Element, TArray> {
     }
 
 
-    public int indexOf(E element) {
+    public final int indexOf(E element) {
         return element.getIndex() * numComponents;
     }
 
-    public int indexOf(E element, int component) {
+    public final int indexOf(E element, int component) {
         return (element.getIndex() * numComponents) + component;
     }
 

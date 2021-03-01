@@ -106,20 +106,21 @@ public class StraightSkeleton {
 
         Vector3f vertexPos = new Vector3f();
         final MovingNode first = createNode(vertices.get(0), vertexPos, min, max);
-        MovingNode prev = first;
+        MovingNode last = first;
 
         for(int i=1; i<vertices.size(); ++i) {
             MovingNode movingNode = createNode(vertices.get(i), vertexPos, min, max);
 
             // Link nodes
-            movingNode.prev = prev;
-            prev.next = movingNode;
+            movingNode.prev = last;
+            last.next = movingNode;
 
-            prev = movingNode;
+            last = movingNode;
         }
 
-        first.prev = prev;
-        prev.next = first;
+        // Link last node with first
+        first.prev = last;
+        last.next = first;
 
         return max.subtractLocal(min).length();
     }
@@ -148,6 +149,7 @@ public class StraightSkeleton {
                 degenerates.add(node);
         }
 
+        // Process degenerate nodes after all bisectors have been initialized
         for(MovingNode degenerateNode : degenerates) {
             // Check if 'degenerateNode' was already removed in previous handleInit() calls
             if(degenerateNode.next != null)

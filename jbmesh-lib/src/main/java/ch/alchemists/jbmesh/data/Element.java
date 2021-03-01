@@ -11,21 +11,21 @@ public abstract class Element {
     protected Element() {}
 
 
-    public int getIndex() {
+    public final int getIndex() {
         return index;
     }
 
-    void setIndex(int index) {
+    final void setIndex(int index) {
         this.index = index;
     }
 
 
-    public boolean isAlive() {
+    public final boolean isAlive() {
         return index >= 0;
     }
 
-    boolean isListed() {
-        return isAlive() && !checkFlags(FLAG_VIRTUAL);
+    final boolean isListed() {
+        return isAlive() && !checkFlags(FLAG_VIRTUAL); // TODO: Remove check for isAlive()
     }
 
 
@@ -38,15 +38,15 @@ public abstract class Element {
     protected abstract void releaseElement();
 
 
-    void setFlags(int flags) {
+    final void setFlags(int flags) {
         this.flags |= flags;
     }
 
-    void unsetFlags(int flags) {
+    final void unsetFlags(int flags) {
         this.flags &= ~flags;
     }
 
-    boolean checkFlags(int flags) {
+    final boolean checkFlags(int flags) {
         return (this.flags & flags) == flags;
     }
 }

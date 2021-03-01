@@ -27,6 +27,11 @@ public class Import {
         return convert(bmesh, mesh, new GridVertexDeduplication(bmesh, RANGE));
     }
 
+    public static BMesh convertOptimizedGrid(Mesh mesh) {
+        BMesh bmesh = new BMesh();
+        return convert(bmesh, mesh, new OptimizedGridDeduplication(bmesh, RANGE));
+    }
+
 
     public static BMesh convertSimpleMapped(Mesh mesh) {
         BMesh bmesh = new BMesh();
@@ -41,6 +46,11 @@ public class Import {
     public static BMesh convertGridMapped(Mesh mesh) {
         BMesh bmesh = new BMesh();
         return convertMapped(bmesh, mesh, new GridVertexDeduplication(bmesh, RANGE));
+    }
+
+    public static BMesh convertOptimizedGridMapped(Mesh mesh) {
+        BMesh bmesh = new BMesh();
+        return convertMapped(bmesh, mesh, new OptimizedGridDeduplication(bmesh, RANGE));
     }
 
 

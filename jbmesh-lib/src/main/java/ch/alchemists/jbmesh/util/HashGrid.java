@@ -35,7 +35,7 @@ public class HashGrid<T> {
     }
 
     public T getNeighbor(Index cellPos, int walkX, int walkY, int walkZ) {
-        long key = Index.key(cellPos.x + walkX, cellPos.y+walkY, cellPos.z+walkZ);
+        long key = Index.key(cellPos.x+walkX, cellPos.y+walkY, cellPos.z+walkZ);
         return grid.get(key);
     }
 

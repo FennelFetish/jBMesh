@@ -1,9 +1,9 @@
-package ch.alchemists.jbmesh.tools;
+package ch.alchemists.jbmesh.examples;
 
-import com.jme3.math.Vector2f;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.Element;
+import com.jme3.math.Vector2f;
 
 public class UserProperties {
     // Example user-defined property

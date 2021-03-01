@@ -1,15 +1,15 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
-import com.jme3.math.Vector3f;
-import java.util.HashMap;
-import java.util.Map;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.BooleanProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.*;
+import com.jme3.math.Vector3f;
 
 public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
+    private static final String PROPERTY_EDGE_CREASE = "AngleNormalCalculator_EdgeCrease";
+
     protected FaceOps faceOps;
 
     protected Vec3Property<Vertex> propPosition;
@@ -43,7 +43,7 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
     @Override
     public void prepare(BMesh bmesh, float creaseAngle) {
-        propEdgeCrease = BooleanProperty.getOrCreate("AngleNormalCalculator_EdgeCreate", bmesh.edges());
+        propEdgeCrease = BooleanProperty.getOrCreate(PROPERTY_EDGE_CREASE, bmesh.edges());
         propPosition   = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
         faceOps = new FaceOps(bmesh);
 
