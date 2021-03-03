@@ -37,7 +37,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
     private static final float DEFAULT_DISTANCE    = 0.0f;
     private float skeletonDistance                 = DEFAULT_DISTANCE;
 
-    private PolygonEditorState polygonEditor;
+    private final PolygonEditorState polygonEditor;
     private final Node node = new Node("StraightSkeletonEditor");
 
     private PolygonEditorState.PointDrawType movingNodeType;
@@ -45,17 +45,18 @@ public class StraightSkeletonEditor extends SimpleApplication {
 
     private StraightSkeletonEditor() {
         super(null);
+
+        polygonEditor = new PolygonEditorState(pointListener);
+        polygonEditor.setStoragePath(STORAGE_PATH);
+        stateManager.attach(polygonEditor);
+
+        polygonEditor.importDefaultPoints();
+        //polygonEditor.importPoints("bench1000.points");
     }
 
 
     @Override
     public void simpleInitApp() {
-        polygonEditor = new PolygonEditorState(new SkeletonEditorPointListener());
-        polygonEditor.setStoragePath(STORAGE_PATH);
-        polygonEditor.importDefaultPoints();
-        //polygonEditor.importPoints("bench1000.points");
-        stateManager.attach(polygonEditor);
-
         rootNode.attachChild(node);
 
         inputManager.addMapping(ACT_INC_DISTANCE, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
@@ -63,7 +64,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
         inputManager.addMapping(ACT_RESET_DISTANCE, new KeyTrigger(KeyInput.KEY_0));
         inputManager.addMapping(ACT_MAX_DISTANCE, new KeyTrigger(KeyInput.KEY_M));
         inputManager.addMapping(ACT_BENCHMARK, new KeyTrigger(KeyInput.KEY_B));
-        inputManager.addListener(new ClickHandler(), ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE, ACT_MAX_DISTANCE, ACT_BENCHMARK);
+        inputManager.addListener(actionListener, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_RESET_DISTANCE, ACT_MAX_DISTANCE, ACT_BENCHMARK);
 
         movingNodeType = new PolygonEditorState.PointDrawType(assetManager, ColorRGBA.Black, 0.06f, 0.15f);
         movingNodeType.textColor = new ColorRGBA(0.0f, 0.6f, 0.6f, 1.0f);
@@ -152,6 +153,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
                 try(Profiler p = Profiler.start("StraightSkeleton.apply")) {
                     skeleton.apply(face);
                 }
+                System.gc();
             }
         }
 
@@ -159,8 +161,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
     }
 
 
-
-    private final class SkeletonEditorPointListener implements PolygonEditorState.PointListener {
+    private final PolygonEditorState.PointListener pointListener = new PolygonEditorState.PointListener() {
         @Override
         public void onPointsReset() {
             skeletonDistance = DEFAULT_DISTANCE;
@@ -170,44 +171,39 @@ public class StraightSkeletonEditor extends SimpleApplication {
         public void onPointsUpdated(List<Vector2f> points) {
             updateSkeletonVis();
         }
-    }
+    };
 
 
+    private final ActionListener actionListener = (String name, boolean isPressed, float tpf) -> {
+        if(!isPressed)
+            return;
 
-    private class ClickHandler implements ActionListener {
-        @Override
-        public void onAction(String name, boolean isPressed, float tpf) {
-            if(!isPressed)
-                return;
+        switch(name) {
+            case ACT_INC_DISTANCE:
+                skeletonDistance += SKEL_DISTANCE_STEP;
+                updateSkeletonVis();
+                break;
 
-            switch(name) {
-                case ACT_INC_DISTANCE:
-                    skeletonDistance += SKEL_DISTANCE_STEP;
-                    updateSkeletonVis();
-                    break;
+            case ACT_DEC_DISTANCE:
+                skeletonDistance -= SKEL_DISTANCE_STEP;
+                updateSkeletonVis();
+                break;
 
-                case ACT_DEC_DISTANCE:
-                    skeletonDistance -= SKEL_DISTANCE_STEP;
-                    updateSkeletonVis();
-                    break;
+            case ACT_RESET_DISTANCE:
+                skeletonDistance = 0;
+                updateSkeletonVis();
+                break;
 
-                case ACT_RESET_DISTANCE:
-                    skeletonDistance = 0;
-                    updateSkeletonVis();
-                    break;
+            case ACT_MAX_DISTANCE:
+                skeletonDistance = Float.NEGATIVE_INFINITY;
+                updateSkeletonVis();
+                break;
 
-                case ACT_MAX_DISTANCE:
-                    skeletonDistance = Float.NEGATIVE_INFINITY;
-                    updateSkeletonVis();
-                    break;
-
-                case ACT_BENCHMARK:
-                    benchmark();
-                    break;
-            }
+            case ACT_BENCHMARK:
+                benchmark();
+                break;
         }
-    }
-
+    };
 
 
     public static void main(String[] args) {

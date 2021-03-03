@@ -60,7 +60,7 @@ public class PolygonEditorState extends BaseAppState {
     private static final String ACT_ADD_POINT    = "ACT_ADD_POINT";
     private static final String ACT_REMOVE_POINT = "ACT_REMOVE_POINT";
     private static final String ACT_RESET_POINTS = "ACT_RESET_POINTS";
-    private static final String ACT_AUTODRAW     = "ACT_AUTODRAW";
+    private static final String ACT_SUBDIVIDE    = "ACT_SUBDIVIDE";
     private static final String ACT_RELOAD_FILE  = "ACT_RELOAD_FILE";
 
     private static final String DEFAULT_EXPORT_FILE = "last.points";
@@ -77,13 +77,14 @@ public class PolygonEditorState extends BaseAppState {
     private PointDrawType defaultPointType;
 
     private final Plane plane;
-    private final List<Vector2f> points = new ArrayList<>();
+    private final ArrayList<Vector2f> points = new ArrayList<>();
 
-    private boolean snapToGrid = false;
+    private boolean snapToGrid = true;
+
+    private static final float AUTODRAW_INTERVAL = 0.2f;
     private boolean autoDraw = false;
-
-    private static final float DRAW_INTERVAL = 0.2f;
     private float tDraw = 0;
+    private Vector2f mouseDownPos;
 
 
     public PolygonEditorState(PointListener listener) {
@@ -152,11 +153,11 @@ public class PolygonEditorState extends BaseAppState {
         inputManager.addMapping(ACT_ADD_POINT, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         inputManager.addMapping(ACT_REMOVE_POINT, new KeyTrigger(KeyInput.KEY_DELETE));
         inputManager.addMapping(ACT_RESET_POINTS, new KeyTrigger(KeyInput.KEY_R));
-        inputManager.addMapping(ACT_AUTODRAW, new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addMapping(ACT_SUBDIVIDE, new KeyTrigger(KeyInput.KEY_X));
         inputManager.addMapping(ACT_RELOAD_FILE, new KeyTrigger(KeyInput.KEY_HOME));
 
-        inputManager.addListener(new ClickHandler(), ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS, ACT_AUTODRAW, ACT_RELOAD_FILE);
-        inputManager.addRawInputListener(new NumberListener());
+        inputManager.addListener(actionListener, ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS, ACT_SUBDIVIDE, ACT_RELOAD_FILE);
+        inputManager.addRawInputListener(numberInputListener);
     }
 
 
@@ -175,13 +176,24 @@ public class PolygonEditorState extends BaseAppState {
 
     @Override
     public void update(float tpf) {
-        if(!autoDraw)
+        if(mouseDownPos == null)
             return;
 
-        tDraw += tpf;
-        if(tDraw >= DRAW_INTERVAL) {
-            tDraw = 0;
-            addPoint();
+        if(autoDraw) {
+            tDraw += tpf;
+            if(tDraw >= AUTODRAW_INTERVAL) {
+                tDraw = 0;
+                addPoint();
+            }
+        }
+        else {
+            // Enable auto draw if cursor moves 3px away from mouseDownPos
+            Vector2f cursorPos = getApplication().getInputManager().getCursorPosition();
+            float e2 = 3 * 3;
+
+            float dist2 = cursorPos.distanceSquared(mouseDownPos);
+            if(dist2 >= e2)
+                autoDraw = true;
         }
     }
 
@@ -239,7 +251,7 @@ public class PolygonEditorState extends BaseAppState {
             createPointVis(defaultPointType, p, Integer.toString(i+1));
         }
 
-        listener.onPointsUpdated(points);
+        listener.onPointsUpdated(getPoints());
     }
 
 
@@ -348,6 +360,33 @@ public class PolygonEditorState extends BaseAppState {
         updatePoints();
     }
 
+    public void subdivide() {
+        List<Vector2f> copy = new ArrayList<>(points);
+        points.clear();
+        points.ensureCapacity(copy.size() * 2);
+
+        final Vector2f midway = new Vector2f();
+        final Vector2f last = new Vector2f(copy.get(0));
+        points.add(last.clone());
+
+        for(int i=1; i<copy.size(); ++i) {
+            Vector2f current = copy.get(i);
+            midway.set(current).subtractLocal(last).multLocal(0.5f).addLocal(last);
+
+            points.add(midway.clone());
+            points.add(current.clone());
+
+            last.set(current);
+        }
+
+        // Close loop
+        Vector2f current = copy.get(0);
+        midway.set(current).subtractLocal(last).multLocal(0.5f).addLocal(last);
+        points.add(midway.clone());
+
+        updatePoints();
+    }
+
 
     private void centerView() {
         Vector2f min = new Vector2f(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
@@ -369,23 +408,27 @@ public class PolygonEditorState extends BaseAppState {
     }
 
 
-    private class ClickHandler implements ActionListener {
+    private final ActionListener actionListener = new ActionListener() {
         @Override
         public void onAction(String name, boolean isPressed, float tpf) {
-            if(name.equals(ACT_AUTODRAW)) {
-                autoDraw = isPressed;
-                tDraw = 0;
-                return;
-            }
-
-            if(!isPressed)
-                return;
-
             switch(name) {
                 case ACT_ADD_POINT:
-                    addPoint();
-                    break;
+                    if(isPressed) {
+                        addPoint();
+                        mouseDownPos = getApplication().getInputManager().getCursorPosition().clone();
+                    } else {
+                        mouseDownPos = null;
+                        autoDraw = false;
+                    }
+                    return;
+            }
 
+            if(isPressed)
+                onPressed(name);
+        }
+
+        private void onPressed(String name) {
+            switch(name) {
                 case ACT_REMOVE_POINT:
                     removePoint();
                     break;
@@ -395,15 +438,20 @@ public class PolygonEditorState extends BaseAppState {
                     updatePoints();
                     break;
 
+                case ACT_SUBDIVIDE:
+                    subdivide();
+                    break;
+
                 case ACT_RELOAD_FILE:
                     importPoints(currentFile);
                     break;
             }
         }
-    }
+    };
 
 
-    private class NumberListener implements RawInputListener {
+    @SuppressWarnings("override")
+    private final RawInputListener numberInputListener = new RawInputListener() {
         @Override
         public void onKeyEvent(KeyInputEvent evt) {
             int c = evt.getKeyCode() - KeyInput.KEY_1 + 1;
@@ -413,26 +461,12 @@ public class PolygonEditorState extends BaseAppState {
             }
         }
 
-
-        @Override
         public void beginInput() {}
-
-        @Override
         public void endInput() {}
-
-        @Override
         public void onJoyAxisEvent(JoyAxisEvent evt) {}
-
-        @Override
         public void onJoyButtonEvent(JoyButtonEvent evt) {}
-
-        @Override
         public void onMouseMotionEvent(MouseMotionEvent evt) {}
-
-        @Override
         public void onMouseButtonEvent(MouseButtonEvent evt) {}
-
-        @Override
         public void onTouchEvent(TouchEvent evt) {}
-    }
+    };
 }

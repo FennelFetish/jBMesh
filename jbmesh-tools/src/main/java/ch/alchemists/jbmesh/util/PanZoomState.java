@@ -26,7 +26,6 @@ public class PanZoomState extends BaseAppState {
     private Camera cam;
 
     private Vector2f panStart = null;
-    private InputHandler inputHandler;
 
 
     public PanZoomState() {}
@@ -47,7 +46,6 @@ public class PanZoomState extends BaseAppState {
 
     @Override
     protected void initialize(Application app) {
-        System.out.println("PanZoomState initialize");
         cam = app.getCamera();
         cam.setLocation(initialPos);
         cam.lookAt(new Vector3f(initialPos.x, initialPos.y, 0), Vector3f.UNIT_Y);
@@ -60,16 +58,14 @@ public class PanZoomState extends BaseAppState {
         inputManager.addMapping(ACT_ZOOM_IN, new KeyTrigger(KeyInput.KEY_ADD), new MouseButtonTrigger(MOUSE_FORWARD));
         inputManager.addMapping(ACT_ZOOM_OUT, new KeyTrigger(KeyInput.KEY_SUBTRACT), new MouseButtonTrigger(MOUSE_BACK));
 
-        inputHandler = new InputHandler();
-        inputManager.addListener(inputHandler, ACT_PAN, ACT_ZOOM_IN, ACT_ZOOM_OUT);
+        inputManager.addListener(actionListener, ACT_PAN, ACT_ZOOM_IN, ACT_ZOOM_OUT);
     }
 
     @Override
     protected void cleanup(Application app) {
         cam = null;
 
-        getApplication().getInputManager().removeListener(inputHandler);
-        inputHandler = null;
+        getApplication().getInputManager().removeListener(actionListener);
     }
 
 
@@ -106,30 +102,27 @@ public class PanZoomState extends BaseAppState {
     }
 
 
-    private class InputHandler implements ActionListener {
-        @Override
-        public void onAction(String name, boolean isPressed, float tpf) {
-            if(!isEnabled())
-                return;
+    private final ActionListener actionListener = (String name, boolean isPressed, float tpf) -> {
+        if(!isEnabled())
+            return;
 
-            switch(name) {
-                case ACT_ZOOM_IN:
-                    if(isPressed)
-                        zoom(1.0f / ZOOM_FACTOR_STEP);
-                    break;
+        switch(name) {
+            case ACT_ZOOM_IN:
+                if(isPressed)
+                    zoom(1.0f / ZOOM_FACTOR_STEP);
+                break;
 
-                case ACT_ZOOM_OUT:
-                    if(isPressed)
-                        zoom(ZOOM_FACTOR_STEP);
-                    break;
+            case ACT_ZOOM_OUT:
+                if(isPressed)
+                    zoom(ZOOM_FACTOR_STEP);
+                break;
 
-                case ACT_PAN:
-                    if(isPressed)
-                        panStart = getApplication().getInputManager().getCursorPosition().clone();
-                    else
-                        panStart = null;
-                    break;
-            }
+            case ACT_PAN:
+                if(isPressed)
+                    panStart = getApplication().getInputManager().getCursorPosition().clone();
+                else
+                    panStart = null;
+                break;
         }
-    }
+    };
 }
