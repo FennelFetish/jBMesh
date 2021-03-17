@@ -14,6 +14,7 @@ import com.jme3.util.BufferUtils;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TriangleIndices {
     private static class Triangle extends Element {
@@ -55,7 +56,7 @@ public class TriangleIndices {
         this.bmesh = bmesh;
         this.propLoopVertex = propLoopVertex;
 
-        triangleData = new BMeshData<>(() -> new Triangle());
+        triangleData = new BMeshData<>(Triangle::new);
         triangleData.addProperty(propTriangleLoops);
     }
 
@@ -69,9 +70,6 @@ public class TriangleIndices {
 
         triangleData.clear();
         triangleData.ensureCapacity(bmesh.faces().size());
-
-        Vector3f v1 = new Vector3f();
-        Vector3f v2 = new Vector3f();
 
         ArrayList<Loop> loops = new ArrayList<>(6);
         for(Face face : bmesh.faces()) {
@@ -90,20 +88,7 @@ public class TriangleIndices {
                     break;
 
                 case 4: {
-                    propPosition.get(loops.get(0).vertex, v1);
-                    propPosition.subtract(loops.get(2).vertex, v1);
-
-                    propPosition.get(loops.get(1).vertex, v2);
-                    propPosition.subtract(loops.get(3).vertex, v2);
-
-                    if(v1.lengthSquared() <= v2.lengthSquared()) {
-                        addTriangle(loops, 0, 1, 2);
-                        addTriangle(loops, 0, 2, 3);
-                    } else {
-                        addTriangle(loops, 0, 1, 3);
-                        addTriangle(loops, 1, 2, 3);
-                    }
-
+                    triangulateQuad(propPosition, loops);
                     break;
                 }
 
@@ -125,6 +110,27 @@ public class TriangleIndices {
         Loop l2 = loops.get(i2);
         Loop l3 = loops.get(i3);
         propTriangleLoops.setValues(tri, l1, l2, l3);
+    }
+
+
+    private void triangulateQuad(Vec3Property<Vertex> propPosition, ArrayList<Loop> loops) {
+        Vector3f v = new Vector3f();
+
+        propPosition.get(loops.get(0).vertex, v);
+        propPosition.subtract(loops.get(2).vertex, v);
+        float length1 = v.lengthSquared();
+
+        propPosition.get(loops.get(1).vertex, v);
+        propPosition.subtract(loops.get(3).vertex, v);
+        float length2 = v.lengthSquared();
+
+        if(length1 <= length2) {
+            addTriangle(loops, 0, 1, 2);
+            addTriangle(loops, 0, 2, 3);
+        } else {
+            addTriangle(loops, 0, 1, 3);
+            addTriangle(loops, 1, 2, 3);
+        }
     }
 
 

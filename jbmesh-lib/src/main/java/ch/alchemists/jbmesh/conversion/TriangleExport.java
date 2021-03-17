@@ -1,10 +1,5 @@
 package ch.alchemists.jbmesh.conversion;
 
-import com.jme3.math.Vector3f;
-import com.jme3.scene.Mesh;
-import com.jme3.scene.VertexBuffer;
-import com.jme3.util.BufferUtils;
-import java.util.List;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.ColorProperty;
 import ch.alchemists.jbmesh.data.property.ObjectProperty;
@@ -13,6 +8,11 @@ import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
+import com.jme3.scene.Mesh;
+import com.jme3.scene.VertexBuffer;
+import com.jme3.util.BufferUtils;
+import java.util.List;
 
 public class TriangleExport extends Export<Loop> {
     private final ObjectProperty<Loop, Vertex> propLoopVertex;
@@ -37,6 +37,12 @@ public class TriangleExport extends Export<Loop> {
         triangleIndices = new TriangleIndices(bmesh, propLoopVertex);
 
         outputMesh.setMode(Mesh.Mode.Triangles);
+    }
+
+
+    public static Mesh apply(BMesh bmesh) {
+        TriangleExport export = new TriangleExport(bmesh);
+        return export.update();
     }
 
 
@@ -85,18 +91,20 @@ public class TriangleExport extends Export<Loop> {
 
             propPosition     = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
             propLoopNormal   = Vec3Property.get(BMeshProperty.Loop.NORMAL, bmesh.loops());
-            propVertexNormal = Vec3Property.getOrCreate(BMeshProperty.Vertex.NORMAL, bmesh.vertices());
+            propVertexNormal = Vec3Property.getOrCreate(BMeshProperty.Vertex.NORMAL, bmesh.vertices()); // TODO: Not always needed
         }
 
         @Override
-        public boolean splitVertex(Loop a, Loop b) {
+        public boolean equals(Loop a, Loop b) {
             return bmesh.loops().equals(a, b);
         }
 
         @Override
-        public void copyProperties(Loop src, Vertex dest) {
-            propLoopNormal.get(src, tempNormal);
-            propVertexNormal.set(dest, tempNormal);
+        public void applyProperties(Loop src, Vertex dest) {
+            if(propLoopNormal != null) {
+                propLoopNormal.get(src, tempNormal);
+                propVertexNormal.set(dest, tempNormal);
+            }
 
             // TODO: Colors
         }
@@ -104,6 +112,7 @@ public class TriangleExport extends Export<Loop> {
         @Override
         public void setBuffers(Mesh outputMesh) {
             // TODO: Reuse buffers
+            // TODO: Create List<> and setter for buffer types and mapping: BMeshProperty -> VertexBuffer.Type
             outputMesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(propPosition.array()));
             outputMesh.setBuffer(VertexBuffer.Type.Normal, 3, BufferUtils.createFloatBuffer(propVertexNormal.array()));
 

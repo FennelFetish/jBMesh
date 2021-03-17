@@ -1,4 +1,4 @@
-package ch.alchemists.jbmesh.util;
+package ch.alchemists.jbmesh.tools.polygoneditor;
 
 import com.jme3.app.Application;
 import com.jme3.app.state.BaseAppState;
@@ -20,7 +20,7 @@ public class PanZoomState extends BaseAppState {
     private static final String ACT_ZOOM_IN = "ACT_ZOOM_IN";
     private static final String ACT_ZOOM_OUT = "ACT_ZOOM_OUT";
 
-    private static final float ZOOM_FACTOR_STEP = 1.33f;
+    private static final float ZOOM_FACTOR_STEP = 1.5f; //1.33f;
 
     private Vector3f initialPos = new Vector3f(18, 9, 5);
     private Camera cam;

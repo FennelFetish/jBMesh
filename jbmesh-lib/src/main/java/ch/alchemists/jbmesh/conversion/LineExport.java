@@ -1,9 +1,5 @@
 package ch.alchemists.jbmesh.conversion;
 
-import com.jme3.scene.Mesh;
-import com.jme3.scene.VertexBuffer;
-import com.jme3.util.BufferUtils;
-import java.util.List;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.IntTupleProperty;
 import ch.alchemists.jbmesh.data.property.ObjectTupleProperty;
@@ -11,6 +7,10 @@ import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.scene.Mesh;
+import com.jme3.scene.VertexBuffer;
+import com.jme3.util.BufferUtils;
+import java.util.List;
 
 public class LineExport extends Export<Edge> {
     // Edge color property? duplicate vertices where needed
@@ -33,6 +33,12 @@ public class LineExport extends Export<Edge> {
         bmesh.edges().addProperty(propEdgeIndices);
 
         outputMesh.setMode(Mesh.Mode.Lines);
+    }
+
+
+    public static Mesh apply(BMesh bmesh) {
+        LineExport export = new LineExport(bmesh);
+        return export.update();
     }
 
 
@@ -59,16 +65,20 @@ public class LineExport extends Export<Edge> {
     protected void setVertexReference(Vertex contactPoint, Edge element, Vertex ref) {
         if(element.vertex0 == contactPoint)
             propEdgeVertex.set(element, 0, ref);
-        else
+        else {
+            assert element.vertex1 == contactPoint;
             propEdgeVertex.set(element, 1, ref);
+        }
     }
 
     @Override
     protected Vertex getVertexReference(Vertex contactPoint, Edge element) {
         if(element.vertex0 == contactPoint)
             return propEdgeVertex.get(element, 0);
-        else
+        else {
+            assert element.vertex1 == contactPoint;
             return propEdgeVertex.get(element, 1);
+        }
     }
 
 
@@ -82,12 +92,12 @@ public class LineExport extends Export<Edge> {
         }
 
         @Override
-        public boolean splitVertex(Edge a, Edge b) {
+        public boolean equals(Edge a, Edge b) {
             return bmesh.edges().equals(a, b);
         }
 
         @Override
-        public void copyProperties(Edge src, Vertex dest) {
+        public void applyProperties(Edge src, Vertex dest) {
             // TODO: Colors
         }
 

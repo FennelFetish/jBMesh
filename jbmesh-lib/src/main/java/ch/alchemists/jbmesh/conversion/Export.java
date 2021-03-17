@@ -1,16 +1,16 @@
 package ch.alchemists.jbmesh.conversion;
 
+import ch.alchemists.jbmesh.structure.BMesh;
+import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.scene.Mesh;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import ch.alchemists.jbmesh.structure.BMesh;
-import ch.alchemists.jbmesh.structure.Vertex;
 
 public abstract class Export<T> {
     public interface DuplicationStrategy<T> {
-        boolean splitVertex(T a, T b);
-        void copyProperties(T src, Vertex dest);
+        boolean equals(T a, T b);
+        void applyProperties(T src, Vertex dest);
         void setBuffers(Mesh outputMesh);
     }
 
@@ -35,7 +35,7 @@ public abstract class Export<T> {
     }
 
 
-    public void update() {
+    public Mesh update() {
         duplicateVertices();
         bmesh.compactData();
 
@@ -45,6 +45,7 @@ public abstract class Export<T> {
         outputMesh.updateBound();
 
         LOG.fine("Exported " + bmesh.vertices().size() + " vertices");
+        return outputMesh;
     }
 
 
@@ -59,9 +60,13 @@ public abstract class Export<T> {
      * Creates virtual vertices.
      */
     private void duplicateVertices() {
+        // TODO: Pool virtual vertices and reuse objects? They are destroyed and recreated immediately.
+        //       Do this by decorating BMeshData with free list functionality?
         for(Vertex v : virtualVertices)
             bmesh.vertices().destroy(v);
         virtualVertices.clear();
+
+        // TODO: If there are no element properties (for Loop/Edge), there is nothing to duplicate. Leave method early.
 
         List<Vertex> vertices = bmesh.vertices().getAll();
         List<T> neighbors = new ArrayList<>(6);
@@ -75,32 +80,36 @@ public abstract class Export<T> {
 
             T element = neighbors.get(0);
             setVertexReference(vertex, element, vertex);
-            duplicationStrategy.copyProperties(element, vertex);
+            duplicationStrategy.applyProperties(element, vertex);
 
             // Create virtual Vertex (slot in data array) for elements with different properties
             for(int i=1; i<neighbors.size(); ++i) {
                 element = neighbors.get(i);
 
-                // Compare element properties with previous elements
-                Vertex ref = null;
-                for(int k=0; k<i; ++k) {
-                    T prev = neighbors.get(k);
-                    if(duplicationStrategy.splitVertex(element, prev)) {
-                        ref = getVertexReference(vertex, prev);
-                        break;
-                    }
-                }
-
-                if(ref == null) {
-                    ref = bmesh.vertices().createVirtual();
-                    virtualVertices.add(ref);
-                    bmesh.vertices().copyProperties(vertex, ref);
-                    duplicationStrategy.copyProperties(element, ref);
-                }
-
+                Vertex ref = tryVirtualize(vertex, neighbors, element, i);
                 setVertexReference(vertex, element, ref);
             }
         }
+    }
+
+
+    private Vertex tryVirtualize(Vertex vertex, List<T> neighbors, T element, int i) {
+        // Compare element properties with previous elements
+        for(int k=0; k<i; ++k) {
+            T prev = neighbors.get(k);
+            if(duplicationStrategy.equals(element, prev)) {
+                Vertex ref = getVertexReference(vertex, prev);
+                assert ref != null;
+                return ref;
+            }
+        }
+
+        // Different properties found, duplicate vertex
+        Vertex ref = bmesh.vertices().createVirtual();
+        virtualVertices.add(ref);
+        bmesh.vertices().copyProperties(vertex, ref);
+        duplicationStrategy.applyProperties(element, ref);
+        return ref;
     }
 
 

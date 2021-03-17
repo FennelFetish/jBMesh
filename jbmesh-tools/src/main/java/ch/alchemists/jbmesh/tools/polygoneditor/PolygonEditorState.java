@@ -1,5 +1,7 @@
-package ch.alchemists.jbmesh.util;
+package ch.alchemists.jbmesh.tools.polygoneditor;
 
+import ch.alchemists.jbmesh.util.BasicShapes;
+import ch.alchemists.jbmesh.util.Gizmo;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
@@ -8,13 +10,12 @@ import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
-import com.jme3.input.MouseInput;
 import com.jme3.input.RawInputListener;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.input.event.*;
 import com.jme3.material.Material;
+import com.jme3.material.Materials;
 import com.jme3.material.RenderState;
 import com.jme3.math.*;
 import com.jme3.renderer.Camera;
@@ -23,13 +24,11 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
-import com.jme3.scene.shape.Sphere;
 import com.jme3.texture.Texture;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class PolygonEditorState extends BaseAppState {
@@ -47,9 +46,9 @@ public class PolygonEditorState extends BaseAppState {
         public ColorRGBA textColor = new ColorRGBA(1, 0.2f, 0.2f, 1.0f);
 
         public PointDrawType(AssetManager assetManager, ColorRGBA color, float pointSize, float fontSize) {
-            mesh = new Sphere(8, 16, pointSize*0.5f);
+            mesh = BasicShapes.disc(16, pointSize*0.5f);
 
-            mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            mat = new Material(assetManager, Materials.UNSHADED);
             mat.setColor("Color", color);
 
             this.fontSize = fontSize;
@@ -57,34 +56,29 @@ public class PolygonEditorState extends BaseAppState {
     }
 
 
-    private static final String ACT_ADD_POINT    = "ACT_ADD_POINT";
-    private static final String ACT_REMOVE_POINT = "ACT_REMOVE_POINT";
     private static final String ACT_RESET_POINTS = "ACT_RESET_POINTS";
     private static final String ACT_SUBDIVIDE    = "ACT_SUBDIVIDE";
+    private static final String ACT_PERTURB      = "ACT_PERTURB";
     private static final String ACT_RELOAD_FILE  = "ACT_RELOAD_FILE";
 
     private static final String DEFAULT_EXPORT_FILE = "last.points";
     private Path storageBasePath = null;
     private String currentFile = DEFAULT_EXPORT_FILE;
 
+    private final PointListener listener;
+    private final Plane plane;
+    private final ArrayList<Vector2f> points = new ArrayList<>();
+
     private static final float BG_SIZE = 5000;
     private Geometry bg;
-
-    private final PointListener listener;
-    private PanZoomState panZoomState;
 
     private BitmapFont font;
     private PointDrawType defaultPointType;
 
-    private final Plane plane;
-    private final ArrayList<Vector2f> points = new ArrayList<>();
-
-    private boolean snapToGrid = true;
-
-    private static final float AUTODRAW_INTERVAL = 0.2f;
-    private boolean autoDraw = false;
-    private float tDraw = 0;
-    private Vector2f mouseDownPos;
+    private PanZoomState panZoomState;
+    private ToolBar toolBar;
+    private Gizmo gizmo;
+    private BitmapText cursorPositionLabel;
 
 
     public PolygonEditorState(PointListener listener) {
@@ -94,9 +88,8 @@ public class PolygonEditorState extends BaseAppState {
 
 
     public List<Vector2f> getPoints() {
-        return Collections.unmodifiableList(points);
+        return points;
     }
-
 
     public void setStoragePath(String path) {
         storageBasePath = Paths.get(path).toAbsolutePath().normalize();
@@ -105,21 +98,26 @@ public class PolygonEditorState extends BaseAppState {
 
     @Override
     protected void initialize(Application app) {
+        SimpleApplication simpleApp = (SimpleApplication) app;
         AssetManager assetManager = app.getAssetManager();
-        Node rootNode = ((SimpleApplication)app).getRootNode();
+        Node rootNode = simpleApp.getRootNode();
 
         panZoomState = new PanZoomState(25);
         app.getStateManager().attach(panZoomState);
+
+        toolBar = new ToolBar(this);
+        app.getStateManager().attach(toolBar);
 
         setupBackground(assetManager, rootNode);
         setupInput(app.getInputManager());
 
         font = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        setupCursorPositionLabel(simpleApp.getGuiNode());
 
         defaultPointType = new PointDrawType(assetManager, ColorRGBA.Red, 0.2f, 0.3f);
         rootNode.attachChild(defaultPointType.container);
 
-        Gizmo gizmo = new Gizmo(assetManager, "", 1.0f);
+        gizmo = new Gizmo(assetManager, "", 1.0f);
         rootNode.attachChild(gizmo);
 
         updatePoints();
@@ -132,7 +130,7 @@ public class PolygonEditorState extends BaseAppState {
         bgTex.setMinFilter(Texture.MinFilter.Trilinear);
         bgTex.setMagFilter(Texture.MagFilter.Nearest);
 
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        Material mat = new Material(assetManager, Materials.UNSHADED);
         mat.setColor("Color", new ColorRGBA(0.1f, 0.35f, 0.45f, 0.5f));
         mat.setTexture("ColorMap", bgTex);
         mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
@@ -150,22 +148,49 @@ public class PolygonEditorState extends BaseAppState {
     }
 
     private void setupInput(InputManager inputManager) {
-        inputManager.addMapping(ACT_ADD_POINT, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-        inputManager.addMapping(ACT_REMOVE_POINT, new KeyTrigger(KeyInput.KEY_DELETE));
         inputManager.addMapping(ACT_RESET_POINTS, new KeyTrigger(KeyInput.KEY_R));
         inputManager.addMapping(ACT_SUBDIVIDE, new KeyTrigger(KeyInput.KEY_X));
+        inputManager.addMapping(ACT_PERTURB, new KeyTrigger(KeyInput.KEY_P));
         inputManager.addMapping(ACT_RELOAD_FILE, new KeyTrigger(KeyInput.KEY_HOME));
 
-        inputManager.addListener(actionListener, ACT_ADD_POINT, ACT_REMOVE_POINT, ACT_RESET_POINTS, ACT_SUBDIVIDE, ACT_RELOAD_FILE);
+        inputManager.addListener(actionListener, ACT_RESET_POINTS, ACT_SUBDIVIDE, ACT_PERTURB, ACT_RELOAD_FILE);
         inputManager.addRawInputListener(numberInputListener);
+    }
+
+    private void setupCursorPositionLabel(Node guiNode) {
+        cursorPositionLabel = new BitmapText(font);
+        cursorPositionLabel.setSize(12f);
+        cursorPositionLabel.setTabWidth(10f);
+        cursorPositionLabel.setLocalTranslation(4, 18, 0);
+        guiNode.attachChild(cursorPositionLabel);
     }
 
 
     @Override
     protected void cleanup(Application app) {
+        SimpleApplication simpleApp = (SimpleApplication) app;
+        simpleApp.getRootNode().detachChild(bg);
+        bg = null;
+
+        simpleApp.getGuiNode().detachChild(cursorPositionLabel);
+        cursorPositionLabel = null;
+
+        simpleApp.getRootNode().detachChild(gizmo);
+        gizmo = null;
+
         app.getStateManager().detach(panZoomState);
         panZoomState = null;
+
+        app.getStateManager().detach(toolBar);
+        toolBar = null;
+
+        app.getInputManager().deleteMapping(ACT_RESET_POINTS);
+        app.getInputManager().deleteMapping(ACT_SUBDIVIDE);
+        app.getInputManager().deleteMapping(ACT_RELOAD_FILE);
+        app.getInputManager().removeListener(actionListener);
+        app.getInputManager().removeRawInputListener(numberInputListener);
     }
+
 
     @Override
     protected void onEnable() {}
@@ -176,74 +201,33 @@ public class PolygonEditorState extends BaseAppState {
 
     @Override
     public void update(float tpf) {
-        if(mouseDownPos == null)
-            return;
-
-        if(autoDraw) {
-            tDraw += tpf;
-            if(tDraw >= AUTODRAW_INTERVAL) {
-                tDraw = 0;
-                addPoint();
-            }
-        }
-        else {
-            // Enable auto draw if cursor moves 3px away from mouseDownPos
-            Vector2f cursorPos = getApplication().getInputManager().getCursorPosition();
-            float e2 = 3 * 3;
-
-            float dist2 = cursorPos.distanceSquared(mouseDownPos);
-            if(dist2 >= e2)
-                autoDraw = true;
-        }
+        Vector2f pick = pick(getCursorPosition());
+        String text = String.format("X: %.2f\tY: %.2f", pick.x, pick.y);
+        cursorPositionLabel.setText(text);
     }
 
 
-    private Vector2f pick() {
+    public Vector2f getCursorPosition() {
+        return getApplication().getInputManager().getCursorPosition();
+    }
+
+
+    public Vector2f pick(Vector2f cursor) {
         Camera cam = getApplication().getCamera();
 
-        Vector2f cursor = getApplication().getInputManager().getCursorPosition();
-        Vector3f near   = cam.getWorldCoordinates(cursor, 0.0f);
-        Vector3f far    = cam.getWorldCoordinates(cursor, 1.0f);
-        Vector3f dir    = far.subtract(near).normalizeLocal();
+        Vector3f near = cam.getWorldCoordinates(cursor, 0.0f);
+        Vector3f far  = cam.getWorldCoordinates(cursor, 1.0f);
+        Vector3f dir  = far.subtract(near).normalizeLocal();
 
         Vector3f intersection = new Vector3f();
         Ray ray = new Ray(cam.getLocation(), dir);
         ray.intersectsWherePlane(plane, intersection);
 
-        if(snapToGrid) {
-            intersection.x = Math.round(intersection.x);
-            intersection.y = Math.round(intersection.y);
-        }
-
         return new Vector2f(intersection.x, intersection.y);
     }
 
-    private void addPoint() {
-        points.add(pick());
 
-        updatePoints();
-        exportPoints(DEFAULT_EXPORT_FILE);
-    }
-
-    private void removePoint() {
-        final float e = 0.5f; //0.001f;
-        final float e2 = e*e;
-
-        Vector2f pick = pick();
-
-        for(int i=0; i<points.size(); ++i) {
-            if(pick.distanceSquared(points.get(i)) < e2) {
-                points.remove(i);
-                break;
-            }
-        }
-
-        updatePoints();
-        exportPoints(DEFAULT_EXPORT_FILE);
-    }
-
-
-    private void updatePoints() {
+    public void updatePoints() {
         defaultPointType.container.detachAllChildren();
 
         for(int i=0; i<points.size(); ++i) {
@@ -283,7 +267,7 @@ public class PolygonEditorState extends BaseAppState {
         return storageBasePath.toString() + "/" + file;
     }
 
-    public void importDefaultPoints() {
+    public void importFromDefaultFile() {
         importPoints(DEFAULT_EXPORT_FILE);
     }
 
@@ -314,6 +298,11 @@ public class PolygonEditorState extends BaseAppState {
             updatePoints();
             centerView();
         }
+    }
+
+
+    public void exportToDefaultFile() {
+        exportPoints(DEFAULT_EXPORT_FILE);
     }
 
     public void exportPoints(String file) {
@@ -387,6 +376,16 @@ public class PolygonEditorState extends BaseAppState {
         updatePoints();
     }
 
+    public void perturb() {
+        float max = 0.03f;
+        for(Vector2f p : points) {
+            p.x += (FastMath.nextRandomFloat()*2-1) * max;
+            p.y += (FastMath.nextRandomFloat()*2-1) * max;
+        }
+
+        updatePoints();
+    }
+
 
     private void centerView() {
         Vector2f min = new Vector2f(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
@@ -411,28 +410,12 @@ public class PolygonEditorState extends BaseAppState {
     private final ActionListener actionListener = new ActionListener() {
         @Override
         public void onAction(String name, boolean isPressed, float tpf) {
-            switch(name) {
-                case ACT_ADD_POINT:
-                    if(isPressed) {
-                        addPoint();
-                        mouseDownPos = getApplication().getInputManager().getCursorPosition().clone();
-                    } else {
-                        mouseDownPos = null;
-                        autoDraw = false;
-                    }
-                    return;
-            }
-
             if(isPressed)
                 onPressed(name);
         }
 
         private void onPressed(String name) {
             switch(name) {
-                case ACT_REMOVE_POINT:
-                    removePoint();
-                    break;
-
                 case ACT_RESET_POINTS:
                     points.clear();
                     updatePoints();
@@ -440,6 +423,10 @@ public class PolygonEditorState extends BaseAppState {
 
                 case ACT_SUBDIVIDE:
                     subdivide();
+                    break;
+
+                case ACT_PERTURB:
+                    perturb();
                     break;
 
                 case ACT_RELOAD_FILE:

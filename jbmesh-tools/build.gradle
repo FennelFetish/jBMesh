@@ -37,11 +37,22 @@ jar.manifest.attributes('Main-Class': mainClassName)
 
 
 dependencies {
-    compile project(":jbmesh-lib")
+    implementation project(":jbmesh-lib")
 
     implementation 'org.jmonkeyengine:jme3-core:'    + jmonkeyengineVersion
     implementation 'org.jmonkeyengine:jme3-desktop:' + jmonkeyengineVersion
     implementation 'org.jmonkeyengine:jme3-plugins:' + jmonkeyengineVersion
     
     runtimeOnly 'org.jmonkeyengine:jme3-lwjgl3:'     + jmonkeyengineVersion
+
+
+    // Lemur GUI library
+    // https://mvnrepository.com/artifact/com.simsilica/lemur
+    compile group: 'com.simsilica', name: 'lemur', version: '1.14.0'
+
+    // https://mvnrepository.com/artifact/com.simsilica/lemur-proto
+    compile group: 'com.simsilica', name: 'lemur-proto', version: '1.11.0'
+
+    // https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-all
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.15'
 }
