@@ -17,7 +17,7 @@ class MovingNode {
     public final Vector2f bisector = new Vector2f();
     private boolean reflex = false;
 
-    private final ArrayList<SkeletonEvent> events = new ArrayList<>();
+    private final ArrayList<SkeletonEvent> events = new ArrayList<>(); // ArrayList is faster than HashSet. Does its performance scale properly?
 
 
     MovingNode(String id) {
@@ -55,21 +55,29 @@ class MovingNode {
     /**
      * @return True if bisector is valid and polygon is not degenerated at this corner.
      */
-    public boolean calcBisector(float distanceSign) {
+    public boolean calcBisector(SkeletonContext ctx) {
+        return calcBisector(ctx, false);
+    }
+
+    /**
+     * @param init True if the calculation is supposed to initialize the bisector.
+     * @return True if bisector is valid and polygon is not degenerated at this corner.
+     */
+    public boolean calcBisector(SkeletonContext ctx, boolean init) {
         if(next.next == this)
             return false;
 
         // Calc direction to neighbor nodes. Make sure there's enough distance for stable calculation.
         Vector2f vPrev = prev.skelNode.p.subtract(skelNode.p);
         float vPrevLength = vPrev.length();
-        if(vPrevLength < SkeletonContext.EPSILON) {
+        if(vPrevLength < ctx.epsilon) {
             setDegenerate();
             return false;
         }
 
         Vector2f vNext = next.skelNode.p.subtract(skelNode.p);
         float vNextLength = vNext.length();
-        if(vNextLength < SkeletonContext.EPSILON) {
+        if(vNextLength < ctx.epsilon) {
             setDegenerate();
             return false;
         }
@@ -78,25 +86,38 @@ class MovingNode {
         vPrev.divideLocal(vPrevLength);
         vNext.divideLocal(vNextLength);
 
-        // Check if edges point in opposite directions
+        // Check if edges point in opposite directions with an angle of 180° between them
         float cos = vPrev.dot(vNext);
-        if(cos < SkeletonContext.EPSILON_MINUS_ONE) {
+        if(cos < ctx.epsilonMinusOne) {
             // Rotate vPrev by 90° counterclockwise
-            bisector.x = -vPrev.y * distanceSign;
-            bisector.y = vPrev.x * distanceSign;
+            bisector.x = -vPrev.y * ctx.distanceSign;
+            bisector.y = vPrev.x * ctx.distanceSign;
             reflex = false;
         }
         else {
+            // This fixes some cases where 90° bisectors (between adjacent edges that point in 180° different directions)
+            // don't degenerate as they should. Presumably because these nodes advance too much (without being considered reflex)
+            // and then lie on the wrong side of an approaching edge, and/or because of floating point inaccuracy.
+            // Therefore we must ensure that vPrev (still) lies left of vNext. This is only a valid check if the node was not reflex
+            // and the angle between vPrev and vNext is less than 90°.
+            // Another way for catching more degenerates is to increase EPSILON.
+            // TODO: THIS CREATES NEW ERRORS WHEN GROWING POLYGONS (see bug22).
+            /*boolean reflexBefore = init || reflex;
+            if(!reflexBefore && cos > 0 && vPrev.determinant(vNext) > 0) {
+                setDegenerate();
+                return false;
+            }*/
+
             bisector.set(vPrev).addLocal(vNext).normalizeLocal();
             float sin = vPrev.determinant(bisector);
 
             // Check if degenerated
-            if(Math.abs(sin) < SkeletonContext.EPSILON) {
+            if(Math.abs(sin) < ctx.epsilon) {
                 setDegenerate();
                 return false;
             }
             else {
-                float speed = distanceSign / sin;
+                float speed = ctx.distanceSign / sin;
                 bisector.multLocal(speed);
                 reflex = (bisector.dot(vPrev) < 0);
             }

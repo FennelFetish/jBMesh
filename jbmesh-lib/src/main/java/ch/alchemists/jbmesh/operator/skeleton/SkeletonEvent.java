@@ -11,15 +11,20 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
 
 
     @Override
-    public int compareTo(SkeletonEvent o) {
-        if(this.time < o.time)
+    public int compareTo(SkeletonEvent other) {
+        if(this.time < other.time)
             return -1;
-        if(this.time > o.time)
+        if(this.time > other.time)
+            return 1;
+
+        if(this instanceof EdgeEvent && other instanceof SplitEvent)
+            return -1;
+        if(this instanceof SplitEvent && other instanceof EdgeEvent)
             return 1;
 
         // A TreeSet as event queue doesn't allow duplicate keys (time values).
         // Compare the hashes so compareTo() won't return 0 if events happen at the same time.
-        return Integer.compare(hashCode(), o.hashCode());
+        return Integer.compare(hashCode(), other.hashCode());
     }
 
 
@@ -36,7 +41,7 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
     protected static void handle(MovingNode node, SkeletonContext ctx) {
         //System.out.println("handle " + node);
         while(ensureValidPolygon(node, ctx)) {
-            boolean validBisector = node.calcBisector(ctx.distanceSign);
+            boolean validBisector = node.calcBisector(ctx);
             if(validBisector) {
                 node.leaveSkeletonNode();
 
@@ -54,7 +59,7 @@ abstract class SkeletonEvent implements Comparable<SkeletonEvent> {
 
     static void handleInit(MovingNode node, SkeletonContext ctx) {
         while(ensureValidPolygon(node, ctx)) {
-            boolean validBisector = node.calcBisector(ctx.distanceSign);
+            boolean validBisector = node.calcBisector(ctx);
             if(validBisector)
                 return;
 

@@ -3,9 +3,6 @@ package ch.alchemists.jbmesh.operator.skeleton;
 import java.util.*;
 
 class SkeletonContext {
-    static final float EPSILON = 0.0001f;
-    static final float EPSILON_MINUS_ONE = EPSILON - 1f; // 0.9999
-
     private int nextMovingNodeId = 1;
 
     private final LinkedHashSet<MovingNode> movingNodes = new LinkedHashSet<>();
@@ -19,8 +16,17 @@ class SkeletonContext {
     public float distanceSign;
     public float time = 0;
 
+    public float epsilon = 0.0001f;
+    public float epsilonMinusOne = epsilon - 1f; // -0.9999
+
 
     SkeletonContext() {}
+
+
+    public void setEpsilon(float epsilon) {
+        this.epsilon = epsilon;
+        this.epsilonMinusOne = epsilon - 1f;
+    }
 
 
     public Set<MovingNode> getNodes() {

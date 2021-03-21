@@ -34,8 +34,10 @@ public class StraightSkeleton {
 
 
     /**
-     * @param distance Absolute distance in units by which the edges should be moved.<br>
-     *                 Positive: Grow face. Negative: Shrink face.
+     * Sets the absolute distance in units by which the edges should be moved.<br>
+     * Positive: Grow face. Negative: Shrink face.<br>
+     * Defaults to Float.NEGATIVE_INFINITY.
+     * @param distance
      */
     public void setDistance(float distance) {
         if(distance == Float.POSITIVE_INFINITY) {
@@ -44,6 +46,16 @@ public class StraightSkeleton {
 
         distanceSign = Math.signum(distance);
         offsetDistance = Math.abs(distance);
+    }
+
+
+    /**
+     * Sets the epsilon value that is used for degeneracy tests. Bigger values may reduce errors due to numerical instability in certain cases.
+     * Defaults to 0.0001f.
+     * @param epsilon
+     */
+    public void setEpsilon(float epsilon) {
+        ctx.setEpsilon(epsilon);
     }
 
 
@@ -93,7 +105,7 @@ public class StraightSkeleton {
 
 
     /**
-     * Creates MovingNodes out of the vertices.
+     * Creates MovingNodes for all the vertices.
      * Also calculates bounding rectangle.
      * @return Diagonal length of bounding rectangle.
      */
@@ -144,7 +156,7 @@ public class StraightSkeleton {
         List<MovingNode> degenerates = new LinkedList<>();
 
         for(MovingNode node : ctx.getNodes()) {
-            boolean validBisector = node.calcBisector(distanceSign);
+            boolean validBisector = node.calcBisector(ctx, true);
             if(!validBisector)
                 degenerates.add(node);
         }

@@ -22,7 +22,7 @@ class SplitEvent extends SkeletonEvent {
 
 
     public static float calcTime(MovingNode reflexNode, MovingNode edgeStart, float distanceSign) {
-        // Calc component of bisector orthogonal to edge
+        // Calc component of bisector orthogonal to edge (perpendicular dot product)
         float bisectorSpeed = reflexNode.bisector.determinant(edgeStart.edgeDir);
         float edgeSpeed = -distanceSign;
         float approachSpeed = bisectorSpeed + edgeSpeed;
