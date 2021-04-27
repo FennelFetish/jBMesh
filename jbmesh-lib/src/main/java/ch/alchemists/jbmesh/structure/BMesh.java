@@ -1,11 +1,10 @@
 package ch.alchemists.jbmesh.structure;
 
-import com.jme3.math.Vector3f;
-import java.util.ArrayList;
-import java.util.Objects;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
+import com.jme3.math.Vector3f;
+import java.util.*;
 
 public class BMesh {
     private final BMeshData<Vertex> vertexData;
@@ -158,21 +157,20 @@ public class BMesh {
     }
 
 
-    // TODO: Profile varargs, make separate overloads like createFace(Vertex, Vertex, Vertex, Vertex...) ?
     /**
      * Creates a new face between the given vertices. The order of the vertices define the winding order of the face.<br>
      * If edges between vertices already exist, they are used for the resulting face. Otherwise new edges are created.
      * @param faceVertices
      * @return A new Face.
      */
-    public Face createFace(Vertex... faceVertices) {
-        if(faceVertices.length < 3)
+    public Face createFace(List<Vertex> faceVertices) {
+        if(faceVertices.size() < 3)
             throw new IllegalArgumentException("A face needs at least 3 vertices");
 
         try {
             assert tempLoops.isEmpty();
-            for(int i=0; i<faceVertices.length; ++i) {
-                Objects.requireNonNull(faceVertices[i]);
+            for(Vertex v : faceVertices) {
+                Objects.requireNonNull(v);
                 tempLoops.add(loopData.create());
             }
 
@@ -180,22 +178,26 @@ public class BMesh {
             face.loop = tempLoops.get(0);
 
             Loop prevLoop = tempLoops.get(tempLoops.size()-1);
-            for(int i=0; i<faceVertices.length; ++i) {
-                int nextIndex = (i+1) % faceVertices.length;
+            Vertex vCurrent = faceVertices.get(0);
 
-                Edge edge = faceVertices[i].getEdgeTo(faceVertices[nextIndex]);
+            for(int i=0; i<faceVertices.size(); ++i) {
+                int nextIndex = (i+1) % faceVertices.size();
+                Vertex vNext = faceVertices.get(nextIndex);
+
+                Edge edge = vCurrent.getEdgeTo(vNext);
                 if(edge == null)
-                    edge = createEdge(faceVertices[i], faceVertices[nextIndex]);
+                    edge = createEdge(vCurrent, vNext);
 
                 Loop loop = tempLoops.get(i);
                 loop.face = face;
                 loop.edge = edge;
-                loop.vertex = faceVertices[i];
+                loop.vertex = vCurrent;
                 loop.nextFaceLoop = tempLoops.get(nextIndex);
                 loop.prevFaceLoop = prevLoop;
                 edge.addLoop(loop);
 
                 prevLoop = loop;
+                vCurrent = vNext;
             }
             
             return face;
@@ -208,6 +210,13 @@ public class BMesh {
         finally {
             tempLoops.clear();
         }
+    }
+
+    /**
+     * See {@link #createFace(List<Vertex>)}.
+     */
+    public Face createFace(Vertex... faceVertices) {
+        return createFace(Arrays.asList(faceVertices));
     }
 
 
@@ -477,6 +486,7 @@ public class BMesh {
         if(commonEdge.loop.nextEdgeLoop.nextEdgeLoop != commonEdge.loop)
             throw new IllegalArgumentException("Only the two given faces must be adjacent to the edge");
 
+        // TODO: What if 'commonEdge' has >2 adjacent faces (T-structure)?
         if(commonEdge.loop.face == face1 && commonEdge.loop.nextEdgeLoop.face == face2) {
             l1 = commonEdge.loop;
             l2 = commonEdge.loop.nextEdgeLoop;
@@ -488,6 +498,7 @@ public class BMesh {
         else
             throw new IllegalArgumentException("Faces are not adjacent to the given edge");
 
+        // Check if loops point in the same direction (faces have opposing winding orders)
         if(l1.vertex == l2.vertex) {
             // TODO: throw? Overload with 'invert if needed' argument?
             System.out.println("invert");
