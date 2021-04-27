@@ -22,10 +22,10 @@ public class PlanarCoordinateSystem {
     }
 
     public Vector2f project(Vector3f v, Vector2f store) {
-        Vector3f temp = v.subtract(p);
+        Vector3f diff = v.subtract(p);
 
-        store.x = temp.dot(x);
-        store.y = temp.dot(y);
+        store.x = diff.dot(x);
+        store.y = diff.dot(y);
 
         return store;
     }
