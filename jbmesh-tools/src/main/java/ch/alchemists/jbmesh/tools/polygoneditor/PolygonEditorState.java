@@ -1,5 +1,8 @@
 package ch.alchemists.jbmesh.tools.polygoneditor;
 
+import ch.alchemists.jbmesh.structure.BMesh;
+import ch.alchemists.jbmesh.structure.Face;
+import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.BasicShapes;
 import ch.alchemists.jbmesh.util.Gizmo;
 import com.jme3.app.Application;
@@ -204,6 +207,22 @@ public class PolygonEditorState extends BaseAppState {
         Vector2f pick = pick(getCursorPosition());
         String text = String.format("X: %.2f\tY: %.2f", pick.x, pick.y);
         cursorPositionLabel.setText(text);
+    }
+
+
+    public Face createBMeshFace(BMesh bmesh) {
+        Vertex[] vertices = new Vertex[points.size()];
+
+        for(int i=0; i<points.size(); ++i) {
+            Vector2f p = points.get(i);
+            Vector3f v = new Vector3f(p.x, p.y, 0);
+            vertices[i] = bmesh.createVertex(v);
+        }
+
+        if(points.size() >= 3)
+            return bmesh.createFace(vertices);
+
+        return null;
     }
 
 

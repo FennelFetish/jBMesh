@@ -14,6 +14,7 @@ import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.texture.FrameBuffer;
 import com.simsilica.lemur.Button;
 import com.simsilica.lemur.Container;
+import com.simsilica.lemur.Insets3f;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +25,7 @@ class ToolBar extends BaseAppState {
     private PolygonEditorTool activeTool = null;
 
     private final PolygonEditorState editor;
+    private final Container container = new Container();
     private final Container toolContainer = new Container();
     private final Container propertyContainer = new Container();
 
@@ -38,9 +40,13 @@ class ToolBar extends BaseAppState {
         tools.add(new AddPointTool(editor));
         tools.add(new RemovePointTool(editor, app));
 
+        container.setBackground(null);
+        container.setBorder(null);
+        container.addChild(toolContainer);
+        propertyContainer.setInsets(new Insets3f(20, 0, 0, 0));
+
         SimpleApplication simpleApp = (SimpleApplication) app;
-        simpleApp.getGuiNode().attachChild(toolContainer);
-        simpleApp.getGuiNode().attachChild(propertyContainer);
+        simpleApp.getGuiNode().attachChild(container);
 
         rebuild();
         reposition();
@@ -55,8 +61,7 @@ class ToolBar extends BaseAppState {
     @Override
     protected void cleanup(Application app) {
         SimpleApplication simpleApp = (SimpleApplication) app;
-        simpleApp.getGuiNode().detachChild(toolContainer);
-        simpleApp.getGuiNode().detachChild(propertyContainer);
+        simpleApp.getGuiNode().detachChild(container);
 
         app.getGuiViewPort().removeProcessor(resizeListener);
     }
@@ -78,7 +83,7 @@ class ToolBar extends BaseAppState {
 
 
     private void rebuild() {
-        toolContainer.detachAllChildren();
+        toolContainer.clearChildren();
 
         Button btnClearTool = new Button("No Tool");
         btnClearTool.addClickCommands((Button source) -> {
@@ -98,7 +103,7 @@ class ToolBar extends BaseAppState {
 
     private void reposition() {
         int h = getApplication().getCamera().getHeight();
-        toolContainer.setLocalTranslation(0, h, 0);
+        container.setLocalTranslation(0, h, 0);
     }
 
 
@@ -106,15 +111,18 @@ class ToolBar extends BaseAppState {
         if(activeTool != null)
             activeTool.onDeactivate();
 
-        propertyContainer.detachAllChildren();
+        propertyContainer.clearChildren();
         activeTool = tool;
 
         if(tool != null) {
+            container.addChild(propertyContainer);
             tool.onActivate();
 
             for(ToolProperty property : tool.getProperties())
                 propertyContainer.addChild(property.getGuiElement());
-            propertyContainer.setLocalTranslation(0, 200, 0);
+        }
+        else {
+            container.removeChild(propertyContainer);
         }
     }
 

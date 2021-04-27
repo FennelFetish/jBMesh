@@ -5,7 +5,6 @@ import ch.alchemists.jbmesh.operator.skeleton.SkeletonVisualization;
 import ch.alchemists.jbmesh.operator.skeleton.StraightSkeleton;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
-import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.tools.polygoneditor.PolygonEditorState;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
@@ -19,7 +18,6 @@ import com.jme3.material.Materials;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector2f;
-import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
@@ -91,7 +89,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
         movingNodeType.container.detachAllChildren();
 
         BMesh bmesh = new BMesh();
-        Face face = createBMeshFace(polygonEditor.getPoints(), bmesh);
+        Face face = polygonEditor.createBMeshFace(bmesh);
 
         if(face != null) {
             node.attachChild(makeGeom(bmesh, ColorRGBA.Red));
@@ -108,7 +106,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
             node.attachChild( makeGeom(skelVis.createSkeletonDegeneracyVis(), ColorRGBA.Brown) );
             node.attachChild( makeGeom(skelVis.createMovingNodesVis(), ColorRGBA.Cyan) );
             node.attachChild( makeGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
-            //node.attachChild( makeGeom(skelVis.createMappingVis(), ColorRGBA.Magenta) );
+            node.attachChild( makeGeom(skelVis.createMappingVis(), ColorRGBA.Magenta) );
 
             for(SkeletonVisualization.VisNode node : skelVis.getMovingNodes()) {
                 polygonEditor.createPointVis(movingNodeType, node.pos, node.name);
@@ -133,27 +131,11 @@ public class StraightSkeletonEditor extends SimpleApplication {
     }
 
 
-    private Face createBMeshFace(List<Vector2f> points, BMesh bmesh) {
-        Vertex[] vertices = new Vertex[points.size()];
-
-        for(int i=0; i<points.size(); ++i) {
-            Vector2f p = points.get(i);
-            Vector3f v = new Vector3f(p.x, p.y, 0);
-            vertices[i] = bmesh.createVertex(v);
-        }
-
-        if(points.size() >= 3)
-            return bmesh.createFace(vertices);
-
-        return null;
-    }
-
-
     private void benchmark() {
         skeletonDistance = Float.NEGATIVE_INFINITY;
 
         BMesh bmesh = new BMesh();
-        Face face = createBMeshFace(polygonEditor.getPoints(), bmesh);
+        Face face = polygonEditor.createBMeshFace(bmesh);
 
         StraightSkeleton skeleton = new StraightSkeleton(bmesh);
         skeleton.setDistance(skeletonDistance);
