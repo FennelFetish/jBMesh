@@ -102,9 +102,9 @@ public class MarchingCube {
             int idx1 = triangles[i++];
             int idx2 = triangles[i++];
 
-            Vertex v0 = dedup.getOrCreateVertex(bmesh, intersectionPoints[idx0]);
-            Vertex v1 = dedup.getOrCreateVertex(bmesh, intersectionPoints[idx1]);
-            Vertex v2 = dedup.getOrCreateVertex(bmesh, intersectionPoints[idx2]);
+            Vertex v0 = dedup.getOrCreateVertex(intersectionPoints[idx0]);
+            Vertex v1 = dedup.getOrCreateVertex(intersectionPoints[idx1]);
+            Vertex v2 = dedup.getOrCreateVertex(intersectionPoints[idx2]);
 
             if(v0 != v1 && v1 != v2 && v0 != v2) {
                 Face face = bmesh.createFace(v0, v1, v2);

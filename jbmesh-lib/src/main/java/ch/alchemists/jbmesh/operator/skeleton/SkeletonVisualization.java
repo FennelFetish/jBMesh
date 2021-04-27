@@ -56,12 +56,12 @@ public class SkeletonVisualization {
         return Float.isNaN(v.x) || Float.isInfinite(v.x);
     }
 
-    private Vertex getVertex(BMesh bmesh, ExactHashDeduplication dedup, Vector2f v) {
+    private Vertex getVertex(ExactHashDeduplication dedup, Vector2f v) {
         Vector2f pos = new Vector2f(v);
         if(isInvalid(pos)) {
             pos.set(-50, -50);
         }
-        return dedup.getOrCreateVertex(bmesh, coordSys.unproject(pos));
+        return dedup.getOrCreateVertex(coordSys.unproject(pos));
     }
 
     private void straightSkeletonVis_addEdge(BMesh bmesh, ExactHashDeduplication dedup, Set<SkeletonNode> nodesDone, SkeletonNode src, SkeletonNode.EdgeType edgeType) {
@@ -70,11 +70,11 @@ public class SkeletonVisualization {
             return;
         }
 
-        Vertex v0 = getVertex(bmesh, dedup, src.p);
+        Vertex v0 = getVertex(dedup, src.p);
         for(Map.Entry<SkeletonNode, SkeletonNode.EdgeType> entry : src.outgoingEdges.entrySet()) {
             SkeletonNode target = entry.getKey();
             if(entry.getValue() == edgeType) {
-                Vertex v1 = getVertex(bmesh, dedup, target.p);
+                Vertex v1 = getVertex(dedup, target.p);
                 if(v0 != v1 && v0.getEdgeTo(v1) == null)
                     bmesh.createEdge(v0, v1);
             }
@@ -150,7 +150,7 @@ public class SkeletonVisualization {
 
         for(SkeletonNode initial : initialNodes) {
             targets.clear();
-            followGraph(initial, targets);
+            initial.followGraphInward(targets);
 
             Vertex v0 = bmesh.createVertex( coordSys.unproject(initial.p) );
             for(SkeletonNode target : targets) {
@@ -160,21 +160,5 @@ public class SkeletonVisualization {
         }
 
         return bmesh;
-    }
-
-    private void followGraph(SkeletonNode node, List<SkeletonNode> targets) {
-        int numMappingEdges = 0;
-        for(Map.Entry<SkeletonNode, SkeletonNode.EdgeType> entry : node.outgoingEdges.entrySet()) {
-            if(entry.getValue() == SkeletonNode.EdgeType.Mapping) {
-                followGraph(entry.getKey(), targets);
-                numMappingEdges++;
-            } /*else {
-                targets.add(entry.getKey());
-            }*/
-        }
-
-        if(numMappingEdges == 0) {
-            targets.add(node);
-        }
     }
 }

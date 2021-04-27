@@ -37,6 +37,10 @@ public class SimpleVertexDeduplication implements VertexDeduplication {
 
 
     @Override
+    public void clear() {}
+
+
+    @Override
     public Vertex getVertex(Vector3f location) {
         for(Vertex vert : bmesh.vertices()) {
             propPosition.get(vert, tempPosition);
@@ -49,7 +53,7 @@ public class SimpleVertexDeduplication implements VertexDeduplication {
 
 
     @Override
-    public Vertex getOrCreateVertex(BMesh bmesh, Vector3f location) {
+    public Vertex getOrCreateVertex(Vector3f location) {
         Vertex vertex = getVertex(location);
         if(vertex == null)
             vertex = bmesh.createVertex(location);

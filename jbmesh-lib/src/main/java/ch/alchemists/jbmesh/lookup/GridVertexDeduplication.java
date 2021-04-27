@@ -44,6 +44,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     };
 
 
+    private final BMesh bmesh;
     private final Vec3Property<Vertex> propPosition;
     private final HashGrid<Cell> grid;
     private final float epsilonSquared;
@@ -55,6 +56,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
     }
 
     public GridVertexDeduplication(BMesh bmesh, float epsilon) {
+        this.bmesh = bmesh;
         grid = new HashGrid<>(epsilon);
         epsilonSquared = epsilon * epsilon;
         propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
@@ -90,6 +92,12 @@ public class GridVertexDeduplication implements VertexDeduplication {
 
 
     @Override
+    public void clear() {
+        grid.clear();
+    }
+
+
+    @Override
     public Vertex getVertex(Vector3f location) {
         HashGrid.Index gridIndex = grid.getIndexForCoords(location);
         Cell centerCell = grid.get(gridIndex);
@@ -105,7 +113,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
 
 
     @Override
-    public Vertex getOrCreateVertex(BMesh bmesh, Vector3f location) {
+    public Vertex getOrCreateVertex(Vector3f location) {
         HashGrid.Index gridIndex = grid.getIndexForCoords(location);
         Cell centerCell = grid.get(gridIndex);
 

@@ -65,9 +65,9 @@ public class Import {
         triangleExtractor.process(triangleExtractor.new TriangleLocationVisitor() {
             @Override
             public void visitTriangle(Vector3f p0, Vector3f p1, Vector3f p2) {
-                Vertex v0 = dedup.getOrCreateVertex(bmesh, p0);
-                Vertex v1 = dedup.getOrCreateVertex(bmesh, p1);
-                Vertex v2 = dedup.getOrCreateVertex(bmesh, p2);
+                Vertex v0 = dedup.getOrCreateVertex(p0);
+                Vertex v1 = dedup.getOrCreateVertex(p1);
+                Vertex v2 = dedup.getOrCreateVertex(p2);
                 
                 // Check for degenerate triangles
                 if(v0 != v1 && v0 != v2 && v1 != v2)
@@ -98,7 +98,7 @@ public class Import {
         for(int i=0; i<indexMap.length; ++i) {
             int vertexIndex = triangleExtractor.getIndex(i);
             triangleExtractor.getVertex(vertexIndex, location);
-            indexMap[vertexIndex] = dedup.getOrCreateVertex(bmesh, location);
+            indexMap[vertexIndex] = dedup.getOrCreateVertex(location);
         }
 
         //System.out.println("Reduced vertex count from " + triangleExtractor.getNumVertices() + " to " + bmesh.vertices().size());
