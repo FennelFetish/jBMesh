@@ -17,7 +17,7 @@ public class MeshOps {
             Face f1 = e.loop.face;
             Face f2 = e.loop.nextEdgeLoop.face;
 
-            if(f1 != f2 && faceOps.coplanar(f1, f2) && f1.numCommonEdges(f2) == 1)
+            if(f1 != f2 && faceOps.coplanar(f1, f2) && f1.countCommonEdges(f2) == 1)
                 bmesh.joinFace(f1, f2, e);
         }
     }

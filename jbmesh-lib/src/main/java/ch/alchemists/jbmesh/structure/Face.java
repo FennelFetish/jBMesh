@@ -42,7 +42,7 @@ public class Face extends Element {
         return edges;
     }
 
-    public int numCommonEdges(Face face) {
+    public int countCommonEdges(Face face) {
         int commonEdges = 0;
         for(Loop l1 : loops()) {
             for(Loop l2 : face.loops()) {
