@@ -57,6 +57,9 @@ public class DebugVisualState extends BaseAppState {
 
 
     private void updateVis(int index) {
+        if(getApplication() == null)
+            return;
+
         if(index < 0)
             return;
 

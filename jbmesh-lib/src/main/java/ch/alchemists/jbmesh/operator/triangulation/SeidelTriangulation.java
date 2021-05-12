@@ -49,10 +49,10 @@ public class SeidelTriangulation {
 
         TrapezoidTree tree = new TrapezoidTree();
         tree.printTree();
-        DebugVisual.next("Seidel");
-
 
         for(Loop l : loops) {
+            DebugVisual.next("Seidel");
+
             propPosition.get(l.edge.vertex0, p0);
             Vector2f v0 = coordSys.project(p0);
 
@@ -63,7 +63,6 @@ public class SeidelTriangulation {
             tree.addEdge(v0, v1);
 
             tree.printTree();
-            DebugVisual.next("Seidel");
 
             //break;
         }

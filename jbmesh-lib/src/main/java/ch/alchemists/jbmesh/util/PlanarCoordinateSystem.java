@@ -1,5 +1,7 @@
 package ch.alchemists.jbmesh.util;
 
+import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 
@@ -10,6 +12,8 @@ public class PlanarCoordinateSystem {
 
 
     public PlanarCoordinateSystem(Vector3f p0, Vector3f p1, Vector3f n) {
+        assert !p0.isSimilar(p1, 0.0001f);
+
         this.p.set(p0);
 
         x.set(p1).subtractLocal(p0).normalizeLocal();
@@ -43,5 +47,13 @@ public class PlanarCoordinateSystem {
 
         store.addLocal(p);
         return store;
+    }
+
+
+    public void rotate(float angle) {
+        Quaternion rot = new Quaternion();
+        rot.fromAngleAxis(angle, Vector3f.UNIT_Z);
+        rot.multLocal(x);
+        rot.multLocal(y);
     }
 }
