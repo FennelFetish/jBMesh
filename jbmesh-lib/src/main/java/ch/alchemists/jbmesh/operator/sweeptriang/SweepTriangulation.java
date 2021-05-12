@@ -53,11 +53,10 @@ public class SweepTriangulation {
         assert sweepVertices.isEmpty();
         createSweepVertices(vertices, coordSys);
 
-        /*System.out.println("Vertices:");
-        for(int i=0; i<sweepVertices.length; ++i) {
-            Vector2f p = new Vector2f(sweepVertices[i].p.x, sweepVertices[i].p.y);
-            System.out.println("  Vertex[" + i + "]: " + coordSys.unproject(p) );
-        }*/
+        System.out.println("Vertices:");
+        for(int i=0; i<sweepVertices.size(); ++i) {
+            System.out.println("  Vertex[" + i + "]: " + coordSys.unproject(sweepVertices.get(i).p) );
+        }
 
         process();
         sweepVertices.clear();
@@ -67,11 +66,16 @@ public class SweepTriangulation {
     private void createSweepVertices(List<Vertex> vertices, PlanarCoordinateSystem coordSys) {
         sweepVertices.ensureCapacity(vertices.size());
 
-        SweepVertex first = addSweepVertex(vertices.get(0), 0, coordSys);
+        SweepVertex first = createSweepVertex(vertices.get(0), 0, coordSys);
         SweepVertex prev = first;
+        sweepVertices.add(first);
 
         for(int i=1; i<vertices.size(); ++i) {
-            SweepVertex current = addSweepVertex(vertices.get(i), i, coordSys);
+            SweepVertex current = createSweepVertex(vertices.get(i), i, coordSys);
+            if(current.p.isSimilar(prev.p, 0.0001f))
+                continue;
+
+            sweepVertices.add(current);
 
             current.prev = prev;
             prev.next = current;
@@ -86,160 +90,135 @@ public class SweepTriangulation {
     }
 
 
-    private SweepVertex addSweepVertex(Vertex vertex, int index, PlanarCoordinateSystem coordSys) {
+    private SweepVertex createSweepVertex(Vertex vertex, int index, PlanarCoordinateSystem coordSys) {
         SweepVertex sweepVertex = new SweepVertex(index);
         coordSys.project(propPosition.get(vertex), sweepVertex.p);
-        sweepVertices.add(sweepVertex);
         return sweepVertex;
     }
 
 
     private void process() {
-        IntervalSet intervals = new IntervalSet();
+        EdgeSet edges = new EdgeSet();
 
         for(int i=0; i<sweepVertices.size(); ++i) {
             SweepVertex v = sweepVertices.get(i);
             if(v.p.y > yLimit)
                 break;
 
-            System.out.println("handleSweepVertex " + i + ": " + v.p);
-            handleSweepVertex(v, intervals);
+            System.out.println("))))))))))))))) handleSweepVertex " + i + ": " + v.p);
+            handleSweepVertex(v, edges);
+            edges.printEdges();
         }
 
-        intervals.debug(yLimit);
+        edges.debug(yLimit);
     }
 
 
-    private void handleSweepVertex(SweepVertex v, IntervalSet intervals) {
+    private void handleSweepVertex(SweepVertex v, EdgeSet edges) {
         boolean prevUp = (v.p.y < v.prev.p.y);
         boolean nextUp = (v.p.y <= v.next.p.y);
 
         System.out.println("prevUp: " + prevUp + ", nextUp: " + nextUp);
 
-        // Normal vertex, vertical continuation of edge
+        // One edge points upwards, one points downwards
         if(prevUp != nextUp) {
             System.out.println("  >> Continuation");
-            handleContinuation(v, intervals);
+            handleContinuation(v, edges);
+            return;
         }
-        // Both edges point upwards (+y)
-        else if(prevUp) {
-            SweepInterval interval = intervals.getInterval(v);
 
-            // Start vertex
-            if(interval == null) {
-                System.out.println("  >> Start Vertex");
-                handleStart(v, intervals);
-            }
-            // Split vertex
-            else {
+        final boolean inside = isInside(v);
+
+        // Both edges point upwards (+y)
+        if(prevUp) {
+            if(inside) {
                 System.out.println("  >> Split Vertex");
-                handleSplit(v, interval, intervals);
+                handleSplit(v, edges);
+            }
+            else {
+                System.out.println("  >> Start Vertex");
+                handleStart(v, edges);
             }
         }
         // Both edges point downwards (-y)
         else {
-            assert !prevUp;
-            handleMerge(v, intervals);
+            if(inside) {
+                System.out.println("  >> Merge Vertex");
+                handleMerge(v, edges);
+            }
+            else {
+                System.out.println("  >> End Vertex");
+                edges.removeEdge(v);
+            }
         }
     }
 
 
-    private void handleStart(SweepVertex v, IntervalSet intervals) {
-        SweepInterval interval = intervals.addInterval(v);
-        interval.leftEdge  = new SweepEdge(v, v.prev, interval);
-        interval.rightEdge = new SweepEdge(v, v.next, interval);
-        interval.lastVertex = v;
-
-        // TODO: Connect to last merge vertex?
+    private boolean isInside(SweepVertex v) {
+        // Check if polygon makes right turn at 'v'
+        Vector2f v1 = v.p.subtract(v.prev.p);
+        Vector2f v2 = v.next.p.subtract(v.prev.p);
+        float det = v1.determinant(v2);
+        return det <= 0;
     }
 
 
-    private void handleSplit(SweepVertex v, SweepInterval leftInterval, IntervalSet intervals) {
-        // Draw debug line for monotone paths
-        Vector3f start = new Vector3f(v.p.x, v.p.y, 0);
-        Vector3f end   = new Vector3f(leftInterval.lastVertex.p.x, leftInterval.lastVertex.p.y, 0);
-        DebugVisual.get("SweepTriangulation").addLine(start, end);
+    private void handleStart(SweepVertex v, EdgeSet edges) {
+        SweepEdge leftEdge = new SweepEdge(v, v.prev);
+        leftEdge.lastVertex = v;
+        edges.addEdge(leftEdge);
 
-        // Connect v to interval.lastVertex for y-monotone chain
-        leftInterval.lastVertex.monotonePath = v;
-
-        if(leftInterval.lastMergeVertex != null)
-            connectToLastMerge(v, leftInterval);
-
-
-        SweepInterval rightInterval = intervals.addInterval(v);
-        rightInterval.leftEdge = new SweepEdge(v, v.prev, rightInterval);
-        rightInterval.rightEdge = leftInterval.rightEdge;
-        rightInterval.rightEdge.interval = rightInterval;
-        rightInterval.lastVertex = v;
-
-        leftInterval.rightEdge = new SweepEdge(v, v.next, leftInterval);
-        leftInterval.lastVertex = v;
+        //SweepEdge rightEdge = new SweepEdge(v, v.next);
+        //edges.addEdge(rightEdge);
     }
 
 
-    private void handleMerge(SweepVertex v, IntervalSet intervals) {
-        SweepInterval leftInterval  = intervals.getWhereRightEndpoint(v);
-        SweepInterval rightInterval = intervals.getWhereLeftEndpoint(v);
+    private void handleSplit(SweepVertex v, EdgeSet edges) {
+        SweepEdge edge = edges.getEdge(v.p.x, v.p.y);
+        assert edge != null;
+        assert edge.lastVertex != null;
 
-        if(leftInterval.lastMergeVertex != null)
-            connectToLastMerge(v, leftInterval);
+        edge.lastVertex.connectMonotonePath(v);
+        edge.lastVertex = v;
 
-        // Merge vertex
-        if(leftInterval != rightInterval) {
-            System.out.println("  >> Merge Vertex");
+        tryConnectLastMergeVertex(edge, v);
 
-            //System.out.println("    leftEdge: " + leftInterval.leftEdge);
-            //System.out.println("    rightEdge: " + rightInterval.rightEdge);
+        //SweepEdge leftEdge = new SweepEdge(v, v.next);
+        //leftEdge.lastVertex = v;
+        //edges.addEdge(leftEdge);
 
-            // Combine intervals
-            leftInterval.rightEdge = rightInterval.rightEdge;
-            leftInterval.rightEdge.interval = leftInterval;
-            leftInterval.lastVertex = v;
-
-            if(rightInterval.lastMergeVertex != null)
-                connectToLastMerge(v, rightInterval);
-
-            if(v.p.y == v.prev.p.y)
-                leftInterval.lastMergeVertex = v.prev;
-            else
-                leftInterval.lastMergeVertex = v;
-
-            /*leftInterval.addMergeVertex(v);
-            if(rightInterval.prevMergeVertices != null)
-                leftInterval.prevMergeVertices.addAll(rightInterval.prevMergeVertices);*/
-        }
-        // End vertex, leftInterval == rightInterval
-        else {
-            // Nothing special, just remove interval (happens below)
-            System.out.println("  >> End Vertex");
-        }
-
-        intervals.removeInterval(rightInterval);
+        SweepEdge rightEdge = new SweepEdge(v, v.prev);
+        rightEdge.lastVertex = v;
+        edges.addEdge(rightEdge);
     }
 
 
-    private void handleContinuation(SweepVertex v, IntervalSet intervals) {
-        SweepInterval interval = intervals.getIntervalOther(v);
-        assert interval != null;
-        interval.lastVertex = v;
+    private void handleMerge(SweepVertex v, EdgeSet edges) {
+        SweepEdge edge = edges.removeEdge(v);
+        edge.lastVertex = v;
 
-        if(v == interval.leftEdge.end) {
-            SweepVertex next = getNextVertex(interval.leftEdge);
-            interval.leftEdge = new SweepEdge(v, next, interval);
-        }
-        else {
-            assert v == interval.rightEdge.end;
+        tryConnectLastMergeVertex(edge, v);
 
-            SweepVertex next = getNextVertex(interval.rightEdge);
-            interval.rightEdge = new SweepEdge(v, next, interval);
-        }
-
-        if(interval.lastMergeVertex != null)
-            connectToLastMerge(v, interval);
+        /*if(v.p.y == v.prev.p.y)
+            edge.lastMergeVertex = v.prev;
+        else*/
+            edge.lastMergeVertex = v;
     }
 
-    private SweepVertex getNextVertex(SweepEdge edge) {
+
+    private void handleContinuation(SweepVertex v, EdgeSet edges) {
+        SweepEdge edge = edges.getEdge(v.p.x, v.p.y);
+        edge.lastVertex = v;
+
+        if(edge.end == v) {
+            SweepVertex next = getContinuationVertex(edge);
+            edge.reset(v, next);
+        }
+
+        tryConnectLastMergeVertex(edge, v);
+    }
+
+    private SweepVertex getContinuationVertex(SweepEdge edge) {
         if(edge.end.prev == edge.start)
             return edge.end.next;
         else {
@@ -249,22 +228,10 @@ public class SweepTriangulation {
     }
 
 
-    private void connectToLastMerge(SweepVertex v, SweepInterval interval) {
-        // Draw debug line for monotone paths
-        Vector3f start = new Vector3f(v.p.x, v.p.y, 0);
-        Vector3f end = new Vector3f(interval.lastMergeVertex.p.x, interval.lastMergeVertex.p.y, 0);
-        DebugVisual.get("SweepTriangulation").addLine(start, end);
-
-        interval.lastMergeVertex.monotonePath = v;
-        interval.lastMergeVertex = null;
-
-        /*for(SweepVertex mergeVertex : interval.prevMergeVertices) {
-            // Draw debug line for monotone paths
-            Vector3f start = new Vector3f(v.p.x, v.p.y, 0);
-            Vector3f end = new Vector3f(mergeVertex.p.x, mergeVertex.p.y, 0);
-            DebugVisual.get("SweepTriangulation").addLine(start, end);
+    private void tryConnectLastMergeVertex(SweepEdge edge, SweepVertex targetVertex) {
+        if(edge.lastMergeVertex != null) {
+            edge.lastMergeVertex.connectMonotonePath(targetVertex);
+            edge.lastMergeVertex = null;
         }
-
-        interval.prevMergeVertices = null;*/
     }
 }
