@@ -5,8 +5,10 @@ import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 
 class SweepVertex implements Comparable<SweepVertex> {
-    public final int index;
     public final Vector2f p = new Vector2f();
+    public final int index;
+
+    //public final boolean leftTurn; // Precalculate?
 
     public SweepVertex next, prev;
     public SweepVertex monotonePath;
@@ -18,12 +20,12 @@ class SweepVertex implements Comparable<SweepVertex> {
 
 
     public void connectMonotonePath(SweepVertex targetVertex) {
-        System.out.println("Connecting monotone path from " + this + " to " + targetVertex);
+        //System.out.println("Connecting monotone path from " + this + " to " + targetVertex);
 
         // Draw debug line for monotone paths
-        Vector3f start = new Vector3f(p.x, p.y, 0);
+        /*Vector3f start = new Vector3f(p.x, p.y, 0);
         Vector3f end = new Vector3f(targetVertex.p.x, targetVertex.p.y, 0);
-        DebugVisual.get("SweepTriangulation").addLine(start, end);
+        DebugVisual.get("SweepTriangulation").addArrow(start, end);*/
 
         monotonePath = targetVertex;
     }
@@ -31,20 +33,18 @@ class SweepVertex implements Comparable<SweepVertex> {
 
     @Override
     public int compareTo(SweepVertex o) {
-        int yCompare = Float.compare(p.y, o.p.y);
-        if(yCompare != 0)
-            return yCompare;
-
-        // If vertices are located at same Y coordinates, sort them by winding order.
-        // This is required in SweepTriangulation.handleSweepVertex() which depends on next/prev references
-        // to determine vertex type.
-        if(o == prev)
+        if(p.y > o.p.y)
             return 1;
-        if(o == next)
+        if(p.y < o.p.y)
             return -1;
 
-        return Float.compare(p.x, o.p.x);
-        //return Integer.compare(index, o.index);
+        if(p.x > o.p.x)
+            return 1;
+        if(p.x < o.p.x)
+            return -1;
+
+        // If one position is NaN, it will also use index for sorting
+        return (index > o.index) ? 1 : -1;
     }
 
 

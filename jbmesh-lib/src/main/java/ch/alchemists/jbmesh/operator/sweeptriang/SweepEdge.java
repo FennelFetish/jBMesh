@@ -1,7 +1,5 @@
 package ch.alchemists.jbmesh.operator.sweeptriang;
 
-import com.jme3.math.Vector2f;
-
 class SweepEdge {
     public SweepVertex start;
     public SweepVertex end;
@@ -21,11 +19,15 @@ class SweepEdge {
         this.start = start;
         this.end = end;
 
-        Vector2f segDiff = end.p.subtract(start.p);
-        if(Math.abs(segDiff.y) < 0.0001f)
-            xChange = 0;
+        float dy = end.p.y - start.p.y;
+        assert dy >= 0;
+
+        if(dy >= 0.0001f) {
+            float dx = end.p.x - start.p.x;
+            xChange = dx / dy;
+        }
         else
-            xChange = segDiff.x / segDiff.y;
+            xChange = 0;
     }
 
 

@@ -2,7 +2,9 @@ package ch.alchemists.jbmesh.operator.sweeptriang;
 
 import ch.alchemists.jbmesh.util.DebugVisual;
 import com.jme3.math.Vector3f;
-import java.util.*;
+import java.util.Comparator;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 public class EdgeSet {
     private static final class Key {
@@ -24,21 +26,6 @@ public class EdgeSet {
                 return edge.getXAtY(y);
             return x;
         }
-
-        /*@Override
-        public boolean equals(Object o) {
-            assert false;
-
-            if(o == null)
-                return false;
-
-            return edge == ((Key)o).edge;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(x, edge);
-        }*/
     }
 
 
@@ -70,9 +57,12 @@ public class EdgeSet {
     private final TreeSet<Key> edges = new TreeSet<>(comparator);
 
 
-    public void addEdge(SweepEdge edge) {
-        System.out.println("Adding edge: " + edge);
+    public void clear() {
+        edges.clear();
+    }
 
+
+    public void addEdge(SweepEdge edge) {
         Key key = new Key(edge);
         comparator.setY(edge.start.p.y);
         boolean success = edges.add(key);
@@ -84,80 +74,54 @@ public class EdgeSet {
         Key key = new Key(x);
         comparator.setY(y);
         key = edges.floor(key);
-
-        if(key != null)
-            return key.edge;
-        return null;
+        return (key == null) ? null : key.edge;
     }
 
 
+    // Fastest..?
     public SweepEdge removeEdge(SweepVertex v) {
-        System.out.println("removeEdge for " + v);
-
         Key key = new Key(v.p.x);
         comparator.setY(v.p.y);
 
-        NavigableSet<Key> lower = edges.headSet(key, true);
-        Iterator<Key> it = lower.descendingIterator();
-
         // Get and remove first edge that is <= key
-        assert it.hasNext();
-        SweepEdge adjacentEdge = it.next().edge;
+        Key remove = edges.floor(key);
+        boolean removeSuccess = edges.remove(remove);
+        assert removeSuccess;
+
+        SweepEdge adjacentEdge = remove.edge;
         assert adjacentEdge.end == v;
-        it.remove();
-        System.out.println("removeEdge: Removed " + adjacentEdge);
+        //System.out.println("removeEdge: Removed " + adjacentEdge);
 
         // Handle lastMergeVertex of deleted edge
         if(adjacentEdge.lastMergeVertex != null)
             adjacentEdge.lastMergeVertex.connectMonotonePath(v);
 
         // Return second edge to the left if it exists
-        if(!it.hasNext())
+        Key left = edges.floor(key);
+        return (left == null) ? null : left.edge;
+    }
+
+
+    public SweepEdge removeEdgeAlt(SweepVertex v) {
+        Key key = new Key(v.p.x);
+        comparator.setY(v.p.y);
+
+        // Get and remove first edge that is <= key
+        NavigableSet<Key> lower = edges.headSet(key, true);
+        SweepEdge adjacentEdge = lower.pollLast().edge;
+        assert adjacentEdge.end == v;
+        //System.out.println("removeEdge: Removed " + adjacentEdge);
+
+        // Handle lastMergeVertex of deleted edge
+        if(adjacentEdge.lastMergeVertex != null)
+            adjacentEdge.lastMergeVertex.connectMonotonePath(v);
+
+        // Return second edge to the left if it exists
+        if(lower.isEmpty())
             return null;
-        SweepEdge leftEdge = it.next().edge;
+        SweepEdge leftEdge = lower.last().edge;
         return leftEdge;
     }
-
-
-    /*private final ArrayList<SweepEdge> edges = new ArrayList<>(8);
-
-
-    public void addEdge(SweepEdge edge) {
-        int index = binarySearch(edge.start.p.x, edge.start.p.y);
-        edges.add(index, edge);
-    }
-
-
-    public SweepEdge getEdge(float x, float y) {
-        int index = binarySearch(x, y);
-        index -= 1;
-
-        if(index >= 0 && index < edges.size())
-            return edges.get(index);
-        return null;
-    }*/
-
-
-    /**
-     * @return Insertion point for a new edge. (return-1) is associated SweepEdge for the point.
-     */
-    /*private int binarySearch(float x, float y) {
-        int left  = 0;
-        int right = edges.size() - 1;
-
-        while(left <= right) {
-            int center = (left + right) >>> 1;
-            float dx = x - edges.get(center).getXAtY(y);
-
-            if(dx >= 0)
-                left = center + 1;
-            else
-                right = center - 1;
-        }
-
-        return left;
-    }*/
-
 
 
     public void debug(float y) {

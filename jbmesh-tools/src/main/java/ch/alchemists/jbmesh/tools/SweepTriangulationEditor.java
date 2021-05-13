@@ -6,6 +6,7 @@ import ch.alchemists.jbmesh.operator.triangulation.SeidelTriangulation;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.tools.polygoneditor.PolygonEditorState;
+import ch.alchemists.jbmesh.util.DebugVisual;
 import ch.alchemists.jbmesh.util.DebugVisualState;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
@@ -19,6 +20,7 @@ import com.jme3.material.Materials;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector2f;
+import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
@@ -42,7 +44,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
     private final DebugVisualState debugVisualState;
     private final Node node = new Node("SweepTriangulationEditor");
 
-    private static final float SWEEP_STEP = 0.1f;
+    private static final float SWEEP_STEP = 0.2f;
     private float sweepLimit = 0;
 
 
@@ -92,12 +94,15 @@ public class SweepTriangulationEditor extends SimpleApplication {
             SweepTriangulation triangulation = new SweepTriangulation(bmesh);
             triangulation.yLimit = sweepLimit;
 
+            DebugVisual.clear("SweepTriangulation");
+
             try(Profiler p = Profiler.start("SweepTriangulation.apply")) {
                 triangulation.apply(face);
             } catch(Throwable ex) {
                 ex.printStackTrace();
             }
 
+            DebugVisual.get("SweepTriangulation").addLine(new Vector3f(-100, sweepLimit, 0), new Vector3f(100, sweepLimit, 0));
             debugVisualState.reset();
             debugVisualState.setEnabled(true);
         }
@@ -130,20 +135,23 @@ public class SweepTriangulationEditor extends SimpleApplication {
         SweepTriangulation triangulation = new SweepTriangulation(bmesh);
         triangulation.yLimit = Float.POSITIVE_INFINITY;
 
-        for(int i=0; i<200; ++i) {
+        for(int i=0; i<20000; ++i) {
             triangulation.apply(face);
         }
 
         try(Profiler p0 = Profiler.start("SweepTriangulation Benchmark")) {
-            for(int i = 0; i < 1000; ++i) {
+            for(int i = 0; i < 300000; ++i) {
                 try(Profiler p = Profiler.start("SweepTriangulation.apply")) {
                     triangulation.apply(face);
                 }
-                System.gc();
+
+                if((i&8191) == 0)
+                    System.gc();
             }
         }
 
         updateTriangulation();
+        System.out.println("Benchmark done");
     }
 
 
