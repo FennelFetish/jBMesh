@@ -47,6 +47,8 @@ public class SweepTriangulationEditor extends SimpleApplication {
     private static final float SWEEP_STEP = 0.2f;
     private float sweepLimit = 0;
 
+    private Node triangleVis = null;
+
 
     private SweepTriangulationEditor() {
         super(null);
@@ -60,6 +62,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
         stateManager.attach(debugVisualState);
 
         polygonEditor.importFromDefaultFile();
+        //polygonEditor.importPoints("bench1000.points");
     }
 
 
@@ -88,6 +91,8 @@ public class SweepTriangulationEditor extends SimpleApplication {
         BMesh bmesh = new BMesh();
         Face face = polygonEditor.createBMeshFace(bmesh);
 
+        DebugVisual.clear("SweepTriangles");
+
         if(face != null) {
             node.attachChild(makeGeom(bmesh, ColorRGBA.Red));
 
@@ -95,6 +100,8 @@ public class SweepTriangulationEditor extends SimpleApplication {
             triangulation.yLimit = sweepLimit;
 
             DebugVisual.clear("SweepTriangulation");
+            DebugVisual.get("SweepTriangulation").pointSize = 0.2f;
+            DebugVisual.get("SweepTriangulation").pointColor = ColorRGBA.Yellow;
 
             try(Profiler p = Profiler.start("SweepTriangulation.apply")) {
                 triangulation.apply(face);
@@ -102,13 +109,19 @@ public class SweepTriangulationEditor extends SimpleApplication {
                 ex.printStackTrace();
             }
 
-            DebugVisual.get("SweepTriangulation").addLine(new Vector3f(-100, sweepLimit, 0), new Vector3f(100, sweepLimit, 0));
+            DebugVisual.get("SweepTriangulation").addLine(new Vector3f(-1000, sweepLimit, 0), new Vector3f(1000, sweepLimit, 0));
             debugVisualState.reset();
             debugVisualState.setEnabled(true);
         }
         else {
             debugVisualState.setEnabled(false);
         }
+
+
+        DebugVisual.get("SweepTriangles").lineColor = ColorRGBA.Orange;
+        if(triangleVis != null)
+            node.detachChild(triangleVis);
+        node.attachChild(DebugVisual.get("SweepTriangles").createNode(assetManager));
     }
 
 
@@ -135,12 +148,14 @@ public class SweepTriangulationEditor extends SimpleApplication {
         SweepTriangulation triangulation = new SweepTriangulation(bmesh);
         triangulation.yLimit = Float.POSITIVE_INFINITY;
 
-        for(int i=0; i<20000; ++i) {
+        final int runs = 300000;
+
+        for(int i=runs/15; i>=0; --i) {
             triangulation.apply(face);
         }
 
         try(Profiler p0 = Profiler.start("SweepTriangulation Benchmark")) {
-            for(int i = 0; i < 300000; ++i) {
+            for(int i = 0; i < runs; ++i) {
                 try(Profiler p = Profiler.start("SweepTriangulation.apply")) {
                     triangulation.apply(face);
                 }

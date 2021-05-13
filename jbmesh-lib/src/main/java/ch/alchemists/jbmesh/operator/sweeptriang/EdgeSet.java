@@ -26,6 +26,14 @@ public class EdgeSet {
                 return edge.getXAtY(y);
             return x;
         }
+
+        @Override
+        public String toString() {
+            return "Key{" +
+                "x=" + x +
+                ", edge=" + edge +
+                '}';
+        }
     }
 
 
@@ -42,13 +50,18 @@ public class EdgeSet {
             if(comp != 0)
                 return comp;
 
+            // Allow duplicate keys for bow-tie vertices at same position
             if(k1.edge == null)
                 return 1;
             if(k1.edge == k2.edge)
                 return 0;
+            if(k2.edge == null)
+                return -1;
 
-            assert k2.edge == null;
-            return -1;
+            return k1.edge.start.compareTo(k2.edge.start);
+
+            //assert k2.edge == null;
+            //return -1;
         }
     }
 
@@ -63,6 +76,8 @@ public class EdgeSet {
 
 
     public void addEdge(SweepEdge edge) {
+        //System.out.println("Add edge: " + edge);
+
         Key key = new Key(edge);
         comparator.setY(edge.start.p.y);
         boolean success = edges.add(key);
@@ -78,27 +93,61 @@ public class EdgeSet {
     }
 
 
+    public SweepEdge removeEndEdge(SweepVertex v) {
+        Key key = new Key(v.p.x);
+        comparator.setY(v.p.y);
+
+        // Get and remove first edge that is <= key
+        Key adjacent = edges.floor(key);
+        assert adjacent.edge.end == v;
+        //System.out.println("Removing " + adjacent.edge + " (key x=" + key.x + ")");
+        boolean removeSuccess = edges.remove(adjacent);
+        assert removeSuccess;
+
+        return adjacent.edge;
+    }
+
+
     // Fastest..?
     public SweepEdge removeEdge(SweepVertex v) {
         Key key = new Key(v.p.x);
         comparator.setY(v.p.y);
 
         // Get and remove first edge that is <= key
-        Key remove = edges.floor(key);
-        boolean removeSuccess = edges.remove(remove);
+        Key adjacent = edges.floor(key);
+        assert adjacent.edge.end == v;
+        //System.out.println("Removing " + adjacent.edge + " (key x=" + key.x + ")");
+        boolean removeSuccess = edges.remove(adjacent);
         assert removeSuccess;
 
-        SweepEdge adjacentEdge = remove.edge;
-        assert adjacentEdge.end == v;
-        //System.out.println("removeEdge: Removed " + adjacentEdge);
-
         // Handle lastMergeVertex of deleted edge
-        if(adjacentEdge.lastMergeVertex != null)
-            adjacentEdge.lastMergeVertex.connectMonotonePath(v);
+        if(adjacent.edge.lastMergeVertex != null) {
+            adjacent.edge.lastMergeVertex.connectMonotonePath(v);
+            adjacent.edge.waitingMonotoneSweep.processLeft(v);
+
+            adjacent.edge.monotoneSweep.processEnd(v);
+            adjacent.edge.monotoneSweep = adjacent.edge.waitingMonotoneSweep;
+        }
+        else {
+            adjacent.edge.monotoneSweep.processLeft(v);
+        }
 
         // Return second edge to the left if it exists
         Key left = edges.floor(key);
-        return (left == null) ? null : left.edge;
+        assert left != null;
+        if(left == null)
+            return null;
+
+        if(left.edge.lastMergeVertex != null) {
+            left.edge.lastMergeVertex.connectMonotonePath(v);
+            left.edge.lastMergeVertex = v;
+
+            left.edge.waitingMonotoneSweep.processEnd(v);
+        }
+
+        left.edge.waitingMonotoneSweep = adjacent.edge.monotoneSweep;
+        left.edge.lastMergeVertex = v;
+        return left.edge;
     }
 
 
@@ -109,6 +158,7 @@ public class EdgeSet {
         // Get and remove first edge that is <= key
         NavigableSet<Key> lower = edges.headSet(key, true);
         SweepEdge adjacentEdge = lower.pollLast().edge;
+        System.out.println("Removed " + adjacentEdge + " (key x=" + key.x + ")");
         assert adjacentEdge.end == v;
         //System.out.println("removeEdge: Removed " + adjacentEdge);
 

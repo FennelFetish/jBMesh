@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.util;
 
-import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
@@ -11,6 +10,10 @@ public class PlanarCoordinateSystem {
     private final Vector3f y = new Vector3f();
 
 
+    private PlanarCoordinateSystem() {}
+
+
+    @Deprecated
     public PlanarCoordinateSystem(Vector3f p0, Vector3f p1, Vector3f n) {
         assert !p0.isSimilar(p1, 0.0001f);
 
@@ -18,6 +21,42 @@ public class PlanarCoordinateSystem {
 
         x.set(p1).subtractLocal(p0).normalizeLocal();
         y.set(n).crossLocal(x).normalizeLocal();
+    }
+
+
+    public static PlanarCoordinateSystem withX(Vector3f x, Vector3f n) {
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem();
+        coordSys.x.set(x);
+        coordSys.y.set(n).crossLocal(x);
+        return coordSys;
+    }
+
+    public static PlanarCoordinateSystem withX(Vector3f p0, Vector3f p1, Vector3f n) {
+        assert !p0.isSimilar(p1, 0.0001f);
+
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem();
+        coordSys.p.set(p0);
+        coordSys.x.set(p1).subtractLocal(p0).normalizeLocal();
+        coordSys.y.set(n).crossLocal(coordSys.x).normalizeLocal();
+        return coordSys;
+    }
+
+
+    public static PlanarCoordinateSystem withY(Vector3f y, Vector3f n) {
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem();
+        coordSys.y.set(y);
+        coordSys.x.set(y).crossLocal(n);
+        return coordSys;
+    }
+
+    public static PlanarCoordinateSystem withY(Vector3f p0, Vector3f p1, Vector3f n) {
+        assert !p0.isSimilar(p1, 0.0001f);
+
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem();
+        coordSys.p.set(p0);
+        coordSys.y.set(p1).subtractLocal(p0).normalizeLocal();
+        coordSys.x.set(coordSys.y).crossLocal(n).normalizeLocal();
+        return coordSys;
     }
 
 
@@ -55,5 +94,11 @@ public class PlanarCoordinateSystem {
         rot.fromAngleAxis(angle, Vector3f.UNIT_Z);
         rot.multLocal(x);
         rot.multLocal(y);
+    }
+
+
+    @Override
+    public String toString() {
+        return "PlanarCoordinateSystem{x: " + x + " (" + x.length() + "), y: " + y + " (" + y.length() + ")}";
     }
 }

@@ -8,18 +8,17 @@ import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.DebugVisual;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
-import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
 public class SweepTriangulation {
     private final BMesh bmesh;
     private final FaceOps faceOps;
     private final Vec3Property<Vertex> propPosition;
 
-    private final ArrayList<SweepVertex> sweepVertices = new ArrayList<>();
+    private final TreeSet<SweepVertex> sweepVertices = new TreeSet<>();
     private final EdgeSet edges = new EdgeSet();
 
     public float yLimit = 0;
@@ -33,14 +32,13 @@ public class SweepTriangulation {
 
 
     private PlanarCoordinateSystem createCoordSystemTest(List<Vertex> vertices, Face face) {
-        /*Vector3f p0 = propPosition.get(vertices.get(0));
-        Vector3f p1 = propPosition.get(vertices.get(1));
-        Vector3f n = faceOps.normal(face);
-
-        PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withX(p0, p1, n);*/
         PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withX(Vector3f.UNIT_X, Vector3f.UNIT_Z);
 
         DebugVisual.setPointTransformation("SweepTriangulation", v -> {
+            return coordSys.unproject(new Vector2f(v.x, v.y));
+        });
+
+        DebugVisual.setPointTransformation("SweepTriangles", v -> {
             return coordSys.unproject(new Vector2f(v.x, v.y));
         });
 
@@ -48,54 +46,48 @@ public class SweepTriangulation {
     }
 
     private PlanarCoordinateSystem createCoordSystem(List<Vertex> vertices, Face face) {
-        try(Profiler p = Profiler.start("createCoordSystem")) {
-            Vector3f dirSum = new Vector3f();
-            Vector3f dir = new Vector3f();
+        Vector3f dirSum = new Vector3f();
+        Vector3f dir = new Vector3f();
 
-            for(Vertex v : vertices) {
-                propPosition.get(v, dir);
-                if(dir.dot(Vector3f.UNIT_X) < 0)
-                    dir.negateLocal();
+        for(Vertex v : vertices) {
+            propPosition.get(v, dir);
+            if(dir.dot(Vector3f.UNIT_X) < 0)
+                dir.negateLocal();
 
-                //dir.x *= dir.x;
-                //dir.y *= dir.y;
-                dirSum.addLocal(dir);
-            }
-            //dirSum.divideLocal(vertices.size());
-            //System.out.println("dirSum: " + dirSum);
-
-            Vector3f n = faceOps.normal(face);
-            PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withY(Vector3f.ZERO, dirSum, n);
-
-            DebugVisual.setPointTransformation("SweepTriangulation", v -> {
-                return coordSys.unproject(new Vector2f(v.x, v.y));
-            });
-
-            return coordSys;
+            dirSum.addLocal(dir);
         }
+        //dirSum.divideLocal(vertices.size());
+        //System.out.println("dirSum: " + dirSum);
+
+        Vector3f n = faceOps.normal(face);
+        PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withY(Vector3f.ZERO, dirSum, n);
+
+        DebugVisual.setPointTransformation("SweepTriangulation", v -> {
+            return coordSys.unproject(new Vector2f(v.x, v.y));
+        });
+
+        DebugVisual.setPointTransformation("SweepTriangles", v -> {
+            return coordSys.unproject(new Vector2f(v.x, v.y));
+        });
+
+        return coordSys;
     }
 
 
     public void apply(Face face) {
-        //System.out.println("SweepTriangulation.apply ----------------------------------------------------");
-        //System.out.println("limit: " + yLimit);
+        System.out.println("SweepTriangulation.apply ----------------------------------------------------");
+        System.out.println("limit: " + yLimit);
 
         List<Vertex> vertices = face.getVertices();
         if(vertices.size() < 3)
             throw new IllegalArgumentException("Triangulation needs at least 3 vertices");
 
-        PlanarCoordinateSystem coordSys = createCoordSystem(vertices, face);
+        PlanarCoordinateSystem coordSys = createCoordSystemTest(vertices, face);
 
         try {
-            try(Profiler p = Profiler.start("createSweepVertices")) {
-                createSweepVertices(vertices, coordSys);
-            }
-
+            createSweepVertices(vertices, coordSys);
             //printVertices(coordSys);
-
-            try(Profiler p = Profiler.start("process")) {
-                process();
-            }
+            process();
         }
         finally {
             sweepVertices.clear();
@@ -106,14 +98,15 @@ public class SweepTriangulation {
 
     private void printVertices(PlanarCoordinateSystem coordSys) {
         System.out.println("Vertices:");
-        for(int i=0; i<sweepVertices.size(); ++i) {
-            System.out.println("  Vertex[" + i + "]: " + coordSys.unproject(sweepVertices.get(i).p) );
+        int i=0;
+        for(SweepVertex v : sweepVertices) {
+            System.out.println("  Vertex[" + i + "]: " + coordSys.unproject(v.p) );
+            i++;
         }
     }
 
 
     private void createSweepVertices(List<Vertex> vertices, PlanarCoordinateSystem coordSys) {
-        sweepVertices.ensureCapacity(vertices.size());
         Vector3f pos = new Vector3f();
 
         SweepVertex first = new SweepVertex(0);
@@ -132,42 +125,36 @@ public class SweepTriangulation {
             if(current.p.isSimilar(prev.p, 0.0001f))
                 continue;
 
-            sweepVertices.add(current);
+            // TODO: Skip collinear spikes
 
             current.prev = prev;
             prev.next = current;
-
             prev = current;
+
+            // Add after setting references because they are used for sorting bow-tie vertices
+            sweepVertices.add(current);
         }
 
         first.prev = prev;
         prev.next = first;
-
-        try(Profiler p = Profiler.start("sort")) {
-            sweepVertices.sort(null);
-        }
     }
 
 
-    /*private SweepVertex createSweepVertex(Vertex vertex, int index, PlanarCoordinateSystem coordSys) {
-        SweepVertex sweepVertex = new SweepVertex(index);
-        coordSys.project(propPosition.get(vertex), sweepVertex.p);
-        return sweepVertex;
-    }*/
-
-
     private void process() {
-        for(int i=0; i<sweepVertices.size(); ++i) {
-            SweepVertex v = sweepVertices.get(i);
-            /*if(v.p.y > yLimit)
-                break;*/
+        for(SweepVertex v : sweepVertices) {
+            if(v.p.y > yLimit)
+                break;
 
-            //System.out.println("===[ handleSweepVertex " + i + ": " + v.p + " ]===");
+            System.out.println("===[ handleSweepVertex " + (v.index+1) + ": " + v.p + " ]===");
             handleSweepVertex(v);
             //edges.printEdges();
         }
 
-        //edges.debug(yLimit);
+        edges.debug(yLimit);
+
+        /*for(SweepVertex v : monotoneStarts) {
+            DebugVisual.get("SweepTriangulation").addPoint(new Vector3f(v.p.x, v.p.y, 0));
+        }*/
     }
 
 
@@ -200,50 +187,12 @@ public class SweepTriangulation {
         }
         // v.prev on same height
         else  {
-            if(isLeftTurn(v) || yNext == y)
+            if(yNext == y || isLeftTurn(v))
                 handleContinuation(v);
             else if(yNext < y)
                 handleMerge(v);
             else
                 handleSplit(v);
-        }
-    }
-
-
-    private void handleSweepVertexOld(SweepVertex v) {
-        boolean prevUp = (v.p.y < v.prev.p.y);
-        boolean nextUp = (v.p.y <= v.next.p.y);
-
-        System.out.println("prevUp: " + prevUp + ", nextUp: " + nextUp);
-
-        // One edge points upwards, one points downwards
-        if(prevUp != nextUp) {
-            System.out.println("  >> Continuation");
-            handleContinuation(v);
-            return;
-        }
-
-        // Both edges point upwards (+y)
-        if(prevUp) {
-            if(!isLeftTurn(v)) {
-                System.out.println("  >> Split Vertex");
-                handleSplit(v);
-            }
-            else {
-                System.out.println("  >> Start Vertex");
-                handleStart(v);
-            }
-        }
-        // Both edges point downwards (-y)
-        else {
-            if(!isLeftTurn(v)) {
-                System.out.println("  >> Merge Vertex");
-                handleMerge(v);
-            }
-            else {
-                System.out.println("  >> End Vertex");
-                edges.removeEdge(v);
-            }
         }
     }
 
@@ -256,68 +205,112 @@ public class SweepTriangulation {
 
 
     private void handleStart(SweepVertex v) {
-        //System.out.println("  >> Start Vertex");
+        System.out.println("  >> Start Vertex");
 
         SweepEdge leftEdge = new SweepEdge(v, v.prev);
+        leftEdge.monotoneSweep = new MonotoneSweep(v);
         leftEdge.lastVertex = v;
         edges.addEdge(leftEdge);
-
-        //SweepEdge rightEdge = new SweepEdge(v, v.next);
-        //edges.addEdge(rightEdge);
     }
 
 
     private void handleSplit(SweepVertex v) {
-        //System.out.println("  >> Split Vertex");
+        System.out.println("  >> Split Vertex");
 
-        SweepEdge edge = edges.getEdge(v.p.x, v.p.y);
-        assert edge != null;
-        assert edge.lastVertex != null;
-
-        edge.lastVertex.connectMonotonePath(v);
-        edge.lastVertex = v;
-
-        tryConnectLastMergeVertex(edge, v);
-
-        //SweepEdge leftEdge = new SweepEdge(v, v.next);
-        //leftEdge.lastVertex = v;
-        //edges.addEdge(leftEdge);
+        SweepEdge leftEdge = edges.getEdge(v.p.x, v.p.y);
+        assert leftEdge != null;
+        assert leftEdge.lastVertex != null;
 
         SweepEdge rightEdge = new SweepEdge(v, v.prev);
+
+        // Connection to left chain
+        if(leftEdge.lastVertex == leftEdge.start) {
+            leftEdge.lastVertex.connectMonotonePath(v);
+            rightEdge.monotoneSweep = leftEdge.monotoneSweep;
+            leftEdge.monotoneSweep = new MonotoneSweep(leftEdge.lastVertex);
+        }
+        // Connection to mergeVertex
+        else if(leftEdge.lastMergeVertex != null) {
+            leftEdge.lastMergeVertex.connectMonotonePath(v);
+            leftEdge.lastMergeVertex = null;
+
+            rightEdge.monotoneSweep = leftEdge.waitingMonotoneSweep;
+            leftEdge.waitingMonotoneSweep = null;
+        }
+        // Connection to right chain
+        else {
+            leftEdge.lastVertex.connectMonotonePath(v);
+            rightEdge.monotoneSweep = new MonotoneSweep(leftEdge.lastVertex);
+        }
+
+        leftEdge.monotoneSweep.processRight(v);
+        leftEdge.lastVertex = v;
+
+        rightEdge.monotoneSweep.processLeft(v);
         rightEdge.lastVertex = v;
         edges.addEdge(rightEdge);
     }
 
 
     private void handleMerge(SweepVertex v) {
-        //System.out.println("  >> Merge Vertex");
+        System.out.println("  >> Merge Vertex");
 
+        // This will also connect lastMergeVertex of the removed edge to v
         SweepEdge edge = edges.removeEdge(v);
+        edge.monotoneSweep.processRight(v);
         edge.lastVertex = v;
-
-        tryConnectLastMergeVertex(edge, v);
-        edge.lastMergeVertex = v;
     }
 
 
     private void handleEnd(SweepVertex v) {
-        //System.out.println("  >> End Vertex");
-        edges.removeEdge(v);
+        System.out.println("  >> End Vertex");
+
+        // This will also connect lastMergeVertex of the removed edge to v
+        SweepEdge removedEdge = edges.removeEndEdge(v);
+        removedEdge.monotoneSweep.processEnd(v);
+
+        if(removedEdge.lastMergeVertex != null) {
+            removedEdge.lastMergeVertex.connectMonotonePath(v);
+            removedEdge.waitingMonotoneSweep.processEnd(v);
+        }
     }
 
 
     private void handleContinuation(SweepVertex v) {
-        //System.out.println("  >> Continuation Vertex");
+        System.out.println("  >> Continuation Vertex");
 
         SweepEdge edge = edges.getEdge(v.p.x, v.p.y);
+        assert edge != null; // If this happens, some edges were crossing?
         edge.lastVertex = v;
 
+        // Left edge continues
         if(edge.end == v) {
             SweepVertex next = getContinuationVertex(edge);
             edge.reset(v, next);
-        }
 
-        tryConnectLastMergeVertex(edge, v);
+            if(edge.lastMergeVertex != null) {
+                edge.lastMergeVertex.connectMonotonePath(v);
+                edge.lastMergeVertex = null;
+
+                edge.monotoneSweep.processEnd(v);
+                edge.monotoneSweep = edge.waitingMonotoneSweep;
+                edge.waitingMonotoneSweep = null;
+            }
+
+            edge.monotoneSweep.processLeft(v);
+        }
+        // Right edge continues
+        else {
+            if(edge.lastMergeVertex != null) {
+                edge.lastMergeVertex.connectMonotonePath(v);
+                edge.lastMergeVertex = null;
+
+                edge.waitingMonotoneSweep.processEnd(v);
+                edge.waitingMonotoneSweep = null;
+            }
+
+            edge.monotoneSweep.processRight(v);
+        }
     }
 
     private SweepVertex getContinuationVertex(SweepEdge edge) {
@@ -330,10 +323,11 @@ public class SweepTriangulation {
     }
 
 
-    private void tryConnectLastMergeVertex(SweepEdge edge, SweepVertex targetVertex) {
+    /*private void tryConnectLastMergeVertex(SweepEdge edge, SweepVertex targetVertex) {
         if(edge.lastMergeVertex != null) {
             edge.lastMergeVertex.connectMonotonePath(targetVertex);
+            //edge.waitingMonotoneSweep
             edge.lastMergeVertex = null;
         }
-    }
+    }*/
 }
