@@ -4,11 +4,8 @@ class SweepEdge {
     public SweepVertex start;
     public SweepVertex end;
 
-    public SweepVertex lastVertex;
-    public SweepVertex lastMergeVertex; // TODO: Remove this, use waitingMonotoneSweep only
-
     public MonotoneSweep monotoneSweep;
-    public MonotoneSweep waitingMonotoneSweep; // Rests at last merge vertex
+    public MonotoneSweep lastMerge;
 
     private float xChange;
 
@@ -43,6 +40,8 @@ class SweepEdge {
 
     @Override
     public String toString() {
+        SweepVertex lastVertex = monotoneSweep.getLastVertex();
+        SweepVertex lastMergeVertex = (lastMerge != null) ? lastMerge.getLastVertex() : null;
         return "SweepEdge{start: " + start.p + ", end: " + end.p + ", lastVertex: " + lastVertex + ", lastMerge: " + lastMergeVertex + "}";
     }
 }

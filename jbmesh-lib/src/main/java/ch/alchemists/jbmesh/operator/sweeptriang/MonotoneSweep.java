@@ -13,14 +13,15 @@ class MonotoneSweep {
     public MonotoneSweep(SweepVertex v, SweepTriangulation.TriangleCallback cb) {
         this.cb = cb;
         stack.push(v);
-        //System.out.println("Stack push start: " + v.p);
-        //printStack();
+    }
+
+
+    public SweepVertex getLastVertex() {
+        return stack.peek();
     }
 
 
     public void processLeft(SweepVertex v) {
-        //System.out.println("Stack push left: " + v.p);
-
         if(stack.size() < 2)
             stack.push(v);
         else if(lastLeft)
@@ -29,13 +30,10 @@ class MonotoneSweep {
             processOtherSide(v);
 
         lastLeft = true;
-        //printStack();
     }
 
 
     public void processRight(SweepVertex v) {
-        //System.out.println("Stack push right: " + v.p);
-
         if(stack.size() < 2)
             stack.push(v);
         else if(lastLeft)
@@ -44,12 +42,10 @@ class MonotoneSweep {
             processSameSide(v);
 
         lastLeft = false;
-        //printStack();
     }
 
 
     public void processEnd(SweepVertex v) {
-        //System.out.println("Stack push end: " + v.p);
         assert stack.size() >= 2;
 
         SweepVertex last = stack.pop();
@@ -67,7 +63,6 @@ class MonotoneSweep {
 
 
     private void processSameSide(SweepVertex v) {
-        //System.out.println("Process same side");
         SweepVertex keep = stack.pop();
 
         Vector2f dir = new Vector2f();
@@ -78,6 +73,7 @@ class MonotoneSweep {
             SweepVertex o = stack.peek();
             dir.set(o.p).subtractLocal(v.p);
 
+            // Ensure that we can see 'o' from 'v'
             float det = base.determinant(dir);
             if(det * side <= 0)
                 break;
@@ -97,8 +93,6 @@ class MonotoneSweep {
 
 
     private void processOtherSide(SweepVertex v) {
-        //System.out.println("Process other side");
-
         SweepVertex keep = stack.pop();
         SweepVertex last = keep;
 
@@ -116,13 +110,5 @@ class MonotoneSweep {
 
         stack.push(keep);
         stack.push(v);
-    }
-
-
-    private void printStack() {
-        System.out.println("Stack:");
-        for(SweepVertex v : stack) {
-            System.out.println("  - " + v.p);
-        }
     }
 }

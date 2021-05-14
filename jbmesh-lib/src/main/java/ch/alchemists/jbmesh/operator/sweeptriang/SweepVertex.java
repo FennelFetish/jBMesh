@@ -1,34 +1,16 @@
 package ch.alchemists.jbmesh.operator.sweeptriang;
 
-import ch.alchemists.jbmesh.util.DebugVisual;
 import com.jme3.math.Vector2f;
-import com.jme3.math.Vector3f;
 
 class SweepVertex implements Comparable<SweepVertex> {
     public final Vector2f p = new Vector2f();
     public final int index;
 
-    //public final boolean leftTurn; // Precalculate?
-
     public SweepVertex next, prev;
-    public SweepVertex monotonePath;
 
 
     public SweepVertex(int index) {
         this.index = index;
-    }
-
-
-    public void connectMonotonePath(SweepVertex targetVertex) {
-        //System.out.println("Connecting monotone path from " + this + " to " + targetVertex);
-
-        // Draw debug line for monotone paths
-        Vector3f start = new Vector3f(p.x, p.y, 0);
-        Vector3f end = new Vector3f(targetVertex.p.x, targetVertex.p.y, 0);
-        DebugVisual.get("SweepTriangulation").addArrow(start, end);
-
-        //assert monotonePath == null;
-        monotonePath = targetVertex;
     }
 
 

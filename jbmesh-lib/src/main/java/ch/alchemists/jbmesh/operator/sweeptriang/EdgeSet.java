@@ -84,7 +84,7 @@ public class EdgeSet {
         // Get and remove first edge that is <= key
         Key adjacent = edges.floor(key);
         assert adjacent.edge.end == v;
-        //System.out.println("Removing " + adjacent.edge + " (key x=" + key.x + ")");
+
         boolean removeSuccess = edges.remove(adjacent);
         assert removeSuccess;
 

@@ -19,7 +19,6 @@ public class SweepTriangulation {
     }
 
 
-    private final BMesh bmesh;
     private final FaceOps faceOps;
     private final Vec3Property<Vertex> propPosition;
 
@@ -31,7 +30,6 @@ public class SweepTriangulation {
 
 
     public SweepTriangulation(BMesh bmesh) {
-        this.bmesh = bmesh;
         this.faceOps = new FaceOps(bmesh);
         this.propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
     }
@@ -212,127 +210,99 @@ public class SweepTriangulation {
 
 
     private void handleStart(SweepVertex v) {
-        //System.out.println("  >> Start Vertex");
-
         SweepEdge leftEdge = new SweepEdge(v, v.prev);
         leftEdge.monotoneSweep = new MonotoneSweep(v, cb);
-        leftEdge.lastVertex = v;
         edges.addEdge(leftEdge);
     }
 
 
     private void handleSplit(SweepVertex v) {
-        //System.out.println("  >> Split Vertex");
-
-        SweepEdge leftEdge = edges.getEdge(v);
-        assert leftEdge != null;
-        assert leftEdge.lastVertex != null;
-
+        SweepEdge leftEdge  = edges.getEdge(v);
         SweepEdge rightEdge = new SweepEdge(v, v.prev);
 
+        SweepVertex lastVertex = leftEdge.monotoneSweep.getLastVertex();
+
         // Connection to left chain
-        if(leftEdge.lastVertex == leftEdge.start) {
-            leftEdge.lastVertex.connectMonotonePath(v);
+        if(lastVertex == leftEdge.start) {
+            //drawMonotonePath(lastVertex, v);
             rightEdge.monotoneSweep = leftEdge.monotoneSweep;
-            leftEdge.monotoneSweep = new MonotoneSweep(leftEdge.lastVertex, cb);
+            leftEdge.monotoneSweep = new MonotoneSweep(lastVertex, cb);
         }
         // Connection to mergeVertex
-        else if(leftEdge.lastMergeVertex != null) {
-            leftEdge.lastMergeVertex.connectMonotonePath(v);
-            leftEdge.lastMergeVertex = null;
-
-            rightEdge.monotoneSweep = leftEdge.waitingMonotoneSweep;
-            leftEdge.waitingMonotoneSweep = null;
+        else if(leftEdge.lastMerge != null) {
+            //drawMonotonePath(leftEdge.lastMerge.getLastVertex(), v);
+            rightEdge.monotoneSweep = leftEdge.lastMerge;
+            leftEdge.lastMerge = null;
         }
         // Connection to right chain
         else {
-            leftEdge.lastVertex.connectMonotonePath(v);
-            rightEdge.monotoneSweep = new MonotoneSweep(leftEdge.lastVertex, cb);
+            //drawMonotonePath(lastVertex, v);
+            rightEdge.monotoneSweep = new MonotoneSweep(lastVertex, cb);
         }
 
         leftEdge.monotoneSweep.processRight(v);
-        leftEdge.lastVertex = v;
-
         rightEdge.monotoneSweep.processLeft(v);
-        rightEdge.lastVertex = v;
         edges.addEdge(rightEdge);
     }
 
 
     private void handleMerge(SweepVertex v) {
-        //System.out.println("  >> Merge Vertex");
-
         // Remove and handle edge to the right
         SweepEdge rightEdge = edges.removeEdge(v);
-        if(rightEdge.lastMergeVertex != null) {
-            rightEdge.lastMergeVertex.connectMonotonePath(v);
+        if(rightEdge.lastMerge != null) {
+            //drawMonotonePath(rightEdge.lastMerge.getLastVertex(), v);
             rightEdge.monotoneSweep.processEnd(v);
-            rightEdge.monotoneSweep = rightEdge.waitingMonotoneSweep;
+            rightEdge.monotoneSweep = rightEdge.lastMerge;
         }
 
         rightEdge.monotoneSweep.processLeft(v);
 
         SweepEdge leftEdge = edges.getEdge(v);
-        if(leftEdge.lastMergeVertex != null) {
-            leftEdge.lastMergeVertex.connectMonotonePath(v);
-            leftEdge.lastMergeVertex = v;
-
-            leftEdge.waitingMonotoneSweep.processEnd(v);
+        if(leftEdge.lastMerge != null) {
+            //drawMonotonePath(leftEdge.lastMerge.getLastVertex(), v);
+            leftEdge.lastMerge.processEnd(v);
         }
 
         leftEdge.monotoneSweep.processRight(v);
-        leftEdge.lastVertex = v;
-
-        // Left edge will remember this merge
-        leftEdge.waitingMonotoneSweep = rightEdge.monotoneSweep;
-        leftEdge.lastMergeVertex = v;
+        leftEdge.lastMerge = rightEdge.monotoneSweep; // Left edge will remember this merge
     }
 
 
     private void handleEnd(SweepVertex v) {
-        //System.out.println("  >> End Vertex");
-
         SweepEdge removedEdge = edges.removeEdge(v);
         removedEdge.monotoneSweep.processEnd(v);
 
-        if(removedEdge.lastMergeVertex != null) {
-            removedEdge.lastMergeVertex.connectMonotonePath(v);
-            removedEdge.waitingMonotoneSweep.processEnd(v);
+        if(removedEdge.lastMerge != null) {
+            //drawMonotonePath(removedEdge.lastMerge.getLastVertex(), v);
+            removedEdge.lastMerge.processEnd(v);
         }
     }
 
 
     private void handleContinuation(SweepVertex v) {
-        //System.out.println("  >> Continuation Vertex");
-
         SweepEdge edge = edges.getEdge(v);
         assert edge != null; // If this happens, some edges were crossing?
-        edge.lastVertex = v;
 
         // Left edge continues
         if(edge.end == v) {
             SweepVertex next = getContinuationVertex(edge);
             edge.reset(v, next);
 
-            if(edge.lastMergeVertex != null) {
-                edge.lastMergeVertex.connectMonotonePath(v);
-                edge.lastMergeVertex = null;
-
+            if(edge.lastMerge != null) {
+                //drawMonotonePath(edge.lastMerge.getLastVertex(), v);
                 edge.monotoneSweep.processEnd(v);
-                edge.monotoneSweep = edge.waitingMonotoneSweep;
-                edge.waitingMonotoneSweep = null;
+                edge.monotoneSweep = edge.lastMerge;
+                edge.lastMerge = null;
             }
 
             edge.monotoneSweep.processLeft(v);
         }
         // Right edge continues
         else {
-            if(edge.lastMergeVertex != null) {
-                edge.lastMergeVertex.connectMonotonePath(v);
-                edge.lastMergeVertex = null;
-
-                edge.waitingMonotoneSweep.processEnd(v);
-                edge.waitingMonotoneSweep = null;
+            if(edge.lastMerge != null) {
+                //drawMonotonePath(edge.lastMerge.getLastVertex(), v);
+                edge.lastMerge.processEnd(v);
+                edge.lastMerge = null;
             }
 
             edge.monotoneSweep.processRight(v);
@@ -346,5 +316,15 @@ public class SweepTriangulation {
             assert edge.end.next == edge.start;
             return edge.end.prev;
         }
+    }
+
+
+    private void drawMonotonePath(SweepVertex src, SweepVertex dest) {
+        //System.out.println("Connecting monotone path from " + src + " to " + dest);
+
+        // Draw debug line for monotone paths
+        Vector3f start = new Vector3f(src.p.x, src.p.y, 0);
+        Vector3f end = new Vector3f(dest.p.x, dest.p.y, 0);
+        DebugVisual.get("SweepTriangulation").addArrow(start, end);
     }
 }
