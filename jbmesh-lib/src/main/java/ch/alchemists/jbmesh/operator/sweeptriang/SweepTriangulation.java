@@ -151,10 +151,6 @@ public class SweepTriangulation {
         }
 
         edges.debug(yLimit);
-
-        /*for(SweepVertex v : monotoneStarts) {
-            DebugVisual.get("SweepTriangulation").addPoint(new Vector3f(v.p.x, v.p.y, 0));
-        }*/
     }
 
 
@@ -196,7 +192,6 @@ public class SweepTriangulation {
         }
     }
 
-
     private static boolean isLeftTurn(SweepVertex v) {
         Vector2f v1 = v.p.subtract(v.prev.p);
         Vector2f v2 = v.next.p.subtract(v.prev.p);
@@ -217,7 +212,7 @@ public class SweepTriangulation {
     private void handleSplit(SweepVertex v) {
         System.out.println("  >> Split Vertex");
 
-        SweepEdge leftEdge = edges.getEdge(v.p.x, v.p.y);
+        SweepEdge leftEdge = edges.getEdge(v);
         assert leftEdge != null;
         assert leftEdge.lastVertex != null;
 
@@ -255,18 +250,37 @@ public class SweepTriangulation {
     private void handleMerge(SweepVertex v) {
         System.out.println("  >> Merge Vertex");
 
-        // This will also connect lastMergeVertex of the removed edge to v
-        SweepEdge edge = edges.removeEdge(v);
-        edge.monotoneSweep.processRight(v);
-        edge.lastVertex = v;
+        // Remove and handle edge to the right
+        SweepEdge rightEdge = edges.removeEdge(v);
+        if(rightEdge.lastMergeVertex != null) {
+            rightEdge.lastMergeVertex.connectMonotonePath(v);
+            rightEdge.monotoneSweep.processEnd(v);
+            rightEdge.monotoneSweep = rightEdge.waitingMonotoneSweep;
+        }
+
+        rightEdge.monotoneSweep.processLeft(v);
+
+        SweepEdge leftEdge = edges.getEdge(v);
+        if(leftEdge.lastMergeVertex != null) {
+            leftEdge.lastMergeVertex.connectMonotonePath(v);
+            leftEdge.lastMergeVertex = v;
+
+            leftEdge.waitingMonotoneSweep.processEnd(v);
+        }
+
+        leftEdge.monotoneSweep.processRight(v);
+        leftEdge.lastVertex = v;
+
+        // Left edge will remember this merge
+        leftEdge.waitingMonotoneSweep = rightEdge.monotoneSweep;
+        leftEdge.lastMergeVertex = v;
     }
 
 
     private void handleEnd(SweepVertex v) {
         System.out.println("  >> End Vertex");
 
-        // This will also connect lastMergeVertex of the removed edge to v
-        SweepEdge removedEdge = edges.removeEndEdge(v);
+        SweepEdge removedEdge = edges.removeEdge(v);
         removedEdge.monotoneSweep.processEnd(v);
 
         if(removedEdge.lastMergeVertex != null) {
@@ -279,7 +293,7 @@ public class SweepTriangulation {
     private void handleContinuation(SweepVertex v) {
         System.out.println("  >> Continuation Vertex");
 
-        SweepEdge edge = edges.getEdge(v.p.x, v.p.y);
+        SweepEdge edge = edges.getEdge(v);
         assert edge != null; // If this happens, some edges were crossing?
         edge.lastVertex = v;
 
@@ -321,13 +335,4 @@ public class SweepTriangulation {
             return edge.end.prev;
         }
     }
-
-
-    /*private void tryConnectLastMergeVertex(SweepEdge edge, SweepVertex targetVertex) {
-        if(edge.lastMergeVertex != null) {
-            edge.lastMergeVertex.connectMonotonePath(targetVertex);
-            //edge.waitingMonotoneSweep
-            edge.lastMergeVertex = null;
-        }
-    }*/
 }
