@@ -53,9 +53,9 @@ class MonotoneSweep {
             SweepVertex o = stack.pop();
 
             if(lastLeft)
-                cb.handleTriangleIndices(v.index, last.index, o.index);
+                cb.handleTriangle(v, last, o);
             else
-                cb.handleTriangleIndices(v.index, o.index, last.index);
+                cb.handleTriangle(v, o, last);
 
             last = o;
         }
@@ -79,9 +79,9 @@ class MonotoneSweep {
                 break;
 
             if(lastLeft)
-                cb.handleTriangleIndices(v.index, keep.index, o.index);
+                cb.handleTriangle(v, keep, o);
             else
-                cb.handleTriangleIndices(v.index, o.index, keep.index);
+                cb.handleTriangle(v, o, keep);
 
             base.set(dir);
             keep = stack.pop();
@@ -101,14 +101,22 @@ class MonotoneSweep {
 
             // v is on other side
             if(lastLeft)
-                cb.handleTriangleIndices(v.index, last.index, o.index);
+                cb.handleTriangle(v, last, o);
             else
-                cb.handleTriangleIndices(v.index, o.index, last.index);
+                cb.handleTriangle(v, o, last);
 
             last = o;
         }
 
         stack.push(keep);
         stack.push(v);
+    }
+
+
+    private void printStack() {
+        System.out.println("Stack:");
+        for(SweepVertex v : stack) {
+            System.out.println("  - " + (v.index+1));
+        }
     }
 }

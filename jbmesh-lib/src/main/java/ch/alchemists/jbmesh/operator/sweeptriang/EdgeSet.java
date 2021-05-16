@@ -35,9 +35,12 @@ public class EdgeSet {
 
         @Override
         public int compare(Key k1, Key k2) {
-            int comp = Float.compare(k1.getX(y), k2.getX(y));
-            if(comp != 0)
-                return comp;
+            // Compare x with tolerance
+            float dx = k1.getX(y) - k2.getX(y);
+            if(dx > 0.0001f)
+                return 1;
+            if(dx < -0.0001f)
+                return -1;
 
             // Allow duplicate keys for bow-tie vertices at same position
             if(k1.edge == null)
@@ -104,10 +107,10 @@ public class EdgeSet {
         }
     }
 
-    public void printEdges() {
+    public void printEdges(float y) {
         System.out.println("--- Edges:");
         for(Key k : edges) {
-            System.out.println("  - " + k.edge);
+            System.out.println("  - " + k.edge + " (x=" + k.edge.getXAtY(y) + ")");
         }
     }
 }

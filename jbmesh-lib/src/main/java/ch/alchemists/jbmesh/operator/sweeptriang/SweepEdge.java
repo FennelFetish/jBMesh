@@ -7,6 +7,7 @@ class SweepEdge {
     public MonotoneSweep monotoneSweep;
     public MonotoneSweep lastMerge;
 
+    private float xLeft;
     private float xChange;
 
 
@@ -25,23 +26,26 @@ class SweepEdge {
         if(dy >= 0.0001f) {
             float dx = end.p.x - start.p.x;
             xChange = dx / dy;
+            xLeft = end.p.x;
         }
-        else
+        else {
             xChange = 0;
+            xLeft = Math.min(end.p.x, start.p.x);
+        }
     }
 
 
     public float getXAtY(float y) {
         float yDiff = y - end.p.y;
-        float x = end.p.x + yDiff*xChange;
+        float x = xLeft + yDiff*xChange;
         return x;
     }
 
 
     @Override
     public String toString() {
-        SweepVertex lastVertex = monotoneSweep.getLastVertex();
-        SweepVertex lastMergeVertex = (lastMerge != null) ? lastMerge.getLastVertex() : null;
-        return "SweepEdge{start: " + start.p + ", end: " + end.p + ", lastVertex: " + lastVertex + ", lastMerge: " + lastMergeVertex + "}";
+        int lastVertex = monotoneSweep.getLastVertex().index+1;
+        int lastMergeVertex = (lastMerge != null) ? lastMerge.getLastVertex().index+1 : -1;
+        return "SweepEdge{start: " + (start.index+1) + ", end: " + (end.index+1) + ", lastVertex: " + lastVertex + ", lastMerge: " + lastMergeVertex + "}";
     }
 }
