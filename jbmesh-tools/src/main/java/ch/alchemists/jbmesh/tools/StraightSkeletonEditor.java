@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.tools;
 
-import ch.alchemists.jbmesh.conversion.LineExport;
 import ch.alchemists.jbmesh.operator.skeleton.SkeletonVisualization;
 import ch.alchemists.jbmesh.operator.skeleton.StraightSkeleton;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -13,17 +12,14 @@ import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
-import com.jme3.material.Material;
-import com.jme3.material.Materials;
-import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector2f;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class StraightSkeletonEditor extends SimpleApplication {
     private static final String STORAGE_PATH       = "F:/jme/jBMesh/points";
@@ -92,21 +88,20 @@ public class StraightSkeletonEditor extends SimpleApplication {
         Face face = polygonEditor.createBMeshFace(bmesh);
 
         if(face != null) {
-            node.attachChild(makeGeom(bmesh, ColorRGBA.Red));
-
             StraightSkeleton skeleton = new StraightSkeleton(bmesh);
             skeleton.setDistance(skeletonDistance);
 
+            // TODO: Add multiple faces & holes
             try(Profiler p = Profiler.start("StraightSkeleton.apply")) {
                 skeleton.apply(face);
             }
 
             SkeletonVisualization skelVis = skeleton.getVisualization();
-            node.attachChild( makeGeom(skelVis.createSkeletonMappingVis(), ColorRGBA.Yellow) );
-            node.attachChild( makeGeom(skelVis.createSkeletonDegeneracyVis(), ColorRGBA.Brown) );
-            node.attachChild( makeGeom(skelVis.createMovingNodesVis(), ColorRGBA.Cyan) );
-            node.attachChild( makeGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
-            node.attachChild( makeGeom(skelVis.createMappingVis(), ColorRGBA.Magenta) );
+            node.attachChild( polygonEditor.createLineGeom(skelVis.createSkeletonMappingVis(), ColorRGBA.Yellow) );
+            node.attachChild( polygonEditor.createLineGeom(skelVis.createSkeletonDegeneracyVis(), ColorRGBA.Brown) );
+            node.attachChild( polygonEditor.createLineGeom(skelVis.createMovingNodesVis(), ColorRGBA.Cyan) );
+            //node.attachChild( polygonEditor.createLineGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
+            //node.attachChild( polygonEditor.createLineGeom(skelVis.createMappingVis(), ColorRGBA.Magenta) );
 
             for(SkeletonVisualization.VisNode node : skelVis.getMovingNodes()) {
                 polygonEditor.createPointVis(movingNodeType, node.pos, node.name);
@@ -115,44 +110,32 @@ public class StraightSkeletonEditor extends SimpleApplication {
     }
 
 
-    private Geometry makeGeom(BMesh bmesh, ColorRGBA color) {
-        // TODO: Make util class "DebugLineExport"?
-        LineExport export = new LineExport(bmesh);
-        export.update();
-
-        Material mat = new Material(assetManager, Materials.UNSHADED);
-        mat.setColor("Color", color);
-        mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
-        mat.getAdditionalRenderState().setLineWidth(2.0f);
-
-        Geometry geom = new Geometry("Geom", export.getMesh());
-        geom.setMaterial(mat);
-        return geom;
-    }
-
-
     private void benchmark() {
-        skeletonDistance = Float.NEGATIVE_INFINITY;
+        final int runs = 1000;
 
         BMesh bmesh = new BMesh();
         Face face = polygonEditor.createBMeshFace(bmesh);
 
         StraightSkeleton skeleton = new StraightSkeleton(bmesh);
+        skeletonDistance = Float.NEGATIVE_INFINITY;
         skeleton.setDistance(skeletonDistance);
 
-        for(int i=0; i<200; ++i) {
+        for(int i=runs/15; i>=0; --i) {
             skeleton.apply(face);
         }
 
         try(Profiler p0 = Profiler.start("StraightSkeleton Benchmark")) {
-            for(int i = 0; i < 1000; ++i) {
+            for(int i=0; i<runs; ++i) {
                 try(Profiler p = Profiler.start("StraightSkeleton.apply")) {
                     skeleton.apply(face);
                 }
-                System.gc();
+
+                if((i&2047) == 0)
+                    System.gc();
             }
         }
 
+        Profiler.printAndClear();
         updateSkeletonVis();
     }
 
@@ -169,7 +152,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
         }
 
         @Override
-        public void onPointsUpdated(List<Vector2f> points) {
+        public void onPointsUpdated(Map<Integer, ArrayList<Vector2f>> pointMap) {
             updateSkeletonVis();
         }
     };

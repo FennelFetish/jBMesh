@@ -20,6 +20,14 @@ public final class Profiler implements AutoCloseable {
             this.order = order;
         }
 
+        public void clear() {
+            time = 0;
+            min = Long.MAX_VALUE;
+            max = 0;
+            runs = 0;
+            children.clear();
+        }
+
         @Override
         public int compareTo(Entry other) {
             return order - other.order;
@@ -101,6 +109,26 @@ public final class Profiler implements AutoCloseable {
     }
 
 
+    public static void print() {
+        System.out.printf("%-50.50s     %-12.12s  %s  %-10.10s  %-10.10s  %-10.10s  %-12.12s %n",
+            "===== Profiler =====", "Total [ms]", "% of Parent", "Avg [ms]", "Min [ms]", "Max [ms]", "Runs");
+
+        synchronized(ROOT) {
+            printEntry(0, ROOT);
+        }
+    }
+
+    public static void printAndClear() {
+        System.out.printf("%-50.50s     %-12.12s  %s  %-10.10s  %-10.10s  %-10.10s  %-12.12s %n",
+            "===== Profiler =====", "Total [ms]", "% of Parent", "Avg [ms]", "Min [ms]", "Max [ms]", "Runs");
+
+        synchronized(ROOT) {
+            printEntry(0, ROOT);
+            ROOT.clear();
+        }
+    }
+
+
     private static void printEntry(int level, Entry entry) {
         Entry[] entries = new Entry[entry.children.size()];
         entries = entry.children.values().toArray(entries);
@@ -141,14 +169,7 @@ public final class Profiler implements AutoCloseable {
 
     static {
         if(ENABLED) {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.printf("%-50.50s     %-12.12s  %s  %-10.10s  %-10.10s  %-10.10s  %-12.12s %n",
-                        "===== Profiler =====", "Total [ms]", "% of Parent", "Avg [ms]", "Min [ms]", "Max [ms]", "Runs");
-                
-                synchronized(ROOT) {
-                    printEntry(0, ROOT);
-                }
-            }));
+            Runtime.getRuntime().addShutdownHook(new Thread(Profiler::print));
         }
     }
 }

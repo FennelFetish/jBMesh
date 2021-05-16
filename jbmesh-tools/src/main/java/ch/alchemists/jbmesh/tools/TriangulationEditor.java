@@ -1,28 +1,22 @@
 package ch.alchemists.jbmesh.tools;
 
-import ch.alchemists.jbmesh.conversion.LineExport;
 import ch.alchemists.jbmesh.operator.triangulation.SeidelTriangulation;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.tools.polygoneditor.PolygonEditorState;
-import ch.alchemists.jbmesh.util.DebugVisual;
 import ch.alchemists.jbmesh.util.DebugVisualState;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
-import com.jme3.material.Material;
-import com.jme3.material.Materials;
-import com.jme3.material.RenderState;
-import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector2f;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class TriangulationEditor extends SimpleApplication {
     private static final String STORAGE_PATH       = "F:/jme/jBMesh/points";
@@ -44,8 +38,7 @@ public class TriangulationEditor extends SimpleApplication {
         polygonEditor.setStoragePath(STORAGE_PATH);
         stateManager.attach(polygonEditor);
 
-        debugVisualState = new DebugVisualState();
-        debugVisualState.setName("Seidel");
+        debugVisualState = new DebugVisualState("Seidel");
         stateManager.attach(debugVisualState);
 
         polygonEditor.importFromDefaultFile();
@@ -74,8 +67,6 @@ public class TriangulationEditor extends SimpleApplication {
         Face face = polygonEditor.createBMeshFace(bmesh);
 
         if(face != null) {
-            node.attachChild(makeGeom(bmesh, ColorRGBA.Red));
-
             SeidelTriangulation triangulation = new SeidelTriangulation(bmesh);
             try(Profiler p = Profiler.start("SeidelTriangulation.apply")) {
                 triangulation.apply(face);
@@ -86,22 +77,6 @@ public class TriangulationEditor extends SimpleApplication {
         else {
             debugVisualState.setEnabled(false);
         }
-    }
-
-
-    private Geometry makeGeom(BMesh bmesh, ColorRGBA color) {
-        // TODO: Make util class "DebugLineExport"?
-        LineExport export = new LineExport(bmesh);
-        export.update();
-
-        Material mat = new Material(assetManager, Materials.UNSHADED);
-        mat.setColor("Color", color);
-        mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
-        mat.getAdditionalRenderState().setLineWidth(2.0f);
-
-        Geometry geom = new Geometry("Geom", export.getMesh());
-        geom.setMaterial(mat);
-        return geom;
     }
 
 
@@ -138,7 +113,7 @@ public class TriangulationEditor extends SimpleApplication {
         public void onPointsReset() {}
 
         @Override
-        public void onPointsUpdated(List<Vector2f> points) {
+        public void onPointsUpdated(Map<Integer, ArrayList<Vector2f>> pointMap) {
             updateTriangulation();
         }
     };

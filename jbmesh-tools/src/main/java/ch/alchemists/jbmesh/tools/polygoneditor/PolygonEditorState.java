@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.tools.polygoneditor;
 
+import ch.alchemists.jbmesh.conversion.LineExport;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -31,13 +32,12 @@ import com.jme3.texture.Texture;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class PolygonEditorState extends BaseAppState {
     public interface PointListener {
         void onPointsReset();
-        void onPointsUpdated(List<Vector2f> points);
+        void onPointsUpdated(Map<Integer, ArrayList<Vector2f>> pointMap);
     }
 
     public static class PointDrawType {
@@ -70,7 +70,8 @@ public class PolygonEditorState extends BaseAppState {
 
     private final PointListener listener;
     private final Plane plane;
-    private final ArrayList<Vector2f> points = new ArrayList<>();
+    private final Map<Integer, ArrayList<Vector2f>> pointMap = new HashMap<>();
+    private int currentPolygon = 0;
 
     private static final float BG_SIZE = 5000;
     private Geometry bg;
@@ -91,8 +92,18 @@ public class PolygonEditorState extends BaseAppState {
 
 
     public List<Vector2f> getPoints() {
-        return points;
+        return getPoints(currentPolygon);
     }
+
+    public ArrayList<Vector2f> getPoints(int polygonIndex) {
+        ArrayList<Vector2f> list = pointMap.computeIfAbsent(polygonIndex, k -> new ArrayList<>());
+        return list;
+    }
+
+    public Collection<List<Vector2f>> getAllPoints() {
+        return Collections.unmodifiableCollection(pointMap.values());
+    }
+
 
     public void setStoragePath(String path) {
         storageBasePath = Paths.get(path).toAbsolutePath().normalize();
@@ -105,7 +116,7 @@ public class PolygonEditorState extends BaseAppState {
         AssetManager assetManager = app.getAssetManager();
         Node rootNode = simpleApp.getRootNode();
 
-        panZoomState = new PanZoomState(25);
+        panZoomState = new PanZoomState(35);
         app.getStateManager().attach(panZoomState);
 
         toolBar = new ToolBar(this);
@@ -211,18 +222,39 @@ public class PolygonEditorState extends BaseAppState {
 
 
     public Face createBMeshFace(BMesh bmesh) {
-        Vertex[] vertices = new Vertex[points.size()];
+        return createBMeshFace(bmesh, currentPolygon);
+    }
 
-        for(int i=0; i<points.size(); ++i) {
-            Vector2f p = points.get(i);
-            Vector3f v = new Vector3f(p.x, p.y, 0);
-            vertices[i] = bmesh.createVertex(v);
-        }
+    public Face createBMeshFace(BMesh bmesh, int polygonIndex) {
+        List<Vector2f> points = getPoints(polygonIndex);
+       return createBMeshFace(bmesh, points);
+    }
 
-        if(points.size() >= 3)
-            return bmesh.createFace(vertices);
+    public Face createBMeshFace(BMesh bmesh, List<Vector2f> points) {
+        if(points.size() < 3)
+            return null;
 
-        return null;
+        List<Vertex> vertices = new ArrayList<>(points.size());
+        for(Vector2f p : points)
+            vertices.add( bmesh.createVertex(p.x, p.y, 0) );
+
+        return bmesh.createFace(vertices);
+    }
+
+
+    public Geometry createLineGeom(BMesh bmesh, ColorRGBA color) {
+        // TODO: Make util class "DebugLineExport"?
+        LineExport export = new LineExport(bmesh);
+        export.update();
+
+        Material mat = new Material(getApplication().getAssetManager(), Materials.UNSHADED);
+        mat.setColor("Color", color);
+        mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
+        mat.getAdditionalRenderState().setLineWidth(2.0f);
+
+        Geometry geom = new Geometry("Geom", export.getMesh());
+        geom.setMaterial(mat);
+        return geom;
     }
 
 
@@ -249,12 +281,23 @@ public class PolygonEditorState extends BaseAppState {
     public void updatePoints() {
         defaultPointType.container.detachAllChildren();
 
-        for(int i=0; i<points.size(); ++i) {
-            Vector2f p = points.get(i);
-            createPointVis(defaultPointType, p, Integer.toString(i+1));
+        for(Map.Entry<Integer, ArrayList<Vector2f>> entry : pointMap.entrySet()) {
+            // Draw points with numbers
+            List<Vector2f> points = entry.getValue();
+            for(int i = 0; i < points.size(); ++i) {
+                Vector2f p = points.get(i);
+                createPointVis(defaultPointType, p, Integer.toString(i + 1));
+            }
+
+            // Draw lines between points
+            BMesh bmesh = new BMesh();
+            createBMeshFace(bmesh, points);
+            ColorRGBA color = (entry.getKey() == currentPolygon) ? ColorRGBA.Red : ColorRGBA.Black;
+            Geometry geom = createLineGeom(bmesh, color);
+            defaultPointType.container.attachChild(geom);
         }
 
-        listener.onPointsUpdated(getPoints());
+        listener.onPointsUpdated(pointMap);
     }
 
 
@@ -297,15 +340,21 @@ public class PolygonEditorState extends BaseAppState {
             return;
 
         try(BufferedReader reader = new BufferedReader(new FileReader(path))) {
-            points.clear();
+            pointMap.clear();
+            int pointIndex = 0;
 
             for(String line; (line = reader.readLine()) != null; ) {
+                if(line.startsWith("---")) {
+                    pointIndex++;
+                    continue;
+                }
+
                 String[] split = line.split(" ");
 
                 Vector2f p = new Vector2f();
                 p.x = Float.parseFloat(split[0]);
                 p.y = Float.parseFloat(split[1]);
-                points.add(p);
+                getPoints(pointIndex).add(p);
             }
         }
         catch(IOException e) {
@@ -330,11 +379,15 @@ public class PolygonEditorState extends BaseAppState {
             return;
 
         try(Writer writer = new BufferedWriter(new FileWriter(path))) {
-            for(Vector2f p : points) {
-                writer.write(Float.toString(p.x));
-                writer.write(" ");
-                writer.write(Float.toString(p.y));
-                writer.write("\n");
+            for(List<Vector2f> points : pointMap.values()) {
+                for(Vector2f p : points) {
+                    writer.write(Float.toString(p.x));
+                    writer.write(" ");
+                    writer.write(Float.toString(p.y));
+                    writer.write("\n");
+                }
+
+                writer.write("---\n");
             }
         }
         catch(IOException e) {
@@ -343,7 +396,9 @@ public class PolygonEditorState extends BaseAppState {
     }
 
 
-    public void scalePoints(float scale) {
+    public void scalePoints(int polygonIndex, float scale) {
+        List<Vector2f> points = getPoints(polygonIndex);
+
         // Find center
         Vector2f center = new Vector2f();
         for(Vector2f p : points)
@@ -359,7 +414,9 @@ public class PolygonEditorState extends BaseAppState {
         updatePoints();
     }
 
-    public void reversePoints() {
+    public void reversePoints(int polygonIndex) {
+        List<Vector2f> points = getPoints(polygonIndex);
+
         List<Vector2f> copy = new ArrayList<>(points);
         points.clear();
         for(int i=copy.size()-1; i>=0; --i)
@@ -368,7 +425,9 @@ public class PolygonEditorState extends BaseAppState {
         updatePoints();
     }
 
-    public void subdivide() {
+    public void subdivide(int polygonIndex) {
+        ArrayList<Vector2f> points = getPoints(polygonIndex);
+
         List<Vector2f> copy = new ArrayList<>(points);
         points.clear();
         points.ensureCapacity(copy.size() * 2);
@@ -395,7 +454,9 @@ public class PolygonEditorState extends BaseAppState {
         updatePoints();
     }
 
-    public void perturb() {
+    public void perturb(int polygonIndex) {
+        List<Vector2f> points = getPoints(polygonIndex);
+
         float max = 0.03f;
         for(Vector2f p : points) {
             p.x += (FastMath.nextRandomFloat()*2-1) * max;
@@ -409,16 +470,20 @@ public class PolygonEditorState extends BaseAppState {
     private void centerView() {
         Vector2f min = new Vector2f(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
         Vector2f max = new Vector2f(Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
+        boolean hasPoints = false;
 
-        for(Vector2f p : points) {
-            min.x = Math.min(min.x, p.x);
-            min.y = Math.min(min.y, p.y);
+        for(List<Vector2f> points : pointMap.values()) {
+            for(Vector2f p : points) {
+                hasPoints = true;
+                min.x = Math.min(min.x, p.x);
+                min.y = Math.min(min.y, p.y);
 
-            max.x = Math.max(max.x, p.x);
-            max.y = Math.max(max.y, p.y);
+                max.x = Math.max(max.x, p.x);
+                max.y = Math.max(max.y, p.y);
+            }
         }
 
-        if(!points.isEmpty()) {
+        if(hasPoints) {
             Vector2f center = max.subtract(min);
             center.multLocal(0.5f).addLocal(min);
             panZoomState.setPos(center);
@@ -436,16 +501,17 @@ public class PolygonEditorState extends BaseAppState {
         private void onPressed(String name) {
             switch(name) {
                 case ACT_RESET_POINTS:
-                    points.clear();
+                    pointMap.clear();
+                    currentPolygon = 0;
                     updatePoints();
                     break;
 
                 case ACT_SUBDIVIDE:
-                    subdivide();
+                    subdivide(currentPolygon);
                     break;
 
                 case ACT_PERTURB:
-                    perturb();
+                    perturb(currentPolygon);
                     break;
 
                 case ACT_RELOAD_FILE:
@@ -460,6 +526,15 @@ public class PolygonEditorState extends BaseAppState {
     private final RawInputListener numberInputListener = new RawInputListener() {
         @Override
         public void onKeyEvent(KeyInputEvent evt) {
+            // Select polygon
+            int p = evt.getKeyCode() - KeyInput.KEY_F1;
+            if(p >= 0 && p <= 12) {
+                currentPolygon = p;
+                updatePoints();
+                return;
+            }
+
+            // Import
             int c = evt.getKeyCode() - KeyInput.KEY_1 + 1;
             if(c >= 1 && c <= 9) {
                 String file = "bug" + c + ".points";

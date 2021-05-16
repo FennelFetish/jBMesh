@@ -12,6 +12,8 @@ import com.jme3.material.Material;
 import com.jme3.material.Materials;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
@@ -49,6 +51,7 @@ public class DebugVisual {
 
     private final List<Line> lines = new ArrayList<>();
     public ColorRGBA lineColor = ColorRGBA.Cyan.clone();
+    public float arrowLength = 0.3f;
 
     private final List<Text> texts = new ArrayList<>();
     public ColorRGBA textColor = ColorRGBA.Yellow.clone();
@@ -133,6 +136,30 @@ public class DebugVisual {
     }
 
     public void addLine(Vector3f start, Vector3f end) {
+        addLine(start, end, lines);
+    }
+
+    public void addArrow(Vector3f start, Vector3f end) {
+        addArrow(start, end, Vector3f.UNIT_Z);
+    }
+
+    public void addArrow(Vector3f start, Vector3f end, Vector3f normal) {
+        addLine(start, end, lines);
+
+        Vector3f dir = start.subtract(end).normalizeLocal().multLocal(arrowLength);
+
+        float angle = 30 * FastMath.DEG_TO_RAD;
+        Quaternion rot1 = new Quaternion().fromAngleAxis(angle, normal);
+        Quaternion rot2 = new Quaternion().fromAngleAxis(-angle, normal);
+
+        Vector3f a1 = rot1.mult(dir).addLocal(end);
+        addLine(end, a1, lines);
+
+        Vector3f a2 = rot2.mult(dir).addLocal(end);
+        addLine(end, a2, lines);
+    }
+
+    private void addLine(Vector3f start, Vector3f end, List<Line> list) {
         PointTransformation transform = transforms.get(name);
         if(transform != null) {
             start = transform.transform(start);
@@ -142,7 +169,7 @@ public class DebugVisual {
         Line line = new Line();
         line.start.set(start);
         line.end.set(end);
-        lines.add(line);
+        list.add(line);
     }
 
     public void addText(Vector3f p, String text) {
@@ -246,7 +273,7 @@ public class DebugVisual {
 
             Material mat = new Material(assetManager, Materials.UNSHADED);
             mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-            mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
+            //mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
             mat.setColor("Color", color);
 
             BMesh bmesh = new BMesh();

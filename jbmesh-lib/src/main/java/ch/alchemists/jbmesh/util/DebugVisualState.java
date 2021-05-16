@@ -19,14 +19,10 @@ public class DebugVisualState extends BaseAppState {
 
     private Spatial currentVis = null;
     private int currentIndex = 0;
-    private String name = "debug";
 
 
-    public DebugVisualState() {}
-
-
-    public void setName(String name) {
-        this.name = name;
+    public DebugVisualState(String name) {
+        super(name);
     }
 
 
@@ -56,6 +52,14 @@ public class DebugVisualState extends BaseAppState {
     }
 
 
+    public void reset() {
+        updateVis(0);
+    }
+
+    public void updateVis() {
+        updateVis(currentIndex);
+    }
+
     private void updateVis(int index) {
         if(getApplication() == null)
             return;
@@ -63,7 +67,7 @@ public class DebugVisualState extends BaseAppState {
         if(index < 0)
             return;
 
-        DebugVisual vis = DebugVisual.get(name, index);
+        DebugVisual vis = DebugVisual.get(getId(), index);
         if(vis == null)
             return;
         currentIndex = index;
@@ -74,11 +78,6 @@ public class DebugVisualState extends BaseAppState {
 
         currentVis = vis.createNode(getApplication().getAssetManager());
         node.attachChild(currentVis);
-    }
-
-
-    public void reset() {
-        updateVis(0);
     }
 
 
