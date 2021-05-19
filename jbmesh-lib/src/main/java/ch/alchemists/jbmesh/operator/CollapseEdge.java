@@ -52,9 +52,10 @@ public class CollapseEdge {
                 FaceVertices faceVertices = new FaceVertices(); // TODO: Make ArrayList instead of object
                 adjacentFaces.put(face, faceVertices);
 
-                for(Loop faceLoop : face.loops()) {
+                for(Vertex vertex : face.vertices()) {
                     // Map 'v1' => 'v0'
-                    Vertex vertex = (faceLoop.vertex == v1) ? v0 : faceLoop.vertex;
+                    if(vertex == v1)
+                        vertex = v0;
                     faceVertices.vertices.add(vertex);
                 }
             }

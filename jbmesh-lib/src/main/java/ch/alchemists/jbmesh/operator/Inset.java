@@ -3,7 +3,6 @@ package ch.alchemists.jbmesh.operator;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
-import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.math.Vector3f;
 
@@ -35,21 +34,21 @@ public class Inset {
         Vector3f centroid = faceOps.centroid(face);
         Vector3f normal = faceOps.normal(face).multLocal(-depth);
 
-        for(Loop loop : face.loops()) {
-            propPosition.get(loop.vertex, p);
+        for(Vertex vertex : face.vertices()) {
+            propPosition.get(vertex, p);
             p.subtractLocal(centroid);
             p.multLocal(thickness);
             p.addLocal(centroid);
-            propPosition.set(loop.vertex, p);
+            propPosition.set(vertex, p);
         }
 
         extrusion.apply(face);
         extrusion.copyVertexProperties();
 
-        for(Loop loop : face.loops()) {
-            propPosition.get(loop.vertex, p);
+        for(Vertex vertex : face.vertices()) {
+            propPosition.get(vertex, p);
             p.addLocal(normal);
-            propPosition.set(loop.vertex, p);
+            propPosition.set(vertex, p);
         }
     }
 }

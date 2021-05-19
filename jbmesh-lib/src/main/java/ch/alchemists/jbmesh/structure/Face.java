@@ -2,6 +2,7 @@ package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.data.Element;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -70,18 +71,18 @@ public class Face extends Element {
     }
 
 
-    public List<Vertex> getVertices() {
-        return getVertices(new ArrayList<>(4));
+    public ArrayList<Vertex> getVertices() {
+        return (ArrayList<Vertex>) getVertices(new ArrayList<>(4));
     }
 
-    public List<Vertex> getVertices(List<Vertex> list) {
+    public Collection<Vertex> getVertices(Collection<Vertex> collection) {
         Loop current = loop;
         do {
-            list.add(current.vertex);
+            collection.add(current.vertex);
             current = current.nextFaceLoop;
         } while(current != loop);
 
-        return list;
+        return collection;
     }
 
     public Iterable<Vertex> vertices() {
@@ -89,26 +90,26 @@ public class Face extends Element {
     }
 
 
-    public List<Loop> getLoops() {
-        return getLoops(new ArrayList<>(4));
+    public ArrayList<Loop> getLoops() {
+        return (ArrayList<Loop>) getLoops(new ArrayList<>(4));
     }
 
-    public List<Loop> getLoops(List<Loop> list) {
+    public Collection<Loop> getLoops(Collection<Loop> collection) {
         Loop current = loop;
         do {
-            list.add(current);
+            collection.add(current);
             current = current.nextFaceLoop;
         } while(current != loop);
 
-        return list;
+        return collection;
     }
 
-    public Iterable<Loop> loops() { // TODO: Replace with vertices() where possible
+    public Iterable<Loop> loops() {
         return () -> new FaceLoopIterator(loop);
     }
 
 
-    private static class FaceLoopIterator implements Iterator<Loop> {
+    private static final class FaceLoopIterator implements Iterator<Loop> {
         private final Loop startLoop;
         private Loop currentLoop;
         private boolean first = true;
@@ -133,7 +134,7 @@ public class Face extends Element {
     }
 
 
-    private static class FaceVertexIterator implements Iterator<Vertex> {
+    private static final class FaceVertexIterator implements Iterator<Vertex> {
         private final FaceLoopIterator it;
 
         public FaceVertexIterator(Loop loop) {

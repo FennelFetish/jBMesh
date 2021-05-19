@@ -82,8 +82,8 @@ public class FaceOps {
         int numVertices = 0;
         store.zero();
 
-        for(Loop loop : face.loops()) {
-            propPosition.addLocal(store, loop.vertex);
+        for(Vertex vertex : face.vertices()) {
+            propPosition.addLocal(store, vertex);
             numVertices++;
         }
 
@@ -109,8 +109,8 @@ public class FaceOps {
     }
 
     public float area(Face face, Vector3f normal) {
-        Iterator<Loop> it = face.loops().iterator();
-        Vertex firstVertex = it.next().vertex;
+        Iterator<Vertex> it = face.vertices().iterator();
+        Vertex firstVertex = it.next();
 
         Vector3f p1 = propPosition.get(firstVertex);
         Vector3f p2 = new Vector3f();
@@ -118,7 +118,7 @@ public class FaceOps {
 
         // Stoke's theorem? Green's theorem?
         while(it.hasNext()) {
-            propPosition.get(it.next().vertex, p2);
+            propPosition.get(it.next(), p2);
             sum.addLocal( p1.crossLocal(p2) );
             p1.set(p2);
         }

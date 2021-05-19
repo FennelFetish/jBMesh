@@ -80,8 +80,7 @@ public class Smooth {
         ArrayList<Vertex> faceVertices = new ArrayList<>(8);
         for(Face face : faces) {
             faceVertices.clear();
-            for(Loop loop : face.loops())
-                faceVertices.add(loop.vertex);
+            face.getVertices(faceVertices);
             assert (faceVertices.size() & 1) == 0; // Even number
 
             // Make sure first vertex in list is an original vertex

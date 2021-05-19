@@ -65,7 +65,7 @@ public class Subtract extends Cut {
 
         Set<Vertex> insideVertices = new HashSet<>(insideFaces.size() * 4);
         for(Face face : insideFaces) {
-            face.loops().forEach(l -> insideVertices.add(l.vertex));
+            face.getVertices(insideVertices);
         }
 
         VertexOps vertOps = new VertexOps(bmesh);

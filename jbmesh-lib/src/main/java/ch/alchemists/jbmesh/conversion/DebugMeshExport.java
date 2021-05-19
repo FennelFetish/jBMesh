@@ -121,8 +121,8 @@ public class DebugMeshExport {
 
         for(Face face : bmesh.faces()) {
             faceVertices.clear();
-            for(Loop loop : face.loops())
-                faceVertices.add(propPosition.get(loop.vertex));
+            for(Vertex vertex : face.vertices())
+                faceVertices.add(propPosition.get(vertex));
 
             final int size = faceVertices.size();
             final Vector3f normal   = faceOps.normal(face);
