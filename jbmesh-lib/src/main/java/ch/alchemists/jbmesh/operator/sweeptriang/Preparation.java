@@ -1,15 +1,21 @@
 package ch.alchemists.jbmesh.operator.sweeptriang;
 
 import ch.alchemists.jbmesh.structure.Vertex;
-import ch.alchemists.jbmesh.util.DebugVisual;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.function.Function;
 
 class Preparation {
+    interface Extractor<T> {
+        Vector3f position(T element, Vector3f store);
+        Vertex vertex(T element);
+    }
+
+    private static final float MIN_VERTEX_DISTANCE = 0.00001f;
+    private static final float MIN_VERTEX_DISTANCE_SQUARED = MIN_VERTEX_DISTANCE * MIN_VERTEX_DISTANCE;
+
     private static final String INVALID_FACE = "Face needs at least 3 valid vertices.";
 
     private final Collection<SweepVertex> sweepVertices;
@@ -28,14 +34,20 @@ class Preparation {
         nextFaceIndex = 0;
     }
 
+    public void setCoordinateSystem(PlanarCoordinateSystem coordSys) {
+        this.coordSys = coordSys;
+    }
 
-    private static <T> PlanarCoordinateSystem createCoordSystem(Iterable<T> face, Function<T, Vector3f> fpos) {
+
+    private static <T> PlanarCoordinateSystem createCoordSystem(Iterable<T> face, Extractor<T> extract) {
         Iterator<T> it = face.iterator();
         if(!it.hasNext())
             throw new IllegalArgumentException(INVALID_FACE);
 
-        Vector3f first = fpos.apply(it.next());
+        Vector3f first = extract.position(it.next(), new Vector3f());
         Vector3f last  = first.clone();
+        Vector3f valid = new Vector3f();
+        Vector3f p     = new Vector3f();
 
         // Accumulate general direction of polygon
         Vector3f dirSum = new Vector3f();
@@ -45,51 +57,56 @@ class Preparation {
 
         int numVertices = 1;
         while(it.hasNext()) {
-            Vector3f p = fpos.apply(it.next());
-            n.x += (last.y - p.y) * (last.z + p.z);
-            n.y += (last.z - p.z) * (last.x + p.x);
-            n.z += (last.x - p.x) * (last.y + p.y);
+            extract.position(it.next(), p);
+            addToNormal(n, last, p);
             last.set(p);
 
             p.subtractLocal(first);
             dirSum.addLocal(p);
 
             // Count only vertices that are different from 'first'
-            if(p.lengthSquared() > 0.00001f)
+            if(p.lengthSquared() > MIN_VERTEX_DISTANCE_SQUARED) {
+                valid.set(p);
                 numVertices++;
+            }
         }
 
         if(numVertices < 3)
             throw new IllegalArgumentException(INVALID_FACE);
 
         // Add last segment from last to first
-        n.x += (last.y - first.y) * (last.z + first.z);
-        n.y += (last.z - first.z) * (last.x + first.x);
-        n.z += (last.x - first.x) * (last.y + first.y);
+        addToNormal(n, last, first);
         n.normalizeLocal();
 
-        // TODO: Dir sum could be very near at 'first'
+        // Dir sum may be very near at 'first'. In this case use any valid vertex.
+        if(dirSum.distanceSquared(first) <= MIN_VERTEX_DISTANCE_SQUARED)
+            dirSum.set(valid).addLocal(first);
+
         PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withY(first, dirSum, n);
-        //PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withX(Vector3f.UNIT_X, Vector3f.UNIT_Z);
-
-        final PlanarCoordinateSystem ref = coordSys;
-        DebugVisual.setPointTransformation("SweepTriangulation", p -> ref.unproject(new Vector2f(p.x, p.y)));
-
+        //coordSys.rotate(-45 * FastMath.DEG_TO_RAD);
         return coordSys;
     }
 
 
-    <T> void addFace(Iterable<T> face, Function<T, Vector3f> fpos, Function <T, Vertex> fvert) {
+    private static void addToNormal(Vector3f n, Vector3f last, Vector3f p) {
+        n.x += (last.y - p.y) * (last.z + p.z);
+        n.y += (last.z - p.z) * (last.x + p.x);
+        n.z += (last.x - p.x) * (last.y + p.y);
+    }
+
+
+    <T> void addFace(Iterable<T> face, Extractor<T> extract) {
         if(coordSys == null)
-            coordSys = createCoordSystem(face, fpos);
+            coordSys = createCoordSystem(face, extract);
 
         Iterator<T> it = face.iterator();
         if(!it.hasNext())
             throw new IllegalArgumentException(INVALID_FACE);
         T ele = it.next();
 
-        SweepVertex first = new SweepVertex(fvert.apply(ele), 0, nextFaceIndex);
-        coordSys.project(fpos.apply(ele), first.p);
+        Vector3f p = new Vector3f();
+        SweepVertex first = new SweepVertex(extract.vertex(ele), 0, nextFaceIndex);
+        coordSys.project(extract.position(ele, p), first.p);
 
         SweepVertex prev = first;
         int numVertices = 1;
@@ -97,8 +114,8 @@ class Preparation {
         while(it.hasNext()) {
             ele = it.next();
 
-            SweepVertex current = new SweepVertex(fvert.apply(ele), numVertices, nextFaceIndex);
-            coordSys.project(fpos.apply(ele), current.p);
+            SweepVertex current = new SweepVertex(extract.vertex(ele), numVertices, nextFaceIndex);
+            coordSys.project(extract.position(ele, p), current.p);
 
             current.prev = prev;
             prev.next = current;
@@ -162,21 +179,25 @@ class Preparation {
 
     private static boolean isValid(SweepVertex v) {
         // Degenerate because at same position
-        if(v.p.isSimilar(v.prev.p, 0.0001f)) {
+        if(v.p.isSimilar(v.prev.p, MIN_VERTEX_DISTANCE))
             return false;
-        }
 
         Vector2f vPrev = v.prev.p.subtract(v.p);
         Vector2f vNext = v.next.p.subtract(v.p);
         float det = vPrev.determinant(vNext);
 
-        // Degenerate because neighbor edges are collinear and point to same side
-        if(Math.abs(det) < 0.0001f && vPrev.dot(vNext) > 0) {
+        // Degenerate because neighbor edges are collinear and point to same side.
+        // The dot() is rarely executed and hence not inlined, which prevents scalar replacement of above Vector2f objects.
+        // Therefore do a manual dot().
+        if(Math.abs(det) < 0.000001f && dot(vPrev.x, vPrev.y, vNext.x, vNext.y) > 0)
             return false;
-        }
 
         v.leftTurn = (det <= 0);
         return true;
+    }
+
+    private static float dot(float x1, float y1, float x2, float y2) {
+        return (x1 * x2) + (y1 * y2);
     }
 
 
@@ -188,6 +209,7 @@ class Preparation {
         SweepVertex prev = v.prev;
         Vector2f vPrev = prev.prev.p.subtract(prev.p);
         Vector2f vNext = prev.next.p.subtract(prev.p);
+
         float det = vPrev.determinant(vNext);
         prev.leftTurn = (det <= 0);
 

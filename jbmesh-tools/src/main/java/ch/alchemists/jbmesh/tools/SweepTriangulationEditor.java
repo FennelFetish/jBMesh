@@ -9,6 +9,7 @@ import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.tools.polygoneditor.PolygonEditorState;
 import ch.alchemists.jbmesh.util.DebugVisual;
 import ch.alchemists.jbmesh.util.DebugVisualState;
+import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.KeyInput;
@@ -16,7 +17,6 @@ import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
-import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
@@ -43,7 +43,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
     private final DebugVisualState debugVisualState;
     private Node sweepLine;
 
-    private static final float SWEEP_STEP = 0.5f;
+    private static final float SWEEP_STEP = 0.2f;
     private float sweepLimit = 0;
 
 
@@ -82,17 +82,22 @@ public class SweepTriangulationEditor extends SimpleApplication {
 
     private void updateTriangulation() {
         // Prepare debug visuals
-        DebugVisual.clear("Triangles");
-        DebugVisual dbg = DebugVisual.get("Triangles");
-        dbg.pointSize = 0.2f;
-        dbg.pointColor = ColorRGBA.Yellow;
+        DebugVisual.colorHue = 0.55f;
+        DebugVisual.colorHueVariance = 0.6f;
+        DebugVisual.colorSaturation = 0.8f;
+        DebugVisual.colorBrightness = 1.0f;
+        DebugVisual.colorAlpha = 0.6f;
 
         DebugVisual.clear("SweepTriangulation");
+        DebugVisual.clear("Triangles");
+        DebugVisual dbg = DebugVisual.get("Triangles");
 
         // Prepare BMesh & Triangulation
         BMesh bmesh = new BMesh();
         SweepTriangulation triangulation = new SweepTriangulation(bmesh);
-        triangulation.yLimit = sweepLimit;
+
+        PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withX(Vector3f.UNIT_X, Vector3f.UNIT_Z);
+        DebugVisual.setPointTransformation("SweepTriangulation", p -> coordSys.unproject(new Vector2f(p.x, p.y)));
 
         Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
         triangulation.setTriangleCallback((v1, v2, v3) -> {
@@ -104,6 +109,8 @@ public class SweepTriangulationEditor extends SimpleApplication {
         });
 
         try {
+            triangulation.setCoordinateSystem(coordSys);
+
             // Add faces
             boolean hasFaces = false;
             for(List<Vector2f> points : polygonEditor.getAllPoints()) {
@@ -117,7 +124,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
             // Triangulate
             if(hasFaces) {
                 try(Profiler p = Profiler.start("SweepTriangulation.apply")) {
-                    triangulation.triangulate();
+                    triangulation.triangulateDebug(sweepLimit);
                 }
             }
         }
@@ -128,7 +135,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
         debugVisualState.updateVis();
 
         DebugVisual dbgLine = DebugVisual.get("SweepTriangulation");
-        dbgLine.addLine(new Vector3f(-1000, sweepLimit, 0), new Vector3f(1000, sweepLimit, 0));
+        //dbgLine.addLine(new Vector3f(-1000, sweepLimit, 0), new Vector3f(1000, sweepLimit, 0));
         if(sweepLine != null)
             rootNode.detachChild(sweepLine);
         sweepLine = dbgLine.createNode(assetManager);
@@ -157,8 +164,8 @@ public class SweepTriangulationEditor extends SimpleApplication {
                     triangulation.triangulate();
                 }
 
-                if((i&8191) == 0)
-                    System.gc();
+                /*if((i&8191) == 0)
+                    System.gc();*/
             }
         }
 

@@ -20,11 +20,12 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
         return new Vector3f(data[i], data[i+1], data[i+2]);
     }
     
-    public void get(E element, Vector3f store) {
+    public Vector3f get(E element, Vector3f store) {
         int i = indexOf(element);
         store.x = data[i];
         store.y = data[i+1];
         store.z = data[i+2];
+        return store;
     }
 
 
@@ -65,6 +66,7 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
     }
 
 
+    @Deprecated
     public void add(E element, Vector3f store) {
         int i = indexOf(element);
         store.x += data[i];
@@ -72,12 +74,44 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
         store.z += data[i+2];
     }
 
+    public Vector3f add(Vector3f store, E element) {
+        int i = indexOf(element);
+        store.x += data[i];
+        store.y += data[i+1];
+        store.z += data[i+2];
+        return store;
+    }
+
+    /*public void add(E element, Vector3f store) {
+        int i = indexOf(element);
+        data[i]   += store.x;
+        data[i+1] += store.y;
+        data[i+2] += store.z;
+    }*/
+
+
+    @Deprecated
     public void subtract(E element, Vector3f store) {
         int i = indexOf(element);
         store.x -= data[i];
         store.y -= data[i+1];
         store.z -= data[i+2];
     }
+
+    public Vector3f subtract(Vector3f store, E element) {
+        int i = indexOf(element);
+        store.x -= data[i];
+        store.y -= data[i+1];
+        store.z -= data[i+2];
+        return store;
+    }
+
+    /*public void subtract(E element, Vector3f store) {
+        int i = indexOf(element);
+        data[i]   -= store.x;
+        data[i+1] -= store.y;
+        data[i+2] -= store.z;
+    }*/
 
 
     public void execute(E element, Func.Unary<Vector3f> op) {

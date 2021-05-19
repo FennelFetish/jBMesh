@@ -4,12 +4,13 @@ import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
+import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.DebugVisual;
+import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
 import com.jme3.math.Vector3f;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.function.Function;
 
 public class SweepTriangulation {
     public interface TriangleCallback {
@@ -24,8 +25,6 @@ public class SweepTriangulation {
     private final Vec3Property<Vertex> propPosition; // TODO: Remove? Pass to addFace()?
     private TriangleCallback cb;
 
-    public float yLimit = Float.POSITIVE_INFINITY;
-
 
     public SweepTriangulation(BMesh bmesh) {
         this.propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
@@ -36,20 +35,25 @@ public class SweepTriangulation {
         this.cb = callback;
     }
 
-
-    public void addFace(Face face) {
-        preparation.addFace(face.loops(), loop -> propPosition.get(loop.vertex), loop -> loop.vertex);
+    public void setCoordinateSystem(PlanarCoordinateSystem coordSys) {
+        preparation.setCoordinateSystem(coordSys);
     }
 
-    public void addFace(List<Vector3f> face) {
-        preparation.addFace(face, Function.identity(), v -> null);
+
+    public void addFace(Face face) {
+        preparation.addFace(face.loops(), new LoopExtractor(propPosition));
+    }
+
+    public void addFaceWithPositions(List<Vector3f> face) {
+        preparation.addFace(face, new Vector3fExtractor());
+    }
+
+    public void addFaceWithLoops(List<Loop> face) {
+        preparation.addFace(face, new LoopExtractor(propPosition));
     }
 
 
     public void triangulate() {
-        //System.out.println("SweepTriangulation.triangulate ----------------------------------------------------");
-        //System.out.println("limit: " + yLimit);
-
         if(sweepVertices.size() < 3)
             throw new IllegalArgumentException("Triangulation needs at least 3 valid vertices");
 
@@ -57,8 +61,31 @@ public class SweepTriangulation {
             throw new IllegalArgumentException("Missing TriangleCallback");
 
         try {
+            for(SweepVertex v : sweepVertices)
+                handleSweepVertex(v);
+        }
+        finally {
+            sweepVertices.clear();
+            edges.clear();
+            preparation.reset();
+        }
+    }
+
+
+    public void triangulateDebug(float yLimit) {
+        //System.out.println("SweepTriangulation.triangulateDebug ----------------------------------------------------");
+
+        if(sweepVertices.size() < 3)
+            throw new IllegalArgumentException("Triangulation needs at least 3 valid vertices");
+
+        if(cb == null)
+            throw new IllegalArgumentException("Missing TriangleCallback");
+
+        final float limit = yLimit + sweepVertices.first().p.y;
+
+        try {
             for(SweepVertex v : sweepVertices) {
-                if(v.p.y > yLimit)
+                if(v.p.y > limit)
                     break;
 
                 //System.out.println("===[ handleSweepVertex " + (v.index+1) + ": " + v.p + " ]===");
@@ -66,7 +93,7 @@ public class SweepTriangulation {
                 //edges.printEdges(yLimit);
             }
 
-            //edges.debug(yLimit);
+            edges.drawSweepSegments(limit);
         }
         finally {
             sweepVertices.clear();
@@ -77,56 +104,35 @@ public class SweepTriangulation {
 
 
     private void handleSweepVertex(SweepVertex v) {
-        float y = v.p.y;
-        float yPrev = v.prev.p.y;
-        float yNext = v.next.p.y;
+        boolean prevUp = v.prev.isAbove(v);
+        boolean nextUp = v.next.isAbove(v);
 
-        // v.prev is below
-        if(yPrev < y) {
-            if(yNext > y)
-                handleContinuation(v);
-            else if(v.leftTurn)
-                handleEnd(v);
-            else if(yNext == y)
-                handleContinuation(v);
-            else
-                handleMerge(v);
-        }
-        // v.prev is above
-        else if(yPrev > y) {
-            if(yNext < y)
-                handleContinuation(v);
-            else if(v.leftTurn)
+        if(prevUp != nextUp)
+            handleContinuation(v);
+        else if(v.leftTurn) {
+            if(prevUp)
                 handleStart(v);
-            else if(yNext == y)
-                handleContinuation(v);
             else
+                handleEnd(v);
+        } else {
+            if(prevUp)
                 handleSplit(v);
-        }
-        // v.prev on same height
-        else  {
-            if(yNext == y || v.leftTurn)
-                handleContinuation(v);
-            else if(yNext < y)
+            else
                 handleMerge(v);
-            else
-                handleSplit(v);
         }
     }
 
 
     private void handleStart(SweepVertex v) {
-        //System.out.println(" >> Start");
-
         SweepEdge leftEdge = new SweepEdge(v, v.prev);
         leftEdge.monotoneSweep = new MonotoneSweep(v, cb);
         edges.addEdge(leftEdge);
+
+        //leftEdge.rightEdge = new SweepEdge(v, v.next);
     }
 
 
     private void handleSplit(SweepVertex v) {
-        //System.out.println(" >> Split");
-
         SweepEdge leftEdge  = edges.getEdge(v);
         assert leftEdge != null : "Intersections?"; // If this happens, some edges were crossing?
 
@@ -152,6 +158,9 @@ public class SweepTriangulation {
             rightEdge.monotoneSweep = new MonotoneSweep(lastVertex, cb);
         }
 
+        //rightEdge.rightEdge = leftEdge.rightEdge;
+        //leftEdge.rightEdge = new SweepEdge(v, v.next);
+
         leftEdge.monotoneSweep.processRight(v);
         rightEdge.monotoneSweep.processLeft(v);
         edges.addEdge(rightEdge);
@@ -159,8 +168,6 @@ public class SweepTriangulation {
 
 
     private void handleMerge(SweepVertex v) {
-        //System.out.println(" >> Merge");
-
         // Remove and handle edge to the right
         SweepEdge rightEdge = edges.removeEdge(v);
         if(rightEdge.lastMerge != null) {
@@ -177,14 +184,14 @@ public class SweepTriangulation {
             leftEdge.lastMerge.processEnd(v);
         }
 
+        //leftEdge.rightEdge = rightEdge.rightEdge;
+
         leftEdge.monotoneSweep.processRight(v);
         leftEdge.lastMerge = rightEdge.monotoneSweep; // Left edge will remember this merge
     }
 
 
     private void handleEnd(SweepVertex v) {
-        //System.out.println(" >> End");
-
         SweepEdge removedEdge = edges.removeEdge(v);
         removedEdge.monotoneSweep.processEnd(v);
 
@@ -196,8 +203,6 @@ public class SweepTriangulation {
 
 
     private void handleContinuation(SweepVertex v) {
-        //System.out.println(" >> Continuation");
-
         SweepEdge edge = edges.getEdge(v);
         assert edge != null : "Intersections?"; // If this happens, some edges were crossing?
 
@@ -217,6 +222,10 @@ public class SweepTriangulation {
         }
         // Right edge continues
         else {
+            //assert edge.rightEdge.end == v;
+            //SweepVertex next = getContinuationVertex(edge.rightEdge);
+            //edge.rightEdge.reset(v, next);
+
             if(edge.lastMerge != null) {
                 //drawMonotonePath(edge.lastMerge.getLastVertex(), v);
                 edge.lastMerge.processEnd(v);
@@ -238,9 +247,42 @@ public class SweepTriangulation {
 
 
     private void drawMonotonePath(SweepVertex src, SweepVertex dest) {
-        System.out.println("Connecting monotone path from " + src + " to " + dest);
+        //System.out.println("Connecting monotone path from " + src + " to " + dest);
         Vector3f start = new Vector3f(src.p.x, src.p.y, 0);
         Vector3f end = new Vector3f(dest.p.x, dest.p.y, 0);
         DebugVisual.get("SweepTriangulation").addArrow(start, end);
     }
+
+
+
+    private static class LoopExtractor implements Preparation.Extractor<Loop> {
+        private final Vec3Property<Vertex> propPosition;
+
+        private LoopExtractor(Vec3Property<Vertex> propPosition) {
+            this.propPosition = propPosition;
+        }
+
+        @Override
+        public Vector3f position(Loop loop, Vector3f store) {
+            return propPosition.get(loop.vertex, store);
+        }
+
+        @Override
+        public Vertex vertex(Loop loop) {
+            return loop.vertex;
+        }
+    };
+
+
+    private static class Vector3fExtractor implements Preparation.Extractor<Vector3f> {
+        @Override
+        public Vector3f position(Vector3f v, Vector3f store) {
+            return store.set(v);
+        }
+
+        @Override
+        public Vertex vertex(Vector3f loop) {
+            return null;
+        }
+    };
 }

@@ -42,7 +42,8 @@ public class EdgeSet {
             if(dx < -0.0001f)
                 return -1;
 
-            // Allow duplicate keys for bow-tie vertices at same position
+            // Allow duplicate keys for bow-tie vertices at same position.
+            // Keys for getEdge() and removeEdge() must be >= than requested result.
             if(k1.edge == null)
                 return 1;
             if(k1.edge == k2.edge)
@@ -50,6 +51,7 @@ public class EdgeSet {
             if(k2.edge == null)
                 return -1;
 
+            // Starts must come before splits
             return k1.edge.start.compareTo(k2.edge.start);
         }
     }
@@ -95,14 +97,21 @@ public class EdgeSet {
     }
 
 
-    public void debug(float y) {
+    public void drawSweepSegments(float y) {
         DebugVisual dbg = DebugVisual.get("SweepTriangulation");
 
         int i = 1;
         for(Key k : edges) {
-            float x = k.edge.getXAtY(y);
-            Vector3f p = new Vector3f(x, y, 0);
-            dbg.addText(p, "" + i);
+            float x1 = k.edge.getXAtY(y);
+
+            float x2 = x1 + 0.2f;
+            if(k.edge.rightEdge != null)
+                x2 = k.edge.rightEdge.getXAtY(y);
+
+            Vector3f p1 = new Vector3f(x1, y, 0);
+            Vector3f p2 = new Vector3f(x2, y, 0);
+            dbg.addText(p1, "" + i);
+            dbg.addLine(p1, p2);
             i++;
         }
     }

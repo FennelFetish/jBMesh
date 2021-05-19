@@ -7,6 +7,8 @@ class SweepEdge {
     public MonotoneSweep monotoneSweep;
     public MonotoneSweep lastMerge;
 
+    public SweepEdge rightEdge;
+
     private float xLeft;
     private float xChange;
 
@@ -44,7 +46,7 @@ class SweepEdge {
 
     @Override
     public String toString() {
-        int lastVertex = monotoneSweep.getLastVertex().index+1;
+        int lastVertex = (monotoneSweep != null) ? monotoneSweep.getLastVertex().index+1 : -1;
         int lastMergeVertex = (lastMerge != null) ? lastMerge.getLastVertex().index+1 : -1;
         return "SweepEdge{start: " + (start.index+1) + ", end: " + (end.index+1) + ", lastVertex: " + lastVertex + ", lastMerge: " + lastMergeVertex + "}";
     }

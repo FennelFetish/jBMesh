@@ -58,4 +58,12 @@ public class ColorUtil {
 
         return color;
     }
+
+
+    public static ColorRGBA getRandomColor(float h, float hVariance, float s, float b) {
+        float rnd = ((float)Math.random() * 2.0f) - 1.0f;
+        h += rnd * (hVariance*0.5f);
+        h = h % 1.0f;
+        return hsb(h, s, b);
+    }
 }

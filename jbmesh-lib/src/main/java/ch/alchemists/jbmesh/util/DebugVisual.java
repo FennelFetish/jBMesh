@@ -43,7 +43,13 @@ public class DebugVisual {
 
     private static final ConcurrentHashMap<String, List<DebugVisual>> visuals = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, PointTransformation> transforms = new ConcurrentHashMap<>();
+
     private static final ConcurrentHashMap<Integer, ColorRGBA> colors = new ConcurrentHashMap<>();
+    public static float colorHue = 0;
+    public static float colorHueVariance = 1.0f;
+    public static float colorSaturation = 1.0f;
+    public static float colorBrightness = 1.0f;
+    public static float colorAlpha = 1.0f;
 
     private final List<Vector3f> points = new ArrayList<>();
     public ColorRGBA pointColor = ColorRGBA.Red.clone();
@@ -118,8 +124,8 @@ public class DebugVisual {
 
     public static ColorRGBA getColor(int index) {
         return colors.computeIfAbsent(index, k -> {
-            ColorRGBA color = ColorRGBA.randomColor();
-            color.a *= 0.5f;
+            ColorRGBA color = ColorUtil.getRandomColor(colorHue, colorHueVariance, colorSaturation, colorBrightness);
+            color.a = colorAlpha;
             return color;
         });
     }

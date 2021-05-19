@@ -51,12 +51,7 @@ class MonotoneSweep {
         SweepVertex last = stack.pop();
         while(!stack.isEmpty()) {
             SweepVertex o = stack.pop();
-
-            if(lastLeft)
-                cb.handleTriangle(v, last, o);
-            else
-                cb.handleTriangle(v, o, last);
-
+            handleTriangle(v, last, o);
             last = o;
         }
     }
@@ -78,10 +73,7 @@ class MonotoneSweep {
             if(det * side <= 0)
                 break;
 
-            if(lastLeft)
-                cb.handleTriangle(v, keep, o);
-            else
-                cb.handleTriangle(v, o, keep);
+            handleTriangle(v, keep, o);
 
             base.set(dir);
             keep = stack.pop();
@@ -98,18 +90,20 @@ class MonotoneSweep {
 
         while(!stack.isEmpty()) {
             SweepVertex o = stack.pop();
-
-            // v is on other side
-            if(lastLeft)
-                cb.handleTriangle(v, last, o);
-            else
-                cb.handleTriangle(v, o, last);
-
+            handleTriangle(v, last, o);
             last = o;
         }
 
         stack.push(keep);
         stack.push(v);
+    }
+
+
+    private void handleTriangle(SweepVertex v1, SweepVertex v2, SweepVertex v3) {
+        if(lastLeft)
+            cb.handleTriangle(v1, v2, v3);
+        else
+            cb.handleTriangle(v1, v3, v2);
     }
 
 

@@ -47,6 +47,16 @@ public class SweepVertex implements Comparable<SweepVertex> {
     }
 
 
+    public boolean isAbove(SweepVertex o) {
+        if(p.y > o.p.y)
+            return true;
+        if(p.y < o.p.y)
+            return false;
+
+        return p.x > o.p.x;
+    }
+
+
     @Override
     public String toString() {
         return "SweepVertex{" + p + "}";
