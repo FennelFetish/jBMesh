@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.Vector3f;
@@ -37,7 +36,7 @@ public class SubdivideFace {
     public SubdivideFace(BMesh bmesh, int cuts) {
         this.bmesh = bmesh;
         setCuts(cuts);
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
     }
 
 

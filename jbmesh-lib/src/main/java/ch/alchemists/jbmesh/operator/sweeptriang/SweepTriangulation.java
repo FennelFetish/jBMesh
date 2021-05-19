@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator.sweeptriang;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -27,7 +26,7 @@ public class SweepTriangulation {
 
 
     public SweepTriangulation(BMesh bmesh) {
-        this.propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        this.propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
     }
 
 

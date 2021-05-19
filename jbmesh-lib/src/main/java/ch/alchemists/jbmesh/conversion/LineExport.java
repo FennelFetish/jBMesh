@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.conversion;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.IntTupleProperty;
 import ch.alchemists.jbmesh.data.property.ObjectTupleProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
@@ -15,7 +14,7 @@ import java.util.List;
 public class LineExport extends Export<Edge> {
     // Edge color property? duplicate vertices where needed
 
-    private final ObjectTupleProperty<Edge, Vertex> propEdgeVertex = new ObjectTupleProperty<>(BMeshProperty.Edge.VERTEX_MAP, 2, Vertex[]::new);
+    private final ObjectTupleProperty<Edge, Vertex> propEdgeVertex = new ObjectTupleProperty<>(Edge.VertexMap, 2, Vertex[]::new);
     private final IntTupleProperty<Edge> propEdgeIndices = new IntTupleProperty<>("LineExport_EdgeIndices", 2);
 
 
@@ -88,7 +87,7 @@ public class LineExport extends Export<Edge> {
 
         public EdgeDuplicationStrategy(BMesh bmesh) {
             this.bmesh = bmesh;
-            propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+            propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
         }
 
         @Override

@@ -74,11 +74,11 @@ public class DebugNormals {
 
 
     private static Mesh createLoopNormals(BMesh bmesh, float length) {
-        Vec3Property<Loop> propNormal = Vec3Property.get(BMeshProperty.Loop.NORMAL, bmesh.loops());
+        Vec3Property<Loop> propNormal = Vec3Property.get(Loop.Normal, bmesh.loops());
         if(propNormal == null)
             throw new IllegalArgumentException("The provided BMesh object doesn't have Loop normals.");
 
-        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
 
         // Filling an array and then putting it into a FloatBuffer all at once scales better with bigger meshes performance-wise
         float[] vbuf = new float[bmesh.loops().size() * 6];

@@ -51,6 +51,6 @@ public class PropertyAccessTest {
         //Vec3Property<Face> propFace4        = bmesh.faceData().getProperty("FaceVec");
 
         //Vec3Property<Vertex> propPosition = (Vec3Property<Vertex>) bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
-        ColorProperty<Vertex> propVertexColor = (ColorProperty<Vertex>) bmesh.vertices().getProperty(BMeshProperty.Vertex.COLOR);
+        ColorProperty<Vertex> propVertexColor = (ColorProperty<Vertex>) bmesh.vertices().getProperty(Vertex.Color);
     }
 }

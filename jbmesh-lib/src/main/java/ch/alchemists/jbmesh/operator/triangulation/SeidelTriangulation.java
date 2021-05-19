@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator.triangulation;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -24,7 +23,7 @@ public class SeidelTriangulation {
     public SeidelTriangulation(BMesh bmesh) {
         this.bmesh = bmesh;
         this.faceOps = new FaceOps(bmesh);
-        this.propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        this.propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
     }
 
 

@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.Vector3f;
@@ -42,7 +41,7 @@ public class Smooth {
         edgeOps = new EdgeOps(bmesh);
         faceOps = new FaceOps(bmesh);
 
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
     }
 
 

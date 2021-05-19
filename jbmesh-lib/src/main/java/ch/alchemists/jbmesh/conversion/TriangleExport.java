@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.conversion;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.ColorProperty;
 import ch.alchemists.jbmesh.data.property.ObjectProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
@@ -26,9 +25,9 @@ public class TriangleExport extends Export<Loop> {
     public TriangleExport(BMesh bmesh, DuplicationStrategy<Loop> duplicationStrategy) {
         super(bmesh, duplicationStrategy);
 
-        ObjectProperty<Loop, Vertex> propLoopVertex = ObjectProperty.get(BMeshProperty.Loop.VERTEX_MAP, Vertex[].class, bmesh.loops());
+        ObjectProperty<Loop, Vertex> propLoopVertex = ObjectProperty.get(Loop.VertexMap, Vertex[].class, bmesh.loops());
         if(propLoopVertex == null) {
-            propLoopVertex = new ObjectProperty<>(BMeshProperty.Loop.VERTEX_MAP, Vertex[]::new);
+            propLoopVertex = new ObjectProperty<>(Loop.VertexMap, Vertex[]::new);
             bmesh.loops().addProperty(propLoopVertex);
         }
         propLoopVertex.setComparable(false);
@@ -89,9 +88,9 @@ public class TriangleExport extends Export<Loop> {
         public LoopDuplicationStrategy(BMesh bmesh) {
             this.bmesh = bmesh;
 
-            propPosition     = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
-            propLoopNormal   = Vec3Property.get(BMeshProperty.Loop.NORMAL, bmesh.loops());
-            propVertexNormal = Vec3Property.getOrCreate(BMeshProperty.Vertex.NORMAL, bmesh.vertices()); // TODO: Not always needed
+            propPosition     = Vec3Property.get(Vertex.Position, bmesh.vertices());
+            propLoopNormal   = Vec3Property.get(Loop.Normal, bmesh.loops());
+            propVertexNormal = Vec3Property.getOrCreate(Vertex.Normal, bmesh.vertices()); // TODO: Not always needed
         }
 
         @Override
@@ -116,7 +115,7 @@ public class TriangleExport extends Export<Loop> {
             outputMesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(propPosition.array()));
             outputMesh.setBuffer(VertexBuffer.Type.Normal, 3, BufferUtils.createFloatBuffer(propVertexNormal.array()));
 
-            ColorProperty<Vertex> propVertexColor = ColorProperty.get(BMeshProperty.Vertex.COLOR, bmesh.vertices());
+            ColorProperty<Vertex> propVertexColor = ColorProperty.get(Vertex.Color, bmesh.vertices());
             if(propVertexColor != null)
                 outputMesh.setBuffer(VertexBuffer.Type.Color, 4, BufferUtils.createFloatBuffer(propVertexColor.array()));
         }

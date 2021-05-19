@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator.bool;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
@@ -31,7 +30,7 @@ public class Subtract extends Cut {
     public Subtract(BMesh bmesh, DistanceFunction dfunc) {
         super(bmesh, dfunc);
         //meshBuilder = new DFuncMeshBuilder(bmesh, dfunc);
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
     }
 
 

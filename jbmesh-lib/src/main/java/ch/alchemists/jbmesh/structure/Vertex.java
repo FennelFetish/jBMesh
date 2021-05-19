@@ -1,10 +1,16 @@
 package ch.alchemists.jbmesh.structure;
 
-import java.util.Iterator;
 import ch.alchemists.jbmesh.data.Element;
+import java.util.Iterator;
 
 public class Vertex extends Element {
-    // Can be NULL
+    // Property names
+    public static final String Position = "VertexPosition";
+    public static final String Normal   = "VertexNormal";
+    public static final String Color    = "VertexColor";
+
+
+    // Can be null
     public Edge edge;
 
 
@@ -58,6 +64,7 @@ public class Vertex extends Element {
         if(this.edge != null) {
             // Check if 'edge' exists in disk cycle
             // TODO: Start from 'edge' and check if 'this.edge' is reachable? -> Less iterations?
+            //       Or remove this check?
             Edge current = this.edge.getNextEdge(this);
             while(current != this.edge) {
                 if(current == edge) {
@@ -69,7 +76,7 @@ public class Vertex extends Element {
             }
         }
 
-        throw new IllegalArgumentException("Edge does not exists in disk cycle for Vertex");
+        throw new IllegalArgumentException("Edge does not exist in disk cycle for Vertex");
     }
 
 
@@ -106,7 +113,7 @@ public class Vertex extends Element {
 
 
     public Iterable<Edge> edges() {
-        return () -> new VertexEdgeIterator();
+        return VertexEdgeIterator::new;
     }
 
     private class VertexEdgeIterator implements Iterator<Edge> {
@@ -133,8 +140,9 @@ public class Vertex extends Element {
     }
 
 
+
     public Iterable<Face> faces() {
-        return () -> new VertexFaceIterator();
+        return VertexFaceIterator::new;
     }
 
     private static class VertexFaceIterator implements Iterator<Face> {

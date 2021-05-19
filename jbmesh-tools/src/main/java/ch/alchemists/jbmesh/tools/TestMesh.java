@@ -1,11 +1,13 @@
 package ch.alchemists.jbmesh.tools;
 
 import ch.alchemists.jbmesh.conversion.Import;
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
-import ch.alchemists.jbmesh.operator.*;
+import ch.alchemists.jbmesh.operator.Inset;
+import ch.alchemists.jbmesh.operator.ScaleFace;
+import ch.alchemists.jbmesh.operator.Smooth;
+import ch.alchemists.jbmesh.operator.SubdivideFace;
 import ch.alchemists.jbmesh.operator.bool.Subtract;
 import ch.alchemists.jbmesh.operator.meshgen.DistanceFunction;
 import ch.alchemists.jbmesh.operator.meshgen.MarchingCube;
@@ -22,7 +24,7 @@ public class TestMesh {
         Sphere sphere = new Sphere(16, 16, 2.0f);
         BMesh bmesh = Import.convertExactMapped(sphere);
 
-        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
         List<Vertex> vertices = bmesh.vertices().getAll();
         for(Vertex v : vertices) {
             Vector3f pos = propPosition.get(v);

@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -19,7 +18,7 @@ public class ScaleFace {
 
     public ScaleFace(BMesh bmesh, float scale) {
         faceOps = new FaceOps(bmesh);
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
         this.scale = scale;
     }
 

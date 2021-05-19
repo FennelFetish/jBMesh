@@ -8,6 +8,11 @@ import java.util.Objects;
  * Has no specific direction.
  */
 public class Edge extends Element {
+    // Property names
+    public static final String Color        = "EdgeColor";
+    public static final String VertexMap    = "EdgeVertexMap";
+
+
     // Target vertex (at end).
     // Needed? Can we use BMLoop's reference instead?
     // -> No, we need both vertices since an edge can exist without faces (no loop) and without adjacent edges (wireframe, single line, no nextEdge)
@@ -17,12 +22,12 @@ public class Edge extends Element {
 
     // Disk cycle at start vertex.
     //Needed? Can we go through BMLoop instead? -> No, wireframe doesn't have loops
-    // Never NULL
+    // Never null on a valid object
     private Edge v0NextEdge = this; // Blender calls this v0DiskNext (v1_disk_link.next)
     private Edge v0PrevEdge = this; // v0DiskPrev
 
     // Disk cycle at end vertex
-    // Never NULL
+    // Never null on a valid object
     private Edge v1NextEdge = this; // v1DiskNext
     private Edge v1PrevEdge = this; // v1DiskPrev
 
@@ -54,7 +59,7 @@ public class Edge extends Element {
         //Objects.requireNonNull(loop);
 
         // TODO: Is this check needed?
-        // TODO: Also see if the 'existst alread in cycle' check is needed in Vertex.addEdge. -> Could make manipulations more difficult.
+        // TODO: Also see if the 'exists already in cycle' check is needed in Vertex.addEdge. -> Could make manipulations more difficult.
         // This throws in BMesh.createFace() because the references are set before. Also at other places.
         /*if(loop.nextEdgeLoop != loop)
             throw new IllegalArgumentException("Loop already associated with a radial cycle"); // TODO: Add to unit test

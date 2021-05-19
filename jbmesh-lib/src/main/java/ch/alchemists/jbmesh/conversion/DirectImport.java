@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.conversion;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.ObjectProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.lookup.ExactHashDeduplication;
@@ -29,7 +28,7 @@ public class DirectImport {
         // Detect Vertex duplicates and create mapping: Virtual vertex => Actual vertex in the structure
         Vertex[] virtualVertexMap = createVertices(bmesh, triangleExtractor, numVertices);
 
-        ObjectProperty<Loop, Vertex> propLoopVertex = new ObjectProperty<>(BMeshProperty.Loop.VERTEX_MAP, Vertex[]::new);
+        ObjectProperty<Loop, Vertex> propLoopVertex = new ObjectProperty<>(Loop.VertexMap, Vertex[]::new);
         bmesh.loops().addProperty(propLoopVertex);
 
         triangleExtractor.process((int i0, int i1, int i2) -> {
@@ -56,7 +55,7 @@ public class DirectImport {
 
 
     private static Vec3Property<Vertex> replacePositionData(BMesh bmesh, int arrayLength, float[] data) {
-        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
         bmesh.vertices().removeProperty(propPosition);
         bmesh.vertices().compactData();
         bmesh.vertices().ensureCapacity(arrayLength);

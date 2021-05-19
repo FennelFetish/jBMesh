@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.FastMath;
@@ -66,7 +65,7 @@ public class NormalGenerator {
         this.normalCalculator = normalCalculator;
         setCreaseAngle(creaseAngle);
 
-        propLoopNormal = Vec3Property.getOrCreate(BMeshProperty.Loop.NORMAL, bmesh.loops());
+        propLoopNormal = Vec3Property.getOrCreate(Loop.Normal, bmesh.loops());
     }
 
 

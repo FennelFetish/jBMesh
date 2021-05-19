@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator.skeleton;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -29,7 +28,7 @@ public class StraightSkeleton {
     public StraightSkeleton(BMesh bmesh) {
         this.bmesh = bmesh;
         faceOps = new FaceOps(bmesh);
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -207,6 +206,54 @@ public class StraightSkeleton {
     private boolean isInvalid(Vector2f v) {
         return Float.isNaN(v.x) || Float.isInfinite(v.x);
     }
+
+
+    //
+    // Results
+    //
+
+    /*public List<SkeletonNode> getStartNodes() {
+        return Collections.unmodifiableList(initialNodes);
+    }
+
+    public List<SkeletonNode> getEndNodes() {
+        Set<MovingNode> movingNodes = ctx.getNodes();
+        List<SkeletonNode> skelNodes = new ArrayList<>(movingNodes.size());
+
+        for(MovingNode movingNode : movingNodes)
+            skelNodes.add(movingNode.skelNode);
+
+        return skelNodes;
+    }
+
+    public List<List<SkeletonNode>> getNodeLoops() {
+        Set<MovingNode> nodes = new HashSet<>(ctx.getNodes());
+        List<List<SkeletonNode>> nodeLoops = new ArrayList<>(2);
+
+        while(!nodes.isEmpty()) {
+            List<SkeletonNode> loop = new ArrayList<>(4);
+            nodeLoops.add(loop);
+
+            final MovingNode start = nodes.stream().findFirst().get();
+            MovingNode current = start;
+            do {
+                loop.add(current.skelNode);
+                nodes.remove(current);
+                current = current.next;
+            } while(current != start);
+        }
+
+        return nodeLoops;
+    }
+
+
+    public Vector3f getPosition(SkeletonNode node) {
+        return coordSys.unproject(node.p);
+    }
+
+    public Vector3f getPosition(SkeletonNode node, Vector3f store) {
+        return coordSys.unproject(node.p, store);
+    }*/
 
 
     public SkeletonVisualization getVisualization() {

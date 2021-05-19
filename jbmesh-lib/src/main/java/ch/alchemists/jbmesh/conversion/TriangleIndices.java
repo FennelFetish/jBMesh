@@ -1,7 +1,6 @@
 package ch.alchemists.jbmesh.conversion;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.Element;
 import ch.alchemists.jbmesh.data.property.*;
 import ch.alchemists.jbmesh.operator.sweeptriang.SweepTriangulation;
@@ -79,7 +78,7 @@ public class TriangleIndices {
      * TODO: Call only for dirty faces?
      */
     public void apply() {
-        Vec3Property<Vertex> propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
 
         triangleData.clear();
         triangleData.ensureCapacity(bmesh.faces().size());

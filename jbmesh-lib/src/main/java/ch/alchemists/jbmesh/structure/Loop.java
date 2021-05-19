@@ -2,33 +2,33 @@ package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.data.Element;
 
-// a) On each side of a BMFace  - iterate with 'nextFaceLoop'
-// b) Runs along a BMEdge       - iterate with 'nextEdgeLoop'
-
-// (stores per-face-vertex data, UV's, vertex-colors, etc)
 public class Loop extends Element {
-    // Never null
+    // Property names
+    public static final String Normal       = "LoopNormal";
+    public static final String VertexMap    = "LoopVertexMap";
+
+
+    // Never null on a valid object
     public Face face;
 
-    // Never null
+    // Never null on a valid object
     public Edge edge;
 
     // Reference is needed for properly defining winding order.
     // Can't rely on BMEdge's reference, since BMEdge has no specifc direction.
-    // Never null
+    // Never null on a valid object
     public Vertex vertex; // source
     // Can also store in this loop whether the vertex was merged/remapped during conversion
 
     // Loop Cycle: Loop around face (iterate to list vertices of a face)
-    // Never null
+    // Never null on a valid object
     public Loop nextFaceLoop; // Blender calls this next
     public Loop prevFaceLoop; // prev
 
     // Radial Cycle: Loop around edge (iterate to list faces on an edge)
-    // Never null
+    // Never null on a valid object
     public Loop nextEdgeLoop = this; // Blender calls this radialNext
     public Loop prevEdgeLoop = this; // radialPrev
-
 
 
     Loop() {}

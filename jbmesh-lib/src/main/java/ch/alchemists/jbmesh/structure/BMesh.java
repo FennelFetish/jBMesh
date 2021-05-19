@@ -1,10 +1,12 @@
 package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import com.jme3.math.Vector3f;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 public class BMesh {
     private final BMeshData<Vertex> vertexData;
@@ -12,7 +14,7 @@ public class BMesh {
     private final BMeshData<Face> faceData;
     private final BMeshData<Loop> loopData;
 
-    private final Vec3Property<Vertex> propPosition = new Vec3Property<>(BMeshProperty.Vertex.POSITION);
+    private final Vec3Property<Vertex> propPosition = new Vec3Property<>(Vertex.Position);
 
     private final transient ArrayList<Loop> tempLoops = new ArrayList<>(4);
 

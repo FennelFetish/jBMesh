@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.operator.meshgen;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -28,7 +27,7 @@ public class MarchingCube {
         this.cellSize = cellSize;
         this.bmesh = bmesh;
         this.dedup = dedup;
-        propLoopNormals = setNormals ? Vec3Property.getOrCreate(BMeshProperty.Loop.NORMAL, bmesh.loops()) : null;
+        propLoopNormals = setNormals ? Vec3Property.getOrCreate(Loop.Normal, bmesh.loops()) : null;
 
         for(int i=0; i<corners.length; ++i)
             corners[i] = new Vector3f();

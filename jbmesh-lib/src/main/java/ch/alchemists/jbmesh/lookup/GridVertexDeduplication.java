@@ -1,6 +1,5 @@
 package ch.alchemists.jbmesh.lookup;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -59,7 +58,7 @@ public class GridVertexDeduplication implements VertexDeduplication {
         this.bmesh = bmesh;
         grid = new HashGrid<>(epsilon);
         epsilonSquared = epsilon * epsilon;
-        propPosition = Vec3Property.get(BMeshProperty.Vertex.POSITION, bmesh.vertices());
+        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
     }
 
 

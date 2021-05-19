@@ -3,35 +3,6 @@ package ch.alchemists.jbmesh.data;
 // TODO: Remember dirty state of elements for each property separately.
 //       A normal generator could use the dirty state of the vertex-position property to determine which face normals have to be regenerated.
 public abstract class BMeshProperty<E extends Element, TArray> {
-    public static final class Vertex {
-        private Vertex() {}
-
-        public static final String POSITION     = "VertexPosition";
-        public static final String COLOR        = "VertexColor";
-        public static final String NORMAL       = "VertexNormal";
-    }
-
-    public static final class Face {
-        private Face() {}
-
-        public static final String NORMAL       = "FaceNormal";
-    }
-
-    public static final class Edge {
-        private Edge() {}
-
-        public static final String COLOR        = "EdgeColor";
-        public static final String VERTEX_MAP   = "EdgeVertexMap";
-    }
-
-    public static final class Loop {
-        private Loop() {}
-
-        public static final String NORMAL       = "LoopNormal";
-        public static final String VERTEX_MAP   = "LoopVertexMap";
-    }
-
-
     public final String name;
     public final int numComponents;
 

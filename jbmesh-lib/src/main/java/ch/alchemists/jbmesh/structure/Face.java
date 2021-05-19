@@ -6,7 +6,11 @@ import java.util.Iterator;
 import java.util.List;
 
 public class Face extends Element {
-    // Never NULL
+    // Property names
+    public static final String Normal = "FaceNormal";
+
+
+    // Never null on a valid object
     public Loop loop;
 
 
@@ -55,7 +59,7 @@ public class Face extends Element {
     }
 
 
-    public int getVertexCount(Face face) {
+    public int countVertices(Face face) {
         int count = 0;
         Loop current = loop;
         do {
@@ -80,6 +84,10 @@ public class Face extends Element {
         return list;
     }
 
+    public Iterable<Vertex> vertices() {
+        return () -> new FaceVertexIterator(loop);
+    }
+
 
     public List<Loop> getLoops() {
         return getLoops(new ArrayList<>(4));
@@ -95,8 +103,7 @@ public class Face extends Element {
         return list;
     }
 
-
-    public Iterable<Loop> loops() {
+    public Iterable<Loop> loops() { // TODO: Replace with vertices() where possible
         return () -> new FaceLoopIterator(loop);
     }
 
@@ -104,7 +111,7 @@ public class Face extends Element {
     private static class FaceLoopIterator implements Iterator<Loop> {
         private final Loop startLoop;
         private Loop currentLoop;
-        private boolean first = true; // Get rid of this flag? (emulate do-while), also doesn't work with prevFaceLoops
+        private boolean first = true;
 
         public FaceLoopIterator(Loop loop) {
             startLoop = loop;
@@ -122,6 +129,25 @@ public class Face extends Element {
             Loop loop = currentLoop;
             currentLoop = currentLoop.nextFaceLoop;
             return loop;
+        }
+    }
+
+
+    private static class FaceVertexIterator implements Iterator<Vertex> {
+        private final FaceLoopIterator it;
+
+        public FaceVertexIterator(Loop loop) {
+            it = new FaceLoopIterator(loop);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return it.hasNext();
+        }
+
+        @Override
+        public Vertex next() {
+            return it.next().vertex;
         }
     }
 }
