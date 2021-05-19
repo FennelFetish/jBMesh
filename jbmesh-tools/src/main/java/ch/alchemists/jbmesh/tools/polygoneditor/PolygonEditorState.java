@@ -83,6 +83,7 @@ public class PolygonEditorState extends BaseAppState {
     private ToolBar toolBar;
     private Gizmo gizmo;
     private BitmapText cursorPositionLabel;
+    private BitmapText vertexCountLabel;
 
 
     public PolygonEditorState(PointListener listener) {
@@ -127,6 +128,7 @@ public class PolygonEditorState extends BaseAppState {
 
         font = assetManager.loadFont("Interface/Fonts/Default.fnt");
         setupCursorPositionLabel(simpleApp.getGuiNode());
+        setupVertexCountLabel(simpleApp.getGuiNode());
 
         defaultPointType = new PointDrawType(assetManager, ColorRGBA.Red, 0.2f, 0.3f);
         rootNode.attachChild(defaultPointType.container);
@@ -153,7 +155,7 @@ public class PolygonEditorState extends BaseAppState {
         quad.scaleTextureCoordinates(new Vector2f(BG_SIZE, BG_SIZE));
 
         bg = new Geometry("Background", quad);
-        bg.move(-BG_SIZE/2, -BG_SIZE/2, -0.001f);
+        bg.move(-BG_SIZE/2, -BG_SIZE/2, -0.005f);
         bg.setMaterial(mat);
         bg.setQueueBucket(RenderQueue.Bucket.Transparent);
 
@@ -177,6 +179,13 @@ public class PolygonEditorState extends BaseAppState {
         cursorPositionLabel.setTabWidth(10f);
         cursorPositionLabel.setLocalTranslation(4, 18, 0);
         guiNode.attachChild(cursorPositionLabel);
+    }
+
+    private void setupVertexCountLabel(Node guiNode) {
+        vertexCountLabel = new BitmapText(font);
+        vertexCountLabel.setSize(12f);
+        vertexCountLabel.setLocalTranslation(4, 36, 0);
+        guiNode.attachChild(vertexCountLabel);
     }
 
 
@@ -280,6 +289,7 @@ public class PolygonEditorState extends BaseAppState {
 
     public void updatePoints() {
         defaultPointType.container.detachAllChildren();
+        int numVertices = 0;
 
         for(Map.Entry<Integer, ArrayList<Vector2f>> entry : pointMap.entrySet()) {
             // Draw points with numbers
@@ -287,6 +297,7 @@ public class PolygonEditorState extends BaseAppState {
             for(int i = 0; i < points.size(); ++i) {
                 Vector2f p = points.get(i);
                 createPointVis(defaultPointType, p, Integer.toString(i + 1));
+                numVertices++;
             }
 
             // Draw lines between points
@@ -297,6 +308,7 @@ public class PolygonEditorState extends BaseAppState {
             defaultPointType.container.attachChild(geom);
         }
 
+        vertexCountLabel.setText(numVertices + " Vertices");
         listener.onPointsUpdated(pointMap);
     }
 
@@ -528,7 +540,7 @@ public class PolygonEditorState extends BaseAppState {
         public void onKeyEvent(KeyInputEvent evt) {
             // Select polygon
             int p = evt.getKeyCode() - KeyInput.KEY_F1;
-            if(p >= 0 && p <= 12) {
+            if(p >= 0 && p <= 10) {
                 currentPolygon = p;
                 updatePoints();
                 return;
