@@ -22,7 +22,7 @@ public class VertexOps {
     }
 
     public void move(Vertex vertex, float dx, float dy, float dz) {
-        propPosition.execute(vertex, v -> {
+        propPosition.modify(vertex, v -> {
             v.x += dx;
             v.y += dy;
             v.z += dz;

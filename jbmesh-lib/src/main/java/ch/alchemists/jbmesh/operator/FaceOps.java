@@ -66,11 +66,10 @@ public class FaceOps {
         Vertex vNext = loop.nextFaceLoop.vertex;
         Vertex vPrev = loop.prevFaceLoop.vertex;
 
-        Vector3f v1 = new Vector3f();
-        propPosition.get(vertex, v1);
+        Vector3f v1 = propPosition.get(vertex);
         store.set(v1);
-        propPosition.subtract(vNext, store);
-        propPosition.subtract(vPrev, v1);
+        propPosition.subtractLocal(store, vNext);
+        propPosition.subtractLocal(v1, vPrev);
 
         return store.crossLocal(v1).normalizeLocal();
     }
@@ -85,7 +84,7 @@ public class FaceOps {
         store.zero();
 
         for(Loop loop : face.loops()) {
-            propPosition.add(loop.vertex, store);
+            propPosition.addLocal(store, loop.vertex);
             numVertices++;
         }
 
@@ -137,8 +136,8 @@ public class FaceOps {
     public float areaTriangle(Face face) {
         Vector3f v0 = propPosition.get(face.loop.vertex);
         Vector3f v1 = v0.clone();
-        propPosition.subtract(face.loop.nextFaceLoop.vertex, v0);
-        propPosition.subtract(face.loop.nextFaceLoop.nextFaceLoop.vertex, v1);
+        propPosition.subtractLocal(v0, face.loop.nextFaceLoop.vertex);
+        propPosition.subtractLocal(v1, face.loop.nextFaceLoop.nextFaceLoop.vertex);
 
         return v0.crossLocal(v1).length() * 0.5f;
     }

@@ -27,7 +27,7 @@ public class EdgeOps {
 
     public Vector3f calcCenter(Edge edge, Vector3f store) {
         propPosition.get(edge.vertex0, store);
-        propPosition.add(edge.vertex1, store);
+        propPosition.addLocal(store, edge.vertex1);
         return store.multLocal(0.5f);
     }
 
@@ -36,11 +36,11 @@ public class EdgeOps {
         // TODO: Are they only collinear if on the exact same line -> edges must be connected to eachother?
 
         Vector3f v1 = propPosition.get(edge1.vertex1);
-        propPosition.subtract(edge1.vertex0, v1);
+        propPosition.subtractLocal(v1, edge1.vertex0);
         v1.normalizeLocal();
 
         Vector3f v2 = propPosition.get(edge2.vertex1);
-        propPosition.subtract(edge2.vertex0, v2);
+        propPosition.subtractLocal(v2, edge2.vertex0);
         v2.normalizeLocal();
 
         return Math.abs(v1.dot(v2)) > 0.999f;
@@ -57,7 +57,7 @@ public class EdgeOps {
 
     public float length(Edge edge) {
         Vector3f d = propPosition.get(edge.vertex0);
-        propPosition.subtract(edge.vertex1, d);
+        propPosition.subtractLocal(d, edge.vertex1);
         return d.length();
     }
 }

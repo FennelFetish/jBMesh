@@ -84,7 +84,7 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
     @Override
     public void getWeightedNormal(Loop loop, Vector3f store) {
         // Use normal of triangle because faces are not always planar (?). Requires convex polygon.
-        // -> Compare with face normal to make it work for concave (flip normal in this case)? -> Make separate NormalCalculator for that
+        // -> TODO: Compare with face normal to make it work for concave (flip normal in this case)? -> Make separate NormalCalculator for that
 
         Vertex vertex = loop.vertex;
         Vertex vNext = loop.nextFaceLoop.vertex;
@@ -92,8 +92,8 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
         propPosition.get(vertex, tempV1);
         tempV2.set(tempV1);
-        propPosition.subtract(vNext, tempV1);
-        propPosition.subtract(vPrev, tempV2);
+        propPosition.subtractLocal(tempV1, vNext);
+        propPosition.subtractLocal(tempV2, vPrev);
 
         store.set(tempV1);
         store.crossLocal(tempV2); // Don't normalize cross product so it includes triangle area

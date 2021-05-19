@@ -1,13 +1,13 @@
 package ch.alchemists.jbmesh.operator;
 
+import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import ch.alchemists.jbmesh.data.BMeshProperty;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
-import ch.alchemists.jbmesh.structure.*;
 
 /**
  * Catmull-Clark Subdivision Surface.
@@ -25,6 +25,8 @@ public class Smooth {
     //                                              =  Average of edge v0 v1 + adjacent face points
 
     // n: Number of adjacent edges (= faces)
+
+    // TODO: Somehow subdivide it more at extremal points, like the corners of a smoothed cube?
 
     private final BMesh bmesh;
     private final EdgeOps edgeOps;
@@ -50,6 +52,8 @@ public class Smooth {
 
 
     public void apply(List<Face> faces) {
+        // TODO: Keep the info for the next iteration?
+
         Set<Edge> edges = new HashSet<>(faces.size() * 4); // TODO: Instead of Set, use pass nr to ensure each edge is only processed once?
         Set<Vertex> vertexPoints = new HashSet<>(faces.size() * 4); // TODO: Or use pass nr so each edge is added to a list (instead of set) only once.
 
@@ -117,7 +121,7 @@ public class Smooth {
             int count = 0; // 4 in manifolds, less at borders
             for(Edge e : edgePoint.edges()) {
                 Vertex other = e.getOther(edgePoint);
-                propPosition.add(other, p);
+                propPosition.addLocal(p, other);
                 count++;
             }
 
@@ -146,8 +150,8 @@ public class Smooth {
                 // TODO: In case of non-manifolds we may have to traverse in the other direction
                 // TODO: Make iterator for this
 
-                propPosition.add(loop.nextFaceLoop.vertex, avgEdge);
-                propPosition.add(loop.nextFaceLoop.nextFaceLoop.vertex, avgFace);
+                propPosition.addLocal(avgEdge, loop.nextFaceLoop.vertex);
+                propPosition.addLocal(avgFace, loop.nextFaceLoop.nextFaceLoop.vertex);
                 count++;
                 loop = loop.nextEdgeLoop.nextFaceLoop;
             } while(loop != startLoop);

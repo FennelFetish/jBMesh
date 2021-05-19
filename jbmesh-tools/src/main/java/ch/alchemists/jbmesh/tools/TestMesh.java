@@ -1,24 +1,21 @@
 package ch.alchemists.jbmesh.tools;
 
-import com.jme3.math.Vector3f;
-import com.jme3.scene.shape.Sphere;
-import java.util.*;
 import ch.alchemists.jbmesh.conversion.Import;
 import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
 import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
-import ch.alchemists.jbmesh.operator.Inset;
-import ch.alchemists.jbmesh.operator.ScaleFace;
-import ch.alchemists.jbmesh.operator.Smooth;
-import ch.alchemists.jbmesh.operator.SubdivideFace;
-import ch.alchemists.jbmesh.operator.meshgen.DistanceFunction;
+import ch.alchemists.jbmesh.operator.*;
 import ch.alchemists.jbmesh.operator.bool.Subtract;
+import ch.alchemists.jbmesh.operator.meshgen.DistanceFunction;
 import ch.alchemists.jbmesh.operator.meshgen.MarchingCube;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.Profiler;
+import com.jme3.math.Vector3f;
+import com.jme3.scene.shape.Sphere;
+import java.util.List;
 
 public class TestMesh {
     public static BMesh testSphere() {
@@ -32,7 +29,7 @@ public class TestMesh {
             if(pos.z < 0 /*|| pos.z > 0.7f || pos.x < 0.9f || pos.y < -0.2f*/)
                 bmesh.removeVertex(v);
             else
-                propPosition.execute(v, (p) -> {
+                propPosition.modify(v, (p) -> {
                     //p.x = 1.0f;
                 });
         }
@@ -111,6 +108,7 @@ public class TestMesh {
 
         try(Profiler p = Profiler.start("Smooth")) {
             Smooth smooth = new Smooth(bmesh);
+            //smooth.setProcessNonmanifolds(true);
             for(int i = 0; i < 3; ++i)
                 smooth.apply(bmesh.faces().getAll());
         }
