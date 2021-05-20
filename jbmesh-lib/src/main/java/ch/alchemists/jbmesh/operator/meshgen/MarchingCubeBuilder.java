@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.meshgen;
 
-import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
+import ch.alchemists.jbmesh.lookup.HashGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.util.HashGrid;
@@ -24,7 +24,7 @@ public class MarchingCubeBuilder {
         if(bmesh == null)
             bmesh = new BMesh();
 
-        VertexDeduplication dedup = new OptimizedGridDeduplication(bmesh, DEDUP_EPSILON);
+        VertexDeduplication dedup = new HashGridDeduplication(bmesh, DEDUP_EPSILON);
         MarchingCube cube = new MarchingCube(bmesh, dedup, cellSize, setNormals);
 
         BoundingBox bounds = dfunc.getBounds();
@@ -62,7 +62,7 @@ public class MarchingCubeBuilder {
         if(bmesh == null)
             bmesh = new BMesh();
 
-        VertexDeduplication dedup = new OptimizedGridDeduplication(bmesh, DEDUP_EPSILON);
+        VertexDeduplication dedup = new HashGridDeduplication(bmesh, DEDUP_EPSILON);
         HashGrid<Vector3f> visitedCells = new HashGrid<>(cellSize);
         MarchingCube cube = new MarchingCube(bmesh, dedup, cellSize, setNormals);
         Queue<HashGrid.Index> queue = new ArrayDeque<>();

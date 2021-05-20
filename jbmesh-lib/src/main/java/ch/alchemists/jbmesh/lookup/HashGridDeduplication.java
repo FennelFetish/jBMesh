@@ -8,7 +8,7 @@ import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OptimizedGridDeduplication implements VertexDeduplication {
+public class HashGridDeduplication implements VertexDeduplication {
     // 3x3x3 cube without center, 26 directions total, 7 directions for 8 subcells
     private static final int[][][] WALK_DIRECTION = { // [8][7][3]
         {{-1, 0, 0}, {0, -1, 0}, {0, 0, -1},    {-1, -1, 0}, {-1, 0, -1}, {0, -1, -1},  {-1, -1, -1}},  // -X, -Y, -Z
@@ -32,11 +32,11 @@ public class OptimizedGridDeduplication implements VertexDeduplication {
     private final Vector3f p = new Vector3f();
 
 
-    public OptimizedGridDeduplication(BMesh bmesh) {
+    public HashGridDeduplication(BMesh bmesh) {
         this(bmesh, HashGrid.DEFAULT_CELLSIZE);
     }
 
-    public OptimizedGridDeduplication(BMesh bmesh, float epsilon) {
+    public HashGridDeduplication(BMesh bmesh, float epsilon) {
         this.bmesh = bmesh;
         this.epsilon = epsilon;
         epsilonSquared = epsilon * epsilon;

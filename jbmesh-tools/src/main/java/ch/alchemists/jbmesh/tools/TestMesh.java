@@ -2,7 +2,7 @@ package ch.alchemists.jbmesh.tools;
 
 import ch.alchemists.jbmesh.conversion.Import;
 import ch.alchemists.jbmesh.data.property.Vec3Property;
-import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
+import ch.alchemists.jbmesh.lookup.HashGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
 import ch.alchemists.jbmesh.operator.Inset;
 import ch.alchemists.jbmesh.operator.ScaleFace;
@@ -22,7 +22,7 @@ import java.util.List;
 public class TestMesh {
     public static BMesh testSphere() {
         Sphere sphere = new Sphere(16, 16, 2.0f);
-        BMesh bmesh = Import.convertExactMapped(sphere);
+        BMesh bmesh = Import.convertExact(sphere);
 
         Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
         List<Vertex> vertices = bmesh.vertices().getAll();
@@ -144,7 +144,7 @@ public class TestMesh {
 
         //VertexDeduplication dedup = new ExactHashDeduplication(bmesh);
         //VertexDeduplication dedup = new GridVertexDeduplication(bmesh, 0.001f);
-        VertexDeduplication dedup = new OptimizedGridDeduplication(bmesh, 0.0001f);
+        VertexDeduplication dedup = new HashGridDeduplication(bmesh, 0.0001f);
 
         DistanceFunction dfunc = dfunc();
 

@@ -1,7 +1,7 @@
 package ch.alchemists.jbmesh.operator.bool;
 
 import ch.alchemists.jbmesh.data.property.Vec3Property;
-import ch.alchemists.jbmesh.lookup.OptimizedGridDeduplication;
+import ch.alchemists.jbmesh.lookup.HashGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
 import ch.alchemists.jbmesh.operator.VertexOps;
 import ch.alchemists.jbmesh.operator.meshgen.DistanceFunction;
@@ -131,7 +131,7 @@ public class Subtract extends Cut {
         }
 
 
-        VertexDeduplication dedup = new OptimizedGridDeduplication(bmesh, 0.0001f);
+        VertexDeduplication dedup = new HashGridDeduplication(bmesh, 0.0001f);
         MarchingCube cube = new MarchingCube(bmesh, dedup, cellSize, true);
 
 
