@@ -5,8 +5,8 @@ import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.Element;
 
 public class ShortTupleProperty<E extends Element> extends BMeshProperty<E, short[]> {
-    public ShortTupleProperty(String name, int size) {
-        super(name, size);
+    public ShortTupleProperty(String name, int components) {
+        super(name, components);
     }
 
 

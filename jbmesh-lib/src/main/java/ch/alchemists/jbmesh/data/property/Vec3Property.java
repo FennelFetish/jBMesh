@@ -104,8 +104,11 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
     }
 
     public void forEach(Iterable<E> elements, Func.Unary<Vector3f> op) {
-        for(E element : elements)
-            execute(element, op);
+        Vector3f v = new Vector3f();
+        for(E element : elements) {
+            get(element, v);
+            op.exec(v);
+        }
     }
 
 
@@ -124,8 +127,12 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
     }
 
     public void forEachModify(Iterable<E> elements, Func.Unary<Vector3f> op) {
-        for(E element : elements)
-            modify(element, op);
+        Vector3f v = new Vector3f();
+        for(E element : elements) {
+            get(element, v);
+            op.exec(v);
+            set(element, v);
+        }
     }
 
 

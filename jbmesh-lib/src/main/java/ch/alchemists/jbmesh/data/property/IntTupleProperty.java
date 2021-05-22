@@ -5,8 +5,8 @@ import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.Element;
 
 public class IntTupleProperty<E extends Element> extends BMeshProperty<E, int[]> {
-    public IntTupleProperty(String name, int size) {
-        super(name, size);
+    public IntTupleProperty(String name, int components) {
+        super(name, components);
     }
 
 

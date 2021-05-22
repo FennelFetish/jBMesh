@@ -40,4 +40,13 @@ public class ColorProperty<E extends Element> extends FloatTupleProperty<E> {
     public static <E extends Element> ColorProperty<E> get(String name, BMeshData<E> meshData) {
         return (ColorProperty<E>) getProperty(name, meshData, float[].class);
     }
+
+    public static <E extends Element> ColorProperty<E> getOrCreate(String name, BMeshData<E> meshData) {
+        ColorProperty<E> prop = get(name, meshData);
+        if(prop == null) {
+            prop = new ColorProperty<>(name);
+            meshData.addProperty(prop);
+        }
+        return prop;
+    }
 }

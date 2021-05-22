@@ -5,8 +5,8 @@ import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.Element;
 
 public class FloatTupleProperty<E extends Element> extends BMeshProperty<E, float[]> {
-    public FloatTupleProperty(String name, int size) {
-        super(name, size);
+    public FloatTupleProperty(String name, int components) {
+        super(name, components);
     }
 
 
