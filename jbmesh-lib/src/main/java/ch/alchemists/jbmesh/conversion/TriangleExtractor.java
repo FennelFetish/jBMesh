@@ -3,7 +3,6 @@ package ch.alchemists.jbmesh.conversion;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
-import com.jme3.util.BufferUtils;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -46,24 +45,23 @@ public class TriangleExtractor {
         meshMode = mesh.getMode();
 
         FloatBuffer fbPos = mesh.getFloatBuffer(VertexBuffer.Type.Position);
-        positionBuffer = BufferUtils.getFloatArray(fbPos);
+        positionBuffer = VertexBufferUtils.getFloatArray(fbPos);
 
         VertexBuffer vbIdx = mesh.getBuffer(VertexBuffer.Type.Index);
         switch(vbIdx.getFormat()) {
             case Int:
             case UnsignedInt:
-                indexBuffer = BufferUtils.getIntArray((IntBuffer) vbIdx.getData());
+                indexBuffer = VertexBufferUtils.getIntArray((IntBuffer) vbIdx.getData());
                 break;
 
             case Short:
             case UnsignedShort: {
-                ShortBuffer buf = (ShortBuffer) vbIdx.getData();
-                buf.clear();
-                indexBuffer = new int[buf.limit()];
-                for(int i=0; i<indexBuffer.length; ++i)
-                    indexBuffer[i] = buf.get();
+                indexBuffer = VertexBufferUtils.getIntArray((ShortBuffer) vbIdx.getData());
                 break;
             }
+
+            default:
+                throw new UnsupportedOperationException("Index buffer format '" + vbIdx.getFormat() + "' not supported.");
         }
     }
 

@@ -7,7 +7,9 @@ public class Vertex extends Element {
     // Property names
     public static final String Position = "VertexPosition";
     public static final String Normal   = "VertexNormal";
+    public static final String TexCoord = "VertexTexCoord";
     public static final String Color    = "VertexColor";
+    public static final String Index    = "VertexIndex";
 
 
     // Can be null
