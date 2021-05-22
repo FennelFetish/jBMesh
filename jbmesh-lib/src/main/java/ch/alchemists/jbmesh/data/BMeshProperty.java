@@ -26,6 +26,7 @@ public abstract class BMeshProperty<E extends Element, TArray> {
 
     @SuppressWarnings("unchecked")
     protected static <E extends Element, TArray> BMeshProperty<E, TArray> getProperty(String name, BMeshData<E> meshData, Class<TArray> arrayType) {
+        // TODO: Check cast?
         return (BMeshProperty<E, TArray>) meshData.getProperty(name);
     }
 
@@ -39,10 +40,20 @@ public abstract class BMeshProperty<E extends Element, TArray> {
     }
 
 
+    // TODO: Benchmark... override in subclasses?
     public void copy(E from, E to) {
         int iFrom = indexOf(from);
         int iTo   = indexOf(to);
         System.arraycopy(data, iFrom, data, iTo, numComponents);
+    }
+
+    public <E2 extends Element> void copy(E from, BMeshProperty<E2, ?> otherProperty, E2 otherTo) {
+        if(numComponents != otherProperty.numComponents)
+            throw new IllegalArgumentException("Number of components don't match.");
+
+        int iFrom = indexOf(from);
+        int iTo   = otherProperty.indexOf(otherTo);
+        System.arraycopy(data, iFrom, otherProperty.data, iTo, numComponents);
     }
 
 

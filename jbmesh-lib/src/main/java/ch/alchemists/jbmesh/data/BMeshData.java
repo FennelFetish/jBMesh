@@ -47,15 +47,19 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     public E get(int index) {
+        // TODO: Don't return virtual elements?
         return elements.get(index);
     }
 
-    public void getAll(Collection<E> dest) {
+    public Collection<E> getAll(Collection<E> dest) {
+        // TODO: Don't return virtual elements?
         for(E e : this)
             dest.add(e);
+        return dest;
     }
 
     public List<E> getAll() {
+        // TODO: Don't return virtual elements?
         return new ArrayList<>(elements);
     }
 
@@ -148,15 +152,34 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     // getProperty(name, Vec3Property.class) should return Vec3Property<E> ?? to avoid casting at call site
-    BMeshProperty<E, ?> getProperty(String name) {
+    public BMeshProperty<E, ?> getProperty(String name) {
         return properties.get(name);
     }
+
+    /*public <TArray> BMeshProperty<E, TArray> getProperty(String name, Class<TArray> arrayType) {
+        return (BMeshProperty<E, TArray>) properties.get(name);
+    }*/
+
 
     public void removeProperty(BMeshProperty<E, ?> property) {
         if(properties.remove(property.name) != null)
             property.release();
         else
             throw new IllegalArgumentException("Property not associated with this data set");
+    }
+
+    public BMeshProperty<E, ?> removeProperty(String name) {
+        BMeshProperty<E, ?> property = properties.remove(name);
+        if(property != null)
+            property.release();
+        return property;
+    }
+
+
+    public void clearProperties() {
+        for(BMeshProperty<E, ?> property : properties.values())
+            property.release();
+        properties.clear();
     }
 
 

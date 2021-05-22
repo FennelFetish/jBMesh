@@ -8,22 +8,18 @@ import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
-import com.jme3.util.BufferUtils;
 import java.util.List;
 
 public class LineExport extends Export<Edge> {
-    // Edge color property? duplicate vertices where needed
-
     private final ObjectTupleProperty<Edge, Vertex> propEdgeVertex = new ObjectTupleProperty<>(Edge.VertexMap, 2, Vertex[]::new);
     private final IntTupleProperty<Edge> propEdgeIndices = new IntTupleProperty<>("LineExport_EdgeIndices", 2);
 
 
     public LineExport(BMesh bmesh) {
-        this(bmesh, new EdgeDuplicationStrategy(bmesh));
-    }
+        super(bmesh);
 
-    public LineExport(BMesh bmesh, DuplicationStrategy<Edge> duplicationStrategy) {
-        super(bmesh, duplicationStrategy);
+        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        addVertexProperty(VertexBuffer.Type.Position, propPosition);
 
         propEdgeVertex.setComparable(false);
         bmesh.edges().addProperty(propEdgeVertex);
@@ -42,7 +38,7 @@ public class LineExport extends Export<Edge> {
 
 
     @Override
-    protected void updateOutputMesh() {
+    protected void setIndexBuffer() {
         // Make index buffer
         for(Edge edge : bmesh.edges()) {
             Vertex v0 = propEdgeVertex.get(edge, 0);
@@ -54,11 +50,13 @@ public class LineExport extends Export<Edge> {
         outputMesh.setBuffer(VertexBuffer.Type.Index, 2, propEdgeIndices.array());
     }
 
+
     @Override
     protected void getVertexNeighborhood(Vertex vertex, List<Edge> dest) {
         for(Edge edge : vertex.edges())
             dest.add(edge);
     }
+
 
     @Override
     protected void setVertexReference(Vertex contactPoint, Edge element, Vertex ref) {
@@ -70,6 +68,7 @@ public class LineExport extends Export<Edge> {
         }
     }
 
+
     @Override
     protected Vertex getVertexReference(Vertex contactPoint, Edge element) {
         if(element.vertex0 == contactPoint)
@@ -77,33 +76,6 @@ public class LineExport extends Export<Edge> {
         else {
             assert element.vertex1 == contactPoint;
             return propEdgeVertex.get(element, 1);
-        }
-    }
-
-
-    public static class EdgeDuplicationStrategy implements DuplicationStrategy<Edge> {
-        private final BMesh bmesh;
-        private final Vec3Property<Vertex> propPosition;
-
-        public EdgeDuplicationStrategy(BMesh bmesh) {
-            this.bmesh = bmesh;
-            propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
-        }
-
-        @Override
-        public boolean equals(Edge a, Edge b) {
-            return bmesh.edges().equals(a, b);
-        }
-
-        @Override
-        public void applyProperties(Edge src, Vertex dest) {
-            // TODO: Colors
-        }
-
-        @Override
-        public void setBuffers(Mesh outputMesh) {
-            // TODO: Reuse buffers
-            outputMesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(propPosition.array()));
         }
     }
 }

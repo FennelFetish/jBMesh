@@ -40,16 +40,16 @@ public class ObjectProperty<E extends Element, T> extends BMeshProperty<E, T[]> 
     }
 
 
-    public static <E extends Element, T> ObjectProperty<E, T> get(String name, Class<T[]> arrayType, BMeshData<E> meshData) {
+    public static <E extends Element, T> ObjectProperty<E, T> get(String name, BMeshData<E> meshData, Class<T[]> arrayType) {
         return (ObjectProperty<E, T>) getProperty(name, meshData, arrayType);
     }
 
-    /*public static <E extends Element, T> ObjectProperty<E, T> getOrCreate(String name, Class<T[]> arrayType, BMeshData<E> meshData) {
-        ObjectProperty<E, T> prop = get(name, arrayType, meshData);
+    public static <E extends Element, T> ObjectProperty<E, T> getOrCreate(String name, BMeshData<E> meshData, Class<T[]> arrayType, ArrayAllocator<T> allocator) {
+        ObjectProperty<E, T> prop = get(name, meshData, arrayType);
         if(prop == null) {
             prop = new ObjectProperty<E, T>(name, allocator);
             meshData.addProperty(prop);
         }
         return prop;
-    }*/
+    }
 }
