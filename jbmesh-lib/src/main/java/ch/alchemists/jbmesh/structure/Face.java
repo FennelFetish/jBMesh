@@ -76,17 +76,38 @@ public class Face extends Element {
     }
 
     public Collection<Vertex> getVertices(Collection<Vertex> collection) {
-        Loop current = loop;
-        do {
-            collection.add(current.vertex);
-            current = current.nextFaceLoop;
-        } while(current != loop);
-
+        for(Loop loop : loops())
+            collection.add(loop.vertex);
         return collection;
     }
 
     public Iterable<Vertex> vertices() {
-        return () -> new FaceVertexIterator(loop);
+        return () -> new FaceElementIterator<>(loop) {
+            @Override
+            public Vertex next() {
+                return it.next().vertex;
+            }
+        };
+    }
+
+
+    public ArrayList<Edge> getEdges() {
+        return (ArrayList<Edge>) getEdges(new ArrayList<>(4));
+    }
+
+    public Collection<Edge> getEdges(Collection<Edge> collection) {
+        for(Loop loop : loops())
+            collection.add(loop.edge);
+        return collection;
+    }
+
+    public Iterable<Edge> edges() {
+        return () -> new FaceElementIterator<>(loop) {
+            @Override
+            public Edge next() {
+                return it.next().edge;
+            }
+        };
     }
 
 
@@ -134,21 +155,16 @@ public class Face extends Element {
     }
 
 
-    private static final class FaceVertexIterator implements Iterator<Vertex> {
-        private final FaceLoopIterator it;
+    private static abstract class FaceElementIterator<E extends Element> implements Iterator<E> {
+        protected final FaceLoopIterator it;
 
-        public FaceVertexIterator(Loop loop) {
+        public FaceElementIterator(Loop loop) {
             it = new FaceLoopIterator(loop);
         }
 
         @Override
-        public boolean hasNext() {
+        public final boolean hasNext() {
             return it.hasNext();
-        }
-
-        @Override
-        public Vertex next() {
-            return it.next().vertex;
         }
     }
 }
