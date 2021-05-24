@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
@@ -9,16 +9,16 @@ import com.jme3.math.Vector3f;
 import java.util.Iterator;
 
 /**
- * Functions that depend on properties.
+ * Geometric functions that depend on vertex position attribute.
  */
 public class FaceOps {
     private final BMesh bmesh;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
 
 
     public FaceOps(BMesh bmesh) {
         this.bmesh = bmesh;
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -33,11 +33,11 @@ public class FaceOps {
 
         Vector3f vCurrent = new Vector3f();
         Vector3f vNext = new Vector3f();
-        propPosition.get(current.vertex, vCurrent);
+        positions.get(current.vertex, vCurrent);
         store.zero();
 
         do {
-            propPosition.get(next.vertex, vNext);
+            positions.get(next.vertex, vNext);
 
             store.x += (vCurrent.y - vNext.y) * (vCurrent.z + vNext.z);
             store.y += (vCurrent.z - vNext.z) * (vCurrent.x + vNext.x);
@@ -65,10 +65,10 @@ public class FaceOps {
         Vertex vNext = loop.nextFaceLoop.vertex;
         Vertex vPrev = loop.prevFaceLoop.vertex;
 
-        Vector3f v1 = propPosition.get(vertex);
+        Vector3f v1 = positions.get(vertex);
         store.set(v1);
-        propPosition.subtractLocal(store, vNext);
-        propPosition.subtractLocal(v1, vPrev);
+        positions.subtractLocal(store, vNext);
+        positions.subtractLocal(v1, vPrev);
 
         return store.crossLocal(v1).normalizeLocal();
     }
@@ -83,7 +83,7 @@ public class FaceOps {
         store.zero();
 
         for(Vertex vertex : face.vertices()) {
-            propPosition.addLocal(store, vertex);
+            positions.addLocal(store, vertex);
             numVertices++;
         }
 
@@ -112,19 +112,19 @@ public class FaceOps {
         Iterator<Vertex> it = face.vertices().iterator();
         Vertex firstVertex = it.next();
 
-        Vector3f p1 = propPosition.get(firstVertex);
+        Vector3f p1 = positions.get(firstVertex);
         Vector3f p2 = new Vector3f();
         Vector3f sum = new Vector3f();
 
         // Stoke's theorem? Green's theorem?
         while(it.hasNext()) {
-            propPosition.get(it.next(), p2);
+            positions.get(it.next(), p2);
             sum.addLocal( p1.crossLocal(p2) );
             p1.set(p2);
         }
 
         // Close loop. Will be zero if p1 == p2 (when face has only one side).
-        propPosition.get(firstVertex, p2);
+        positions.get(firstVertex, p2);
         sum.addLocal( p1.crossLocal(p2) );
 
         float area = sum.dot(normal) * 0.5f;
@@ -133,10 +133,10 @@ public class FaceOps {
 
 
     public float areaTriangle(Face face) {
-        Vector3f v0 = propPosition.get(face.loop.vertex);
+        Vector3f v0 = positions.get(face.loop.vertex);
         Vector3f v1 = v0.clone();
-        propPosition.subtractLocal(v0, face.loop.nextFaceLoop.vertex);
-        propPosition.subtractLocal(v1, face.loop.nextFaceLoop.nextFaceLoop.vertex);
+        positions.subtractLocal(v0, face.loop.nextFaceLoop.vertex);
+        positions.subtractLocal(v1, face.loop.nextFaceLoop.nextFaceLoop.vertex);
 
         return v0.crossLocal(v1).length() * 0.5f;
     }

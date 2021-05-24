@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
-import ch.alchemists.jbmesh.data.property.FloatProperty;
+import ch.alchemists.jbmesh.data.property.FloatAttribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -9,9 +9,9 @@ import com.jme3.math.Vector3f;
 
 @Deprecated
 public class AngleAreaNormalCalculator extends AngleNormalCalculator {
-    private static final String PROPERTY_FACE_AREA = "AngleAreaNormalCalculator_FaceArea";
+    private static final String ATTRIBUTE_FACE_AREA = "AngleAreaNormalCalculator_FaceArea";
 
-    private FloatProperty<Face> propFaceArea;
+    private FloatAttribute<Face> attrFaceArea;
 
 
     /*public AngleAreaNormalCalculator() {
@@ -21,28 +21,29 @@ public class AngleAreaNormalCalculator extends AngleNormalCalculator {
 
     @Override
     public void prepare(BMesh bmesh, float creaseAngle) {
-        propFaceArea = FloatProperty.getOrCreate(PROPERTY_FACE_AREA, bmesh.faces());
+        attrFaceArea = FloatAttribute.getOrCreate(ATTRIBUTE_FACE_AREA, bmesh.faces());
         FaceOps faceOps = new FaceOps(bmesh);
 
         for(Face face : bmesh.faces()) {
             faceOps.normal(face, tempV1);
-            //propFaceNormal.set(face, tempV1);
+            //attrFaceNormal.set(face, tempV1);
 
             float area = faceOps.area(face, tempV1);
-            propFaceArea.set(face, area);
+            attrFaceArea.set(face, area);
         }
     }
 
+    @Override
     public void cleanup(BMesh bmesh) {
-        bmesh.faces().removeProperty(propFaceArea);
-        propFaceArea = null;
+        bmesh.faces().removeAttribute(attrFaceArea);
+        attrFaceArea = null;
     }
 
 
     @Override
     public void getWeightedNormal(Loop loop, Vector3f store) {
         /*float weight = super.getWeightedNormal(loop, store);
-        float area = propFaceArea.get(loop.face); // TODO: Use existing cross product of triangles in AngleNormalCalculator instead?
+        float area = attrFaceArea.get(loop.face); // TODO: Use existing cross product of triangles in AngleNormalCalculator instead?
         return weight * area;*/
 
         store.zero();

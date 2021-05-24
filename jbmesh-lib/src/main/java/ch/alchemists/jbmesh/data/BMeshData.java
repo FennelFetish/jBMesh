@@ -5,7 +5,7 @@ import java.nio.Buffer;
 import java.util.*;
 
 public class BMeshData<E extends Element> implements Iterable<E> {
-    public static interface ElementFactory<E extends Element> {
+    public interface ElementFactory<E extends Element> {
         E createElement();
     }
 
@@ -20,7 +20,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
     private int modCount = 0;
     
-    private final Map<String, BMeshProperty<E, ?>> properties = new HashMap<>();
+    private final Map<String, BMeshAttribute<E, ?>> attributes = new HashMap<>();
 
 
     public BMeshData(ElementFactory<E> factory) {
@@ -110,7 +110,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         int lastIndex = elements.size() - 1;
         if(index != lastIndex) {
             E lastElement = elements.get(lastIndex);
-            copyProperties(lastElement, element);
+            copyAttributes(lastElement, element);
             elements.set(index, lastElement);
             lastElement.setIndex(index);
         }
@@ -119,67 +119,76 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         element.release();
         modCount++;
 
-        // TODO: Reset property values?
+        // TODO: Reset attribute values?
     }
 
 
-    public void addProperty(BMeshProperty<E, ?> property) {
-        if(properties.containsKey(property.name))
-            throw new IllegalStateException("Property '" + property.name + "' already exists");
+    public void addAttribute(BMeshAttribute<E, ?> attribute) {
+        if(attributes.containsKey(attribute.name))
+            throw new IllegalStateException("Attribute '" + attribute.name + "' already exists");
 
-        if(property.data != null)
-            throw new IllegalStateException("Property '" + property.name + "' already associated with another data set");
+        if(attribute.data != null)
+            throw new IllegalStateException("Attribute '" + attribute.name + "' already associated with another data set");
 
-        Object oldArray = property.allocReplace(arraySize);
+        Object oldArray = attribute.allocReplace(arraySize);
         assert oldArray == null;
-        properties.put(property.name, property);
+        attributes.put(attribute.name, attribute);
     }
 
-    public <TArray> void addProperty(BMeshProperty<E, TArray> property, TArray data) {
-        if(properties.containsKey(property.name))
-            throw new IllegalStateException("Property '" + property.name + "' already exists");
+    public <TArray> void addAttribute(BMeshAttribute<E, TArray> attribute, TArray data) {
+        if(attributes.containsKey(attribute.name))
+            throw new IllegalStateException("Attribute '" + attribute.name + "' already exists");
 
-        if(property.data != null)
-            throw new IllegalStateException("Property '" + property.name + "' already associated with another data set");
+        if(attribute.data != null)
+            throw new IllegalStateException("Attribute '" + attribute.name + "' already associated with another data set");
 
         int len = Array.getLength(data);
-        if(len != arraySize * property.numComponents)
-            throw new IllegalArgumentException("Array length (" + (len/property.numComponents) + ") does not match managed length (" + arraySize + ")");
+        if(len != arraySize * attribute.numComponents)
+            throw new IllegalArgumentException("Array length (" + (len/attribute.numComponents) + ") does not match managed length (" + arraySize + ")");
 
-        property.data = data;
-        properties.put(property.name, property);
+        attribute.data = data;
+        attributes.put(attribute.name, attribute);
     }
 
 
-    // getProperty(name, Vec3Property.class) should return Vec3Property<E> ?? to avoid casting at call site
-    public BMeshProperty<E, ?> getProperty(String name) {
-        return properties.get(name);
+    // getAttribute(name, Vec3Attribute.class) should return Vec3Attribute<E> ?? to avoid casting at call site
+    public BMeshAttribute<E, ?> getAttribute(String name) {
+        return attributes.get(name);
     }
 
-    /*public <TArray> BMeshProperty<E, TArray> getProperty(String name, Class<TArray> arrayType) {
-        return (BMeshProperty<E, TArray>) properties.get(name);
-    }*/
+    @SuppressWarnings("unchecked")
+    public <TArray> BMeshAttribute<E, TArray> getAttribute(String name, Class<TArray> arrayType) {
+        BMeshAttribute<E, TArray> attribute = (BMeshAttribute<E, TArray>) attributes.get(name);
+
+        if(attribute == null)
+            return null;
+
+        if(attribute.data.getClass() != arrayType)
+            throw new ClassCastException("Attribute data type does not match requested type");
+
+        return attribute;
+    }
 
 
-    public void removeProperty(BMeshProperty<E, ?> property) {
-        if(properties.remove(property.name) != null)
-            property.release();
+    public void removeAttribute(BMeshAttribute<E, ?> attribute) {
+        if(attributes.remove(attribute.name) != null)
+            attribute.release();
         else
-            throw new IllegalArgumentException("Property not associated with this data set");
+            throw new IllegalArgumentException("Attribute not associated with this data set");
     }
 
-    public BMeshProperty<E, ?> removeProperty(String name) {
-        BMeshProperty<E, ?> property = properties.remove(name);
-        if(property != null)
-            property.release();
-        return property;
+    public BMeshAttribute<E, ?> removeAttribute(String name) {
+        BMeshAttribute<E, ?> attribute = attributes.remove(name);
+        if(attribute != null)
+            attribute.release();
+        return attribute;
     }
 
 
-    public void clearProperties() {
-        for(BMeshProperty<E, ?> property : properties.values())
-            property.release();
-        properties.clear();
+    public void clearAttributes() {
+        for(BMeshAttribute<E, ?> attribute : attributes.values())
+            attribute.release();
+        attributes.clear();
     }
 
 
@@ -206,8 +215,8 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     private void resize(int size, int copyLength) {
-        for(BMeshProperty prop : properties.values()) {
-            prop.realloc(size, copyLength);
+        for(BMeshAttribute<E, ?> attribute : attributes.values()) {
+            attribute.realloc(size, copyLength);
         }
 
         arraySize = size;
@@ -229,15 +238,15 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
 
-    public <TArray> TArray getCompactData(BMeshProperty<E, TArray> property) {
-        final int size = elements.size() * property.numComponents;
-        TArray array = property.alloc(size);
-        System.arraycopy(property.data, 0, array, 0, size);
+    public <TArray> TArray getCompactData(BMeshAttribute<E, TArray> attribute) {
+        final int size = elements.size() * attribute.numComponents;
+        TArray array = attribute.alloc(size);
+        System.arraycopy(attribute.data, 0, array, 0, size);
         return array;
     }
 
 
-    public <TArray> void putCompactData(BMeshProperty<E, TArray> property, Buffer buffer) {
+    public <TArray> void putCompactData(BMeshAttribute<E, TArray> attribute, Buffer buffer) {
         buffer.clear();
         // ...
     }
@@ -256,8 +265,8 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     public boolean equals(E a, E b) {
-        for(BMeshProperty<E, ?> prop : properties.values()) {
-            if(prop.isComparable() && !prop.equals(a, b))
+        for(BMeshAttribute<E, ?> attr : attributes.values()) {
+            if(attr.isComparable() && !attr.equals(a, b))
                 return false;
         }
 
@@ -265,9 +274,9 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
 
-    public void copyProperties(E from, E to) {
-        for(BMeshProperty<E, ?> prop : properties.values()) {
-            prop.copy(from, to);
+    public void copyAttributes(E from, E to) {
+        for(BMeshAttribute<E, ?> attr : attributes.values()) {
+            attr.copy(from, to);
         }
     }
 

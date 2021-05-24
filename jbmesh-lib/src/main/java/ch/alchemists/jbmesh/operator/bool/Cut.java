@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.bool;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.meshgen.DistanceFunction;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.Vector3f;
@@ -21,7 +21,7 @@ public abstract class Cut {
 
 
     protected final BMesh bmesh;
-    protected final Vec3Property<Vertex> propPosition;
+    protected final Vec3Attribute<Vertex> positions;
 
     protected DistanceFunction dfunc;
 
@@ -29,7 +29,7 @@ public abstract class Cut {
     public Cut(BMesh bmesh, DistanceFunction dfunc) {
         this.bmesh = bmesh;
         this.dfunc = dfunc;
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -60,8 +60,8 @@ public abstract class Cut {
         for(FaceSplitInfo splitInfo : faceSplits) {
             Vertex vStart = splitEdges.get(splitInfo.startEdge);
             if(vStart == null) {
-                propPosition.get(splitInfo.start.vertex, p1); // Outside
-                propPosition.get(splitInfo.start.nextFaceLoop.vertex, p2); // Inside
+                positions.get(splitInfo.start.vertex, p1); // Outside
+                positions.get(splitInfo.start.nextFaceLoop.vertex, p2); // Inside
 
                 vStart = bmesh.splitEdge(splitInfo.startEdge);
                 moveToBorder(vStart, p2, p1);
@@ -72,8 +72,8 @@ public abstract class Cut {
 
             Vertex vEnd = splitEdges.get(splitInfo.endEdge);
             if(vEnd == null) {
-                propPosition.get(splitInfo.end.vertex, p1); // Inside
-                propPosition.get(splitInfo.end.nextFaceLoop.vertex, p2); // Outside
+                positions.get(splitInfo.end.vertex, p1); // Inside
+                positions.get(splitInfo.end.nextFaceLoop.vertex, p2); // Outside
 
                 vEnd = bmesh.splitEdge(splitInfo.endEdge);
                 moveToBorder(vEnd, p1, p2);
@@ -114,10 +114,10 @@ public abstract class Cut {
                 // TODO: Instead of doing intersection test for every loop, do it for each edge once -> save to HashMap?
 
                 // Check for intersection of edge with the border of distance function
-                propPosition.get(loop.vertex, p1);
+                positions.get(loop.vertex, p1);
                 float dist1 = dfunc.dist(p1);
 
-                propPosition.get(loop.nextFaceLoop.vertex, p2);
+                positions.get(loop.nextFaceLoop.vertex, p2);
                 float dist2 = dfunc.dist(p2);
 
                 // Loop pointing inwards
@@ -197,7 +197,7 @@ public abstract class Cut {
             dist = dfunc.dist(inside);
         }
 
-        propPosition.set(v, inside);
+        positions.set(v, inside);
     }
 
     // Does less but is not really faster since it's not the bottleneck
@@ -212,7 +212,7 @@ public abstract class Cut {
         outside.multLocal(t);
         outside.addLocal(inside);
 
-        propPosition.set(v, outside);
+        positions.set(v, outside);
     }*/
 
 

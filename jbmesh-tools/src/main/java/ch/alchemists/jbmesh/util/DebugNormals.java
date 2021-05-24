@@ -7,8 +7,7 @@ import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
-import ch.alchemists.jbmesh.data.BMeshProperty;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -74,11 +73,11 @@ public class DebugNormals {
 
 
     private static Mesh createLoopNormals(BMesh bmesh, float length) {
-        Vec3Property<Loop> propNormal = Vec3Property.get(Loop.Normal, bmesh.loops());
-        if(propNormal == null)
+        Vec3Attribute<Loop> normals = Vec3Attribute.get(Loop.Normal, bmesh.loops());
+        if(normals == null)
             throw new IllegalArgumentException("The provided BMesh object doesn't have Loop normals.");
 
-        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
 
         // Filling an array and then putting it into a FloatBuffer all at once scales better with bigger meshes performance-wise
         float[] vbuf = new float[bmesh.loops().size() * 6];
@@ -92,8 +91,8 @@ public class DebugNormals {
         Vector3f color = new Vector3f();
 
         for(Loop loop : bmesh.loops()) {
-            propPosition.get(loop.vertex, p);
-            propNormal.get(loop, normal);
+            positions.get(loop.vertex, p);
+            normals.get(loop, normal);
             colorFromNormal(normal, color);
             normal.multLocal(length);
             normal.addLocal(p);

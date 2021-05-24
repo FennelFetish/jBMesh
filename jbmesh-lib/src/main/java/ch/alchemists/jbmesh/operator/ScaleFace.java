@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -8,7 +8,7 @@ import com.jme3.math.Vector3f;
 
 public class ScaleFace {
     private final FaceOps faceOps;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
 
     private float scale = 1.0f;
 
@@ -17,7 +17,7 @@ public class ScaleFace {
 
     public ScaleFace(BMesh bmesh, float scale) {
         faceOps = new FaceOps(bmesh);
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
         this.scale = scale;
     }
 
@@ -27,11 +27,11 @@ public class ScaleFace {
         Vector3f p = new Vector3f();
 
         for(Vertex vertex : face.vertices()) {
-            propPosition.get(vertex, p);
+            positions.get(vertex, p);
             p.subtractLocal(centroid);
             p.multLocal(scale);
             p.addLocal(centroid);
-            propPosition.set(vertex, p);
+            positions.set(vertex, p);
         }
     }
 }

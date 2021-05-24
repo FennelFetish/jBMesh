@@ -1,8 +1,8 @@
 package ch.alchemists.jbmesh.conversion;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
-import ch.alchemists.jbmesh.data.property.ObjectProperty;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
+import ch.alchemists.jbmesh.data.property.ObjectAttribute;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.lookup.ExactHashDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -21,19 +21,19 @@ public class DirectImport {
     }
 
 
-    private static class PropertyMapping {
-        public final BMeshProperty<Vertex, ?> vertexProperty;
-        public final BMeshProperty<Loop, ?> loopProperty;
+    private static class AttributeMapping {
+        public final BMeshAttribute<Vertex, ?> vertexAttribute;
+        public final BMeshAttribute<Loop, ?> loopAttribute;
 
-        public PropertyMapping(BMeshProperty<Vertex, ?> vertexProperty, BMeshProperty<Loop, ?> loopProperty) {
-            this.vertexProperty = vertexProperty;
-            this.loopProperty = loopProperty;
+        public AttributeMapping(BMeshAttribute<Vertex, ?> vertexAttribute, BMeshAttribute<Loop, ?> loopAttribute) {
+            this.vertexAttribute = vertexAttribute;
+            this.loopAttribute = loopAttribute;
         }
     }
 
 
     private final Mesh inputMesh;
-    private final List<PropertyMapping> propertyMappings = new ArrayList<>();
+    private final List<AttributeMapping> mappedAttributes = new ArrayList<>();
 
 
     public DirectImport(Mesh inputMesh) {
@@ -62,16 +62,16 @@ public class DirectImport {
         bmesh.faces().ensureCapacity(numIndices / 3);
         bmesh.loops().ensureCapacity(numIndices);
 
-        Vec3Property<Vertex> propPosition = replacePositionData(bmesh, numVertices, triangleExtractor.getPositionArray());
-        createVertexProperties(bmesh, numVertices);
+        Vec3Attribute<Vertex> attrPosition = replacePositionData(bmesh, numVertices, triangleExtractor.getPositionArray());
+        createVertexAttributes(bmesh, numVertices);
 
         // Detect Vertex duplicates and create mapping: [Virtual vertex] => [Actual vertex] in the structure
         VertexDeduplication dedup = dedupFactory.createVertexDeduplication(bmesh);
-        Vertex[] virtualVertexMap = createVertices(bmesh, triangleExtractor, dedup); // TODO: should createVerticess() come before dealing with properties?
+        Vertex[] virtualVertexMap = createVertices(bmesh, triangleExtractor, dedup); // TODO: should createVerticess() come before dealing with attributes?
         boolean hasVirtual = (virtualVertexMap.length > bmesh.vertices().size());
 
-        ObjectProperty<Loop, Vertex> propLoopVertex = new ObjectProperty<>(Loop.VertexMap, Vertex[]::new);
-        bmesh.loops().addProperty(propLoopVertex);
+        ObjectAttribute<Loop, Vertex> attrLoopVertex = new ObjectAttribute<>(Loop.VertexMap, Vertex[]::new);
+        bmesh.loops().addAttribute(attrLoopVertex);
 
         triangleExtractor.process((int i0, int i1, int i2) -> {
             Vertex v0 = virtualVertexMap[i0];
@@ -81,17 +81,17 @@ public class DirectImport {
             // Check for degenerate triangles
             if(v0 != v1 && v0 != v2 && v1 != v2) {
                 Face face = bmesh.createFace(v0, v1, v2);
-                propLoopVertex.set(face.loop,              bmesh.vertices().get(i0));
-                propLoopVertex.set(face.loop.nextFaceLoop, bmesh.vertices().get(i1));
-                propLoopVertex.set(face.loop.prevFaceLoop, bmesh.vertices().get(i2));
+                attrLoopVertex.set(face.loop,              bmesh.vertices().get(i0));
+                attrLoopVertex.set(face.loop.nextFaceLoop, bmesh.vertices().get(i1));
+                attrLoopVertex.set(face.loop.prevFaceLoop, bmesh.vertices().get(i2));
             }
         });
 
-        copyPropertiesToLoops(bmesh, propLoopVertex);
+        copyAttributesToLoops(bmesh, attrLoopVertex);
 
         // TODO: Add triangles to TriangleIndices? And set existing index array
 
-        assert propPosition.array() == triangleExtractor.getPositionArray();
+        assert attrPosition.array() == triangleExtractor.getPositionArray();
         return bmesh;
     }
 
@@ -121,11 +121,11 @@ public class DirectImport {
     }
 
 
-    private void createVertexProperties(BMesh bmesh, int numVertices) {
+    private void createVertexAttributes(BMesh bmesh, int numVertices) {
         for(VertexBuffer buffer : inputMesh.getBufferList()) {
             switch(buffer.getBufferType()) {
                 case Index:
-                    // --> Property for Loops
+                    // --> Attribute for Loops
                     break;
 
                 case Position:
@@ -133,40 +133,38 @@ public class DirectImport {
                     break;
 
                 default: {
-                    BMeshProperty<Vertex, ?> vertexProperty = VertexBufferUtils.createProperty(buffer, Vertex.class);
-                    VertexBufferUtils.setData(bmesh.vertices(), buffer, vertexProperty);
+                    BMeshAttribute<Vertex, ?> vertexAttribute = VertexBufferUtils.createBMeshAttribute(buffer, Vertex.class);
+                    VertexBufferUtils.setData(bmesh.vertices(), buffer, vertexAttribute);
 
-                    BMeshProperty<Loop, ?> loopProperty = VertexBufferUtils.createProperty(buffer, Loop.class);
-                    bmesh.loops().addProperty(loopProperty);
-                    propertyMappings.add(new PropertyMapping(vertexProperty, loopProperty));
+                    BMeshAttribute<Loop, ?> loopAttribute = VertexBufferUtils.createBMeshAttribute(buffer, Loop.class);
+                    bmesh.loops().addAttribute(loopAttribute);
+                    mappedAttributes.add(new AttributeMapping(vertexAttribute, loopAttribute));
                 }
             }
         }
     }
 
 
-    // Keep Vertex.Position property because BMesh hold a reference to the original instance.
-    private Vec3Property<Vertex> replacePositionData(BMesh bmesh, int arrayLength, float[] data) {
-        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
-        //bmesh.vertices().removeProperty(propPosition);
-        bmesh.vertices().clearProperties();
+    // Keep Position attribute because BMesh holds a reference to the original instance.
+    private Vec3Attribute<Vertex> replacePositionData(BMesh bmesh, int arrayLength, float[] data) {
+        Vec3Attribute<Vertex> attrPosition = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        //bmesh.vertices().removeAttribute(attrPosition);
+        bmesh.vertices().clearAttributes();
         bmesh.vertices().compactData();
         bmesh.vertices().ensureCapacity(arrayLength);
-        bmesh.vertices().addProperty(propPosition, data);
-        return propPosition;
+        bmesh.vertices().addAttribute(attrPosition, data);
+        return attrPosition;
     }
 
 
-    private void copyPropertiesToLoops(BMesh bmesh, ObjectProperty<Loop, Vertex> propLoopVertex) {
-        // TODO: Transfer properties from Vertex to Loop
+    private void copyAttributesToLoops(BMesh bmesh, ObjectAttribute<Loop, Vertex> attrLoopVertex) {
+        // TODO: Transfer attributes from Vertex to Loop
         // TODO: Check if that's even necessary? (Only necessary if there are virtual vertices?)
-        // TODO: We need  a) A function to clone BMeshProperty for creating properties for the loops
-        //                b) A function for copying values from one array to another property-array
 
-        for(PropertyMapping mapping : propertyMappings) {
+        for(AttributeMapping mapping : mappedAttributes) {
             for(Loop loop : bmesh.loops()) {
-                Vertex vertex = propLoopVertex.get(loop);
-                mapping.vertexProperty.copy(vertex, mapping.loopProperty, loop);
+                Vertex vertex = attrLoopVertex.get(loop);
+                mapping.vertexAttribute.copy(vertex, mapping.loopAttribute, loop);
             }
         }
     }

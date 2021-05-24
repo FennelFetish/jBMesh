@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.Vector3f;
 import java.util.*;
@@ -21,7 +21,7 @@ public class SubdivideFace {
     private final Map<Face, FaceInfo> faceInfo = new HashMap<>(); // TODO: This one too (as local variable in apply())
     private final Set<Edge> edges = new HashSet<>(); // TODO: Try and benchmark as local variable in apply() with initialCapacity
 
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
     private int cuts = 1;
 
     private final List<Loop> tempLoops = new ArrayList<>(4);
@@ -36,7 +36,7 @@ public class SubdivideFace {
     public SubdivideFace(BMesh bmesh, int cuts) {
         this.bmesh = bmesh;
         setCuts(cuts);
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -85,15 +85,15 @@ public class SubdivideFace {
 
     private void splitEdge(Edge edge, final int cuts) {
         Vertex edgeV1 = edge.vertex1;
-        propPosition.get(edge.vertex0, tempP);
-        propPosition.get(edge.vertex1, tempStep);
+        positions.get(edge.vertex0, tempP);
+        positions.get(edge.vertex1, tempStep);
         tempStep.subtractLocal(tempP);
         tempStep.divideLocal(cuts+1);
 
         for(int i=0; i<cuts; ++i) {
             Vertex v = bmesh.splitEdge(edge);
             tempP.addLocal(tempStep);
-            propPosition.set(v, tempP);
+            positions.set(v, tempP);
 
             edge = v.getEdgeTo(edgeV1);
             assert edge != null;

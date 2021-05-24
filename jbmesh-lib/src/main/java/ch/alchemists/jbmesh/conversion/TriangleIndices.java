@@ -25,8 +25,8 @@ public class TriangleIndices {
 
     private static final Logger LOG = Logger.getLogger(TriangleIndices.class.getName());
 
-    private static final String PROPERTY_INDICES  = "TriangleIndices";
-    private static final String PROPERTY_TRILOOPS = "TriangleIndices_Loops";
+    private static final String ATTRIBUTE_INDICES  = "TriangleIndices";
+    private static final String ATTRIBUTE_TRILOOPS = "TriangleIndices_Loops";
 
 
     // Store triangulation in virtual Loops. Use their references to link them. They are not connected to the real structure.
@@ -35,35 +35,35 @@ public class TriangleIndices {
 
     // Result must be int[] or short[]
     // Sorted by triangle!
-    // Don't add property to Loop / don't create virtual Loops because in contrast to Vertex, the loops/indices don't need data:
-    //   Virtual elements would waste memory in all properties but the index property.
-    // Manage own BMeshData<Triangulation> ? Add IntTupleProperty<Triangulation>("indices", 3)
+    // Don't add attribute to Loop / don't create virtual Loops because in contrast to Vertex, the loops/indices don't need data:
+    //   Virtual elements would waste memory in all attributes but the index attribute.
+    // Manage own BMeshData<Triangulation> ? Add IntTupleAttribute<Triangulation>("indices", 3)
 
     private final BMesh bmesh;
     private final SweepTriangulation triangulation;
 
-    private final ObjectProperty<Loop, Vertex> propLoopVertex;
-    private final ObjectTupleProperty<Triangle, Loop> propTriangleLoops = new ObjectTupleProperty<>(PROPERTY_TRILOOPS, 3, Loop[]::new);
+    private final ObjectAttribute<Loop, Vertex> attrLoopVertex;
+    private final ObjectTupleAttribute<Triangle, Loop> attrTriangleLoops = new ObjectTupleAttribute<>(ATTRIBUTE_TRILOOPS, 3, Loop[]::new);
 
     private final BMeshData<Triangle> triangleData;
     private final VertexBuffer indexBuffer = new VertexBuffer(VertexBuffer.Type.Index);
-    private Object lastIndexProperty = null;
+    private Object lastIndexAttribute = null;
 
-    private final IntTupleProperty<Triangle> propIndicesInt = new IntTupleProperty<>(PROPERTY_INDICES, 3);
+    private final IntTupleAttribute<Triangle> attrIndicesInt = new IntTupleAttribute<>(ATTRIBUTE_INDICES, 3);
     private IntBuffer intBuffer;
 
-    private final ShortTupleProperty<Triangle> propIndicesShort = new ShortTupleProperty<>(PROPERTY_INDICES, 3);
+    private final ShortTupleAttribute<Triangle> attrIndicesShort = new ShortTupleAttribute<>(ATTRIBUTE_INDICES, 3);
     private ShortBuffer shortBuffer;
 
 
-    public TriangleIndices(BMesh bmesh, ObjectProperty<Loop, Vertex> propLoopVertex) {
+    public TriangleIndices(BMesh bmesh, ObjectAttribute<Loop, Vertex> attrLoopVertex) {
         this.bmesh = bmesh;
         triangulation = new SweepTriangulation(bmesh);
 
-        this.propLoopVertex = propLoopVertex;
+        this.attrLoopVertex = attrLoopVertex;
 
         triangleData = new BMeshData<>(Triangle::new);
-        triangleData.addProperty(propTriangleLoops);
+        triangleData.addAttribute(attrTriangleLoops);
     }
 
 
@@ -78,7 +78,7 @@ public class TriangleIndices {
      * TODO: Call only for dirty faces?
      */
     public void apply() {
-        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> attrPosition = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
 
         triangleData.clear();
         triangleData.ensureCapacity(bmesh.faces().size());
@@ -93,7 +93,7 @@ public class TriangleIndices {
             if(numVertices == 3)
                 addTriangle(loops,0, 1, 2);
             else if(numVertices == 4)
-                triangulateQuad(propPosition, loops);
+                triangulateQuad(attrPosition, loops);
             else if(numVertices > 4)
                 triangulatePolygon(loops);
             else
@@ -109,7 +109,7 @@ public class TriangleIndices {
         Loop l1 = loops.get(i1);
         Loop l2 = loops.get(i2);
         Loop l3 = loops.get(i3);
-        propTriangleLoops.setValues(tri, l1, l2, l3);
+        attrTriangleLoops.setValues(tri, l1, l2, l3);
     }
 
 
@@ -117,11 +117,11 @@ public class TriangleIndices {
      * Triangulates a quadliteral with a split along the shorter diagonal.
      * If a vertex is reflex and the quad forms an arrowhead, this reflex vertex will be part of the chosen diagonal.
      */
-    private void triangulateQuad(Vec3Property<Vertex> propPosition, ArrayList<Loop> loops) {
-        Vector3f p0 = propPosition.get(loops.get(0).vertex);
-        Vector3f p1 = propPosition.get(loops.get(1).vertex);
-        Vector3f p2 = propPosition.get(loops.get(2).vertex);
-        Vector3f p3 = propPosition.get(loops.get(3).vertex);
+    private void triangulateQuad(Vec3Attribute<Vertex> attrPosition, ArrayList<Loop> loops) {
+        Vector3f p0 = attrPosition.get(loops.get(0).vertex);
+        Vector3f p1 = attrPosition.get(loops.get(1).vertex);
+        Vector3f p2 = attrPosition.get(loops.get(2).vertex);
+        Vector3f p3 = attrPosition.get(loops.get(3).vertex);
 
         // Test 1 & 3 against diagonal 0->2
         Vector3f diagonal = p2.subtract(p0);
@@ -194,27 +194,31 @@ public class TriangleIndices {
 
         // TODO: How to change format in existing VertexBuffer? int -> short / short -> int
         //       Clear first and then set again?
+
+        // TODO: To update buffer with array of different length:
+        //       VertexBuffer.updateData(), Mesh.updateCounts()
+
         // TODO: Lazy switching of buffer type (don't change every frame)?
     }
 
 
     private void updateInt(int numIndices) {
-        if(lastIndexProperty != propIndicesInt) {
-            if(lastIndexProperty == propIndicesShort)
-                triangleData.removeProperty(propIndicesShort);
+        if(lastIndexAttribute != attrIndicesInt) {
+            if(lastIndexAttribute == attrIndicesShort)
+                triangleData.removeAttribute(attrIndicesShort);
 
-            triangleData.addProperty(propIndicesInt);
-            lastIndexProperty = propIndicesInt;
+            triangleData.addAttribute(attrIndicesInt);
+            lastIndexAttribute = attrIndicesInt;
         }
 
         for(Triangle tri : triangleData) {
             int i0 = mapTriangleLoopVertexIndex(tri, 0);
             int i1 = mapTriangleLoopVertexIndex(tri, 1);
             int i2 = mapTriangleLoopVertexIndex(tri, 2);
-            propIndicesInt.setValues(tri, i0, i1, i2);
+            attrIndicesInt.setValues(tri, i0, i1, i2);
         }
 
-        int[] data = triangleData.getCompactData(propIndicesInt);
+        int[] data = triangleData.getCompactData(attrIndicesInt);
         if(intBuffer == null || intBuffer.capacity() < numIndices) {
             intBuffer = BufferUtils.createIntBuffer(data);
             //System.out.println("made new int index buffer");
@@ -226,25 +230,30 @@ public class TriangleIndices {
         }
 
         indexBuffer.setupData(VertexBuffer.Usage.Static, 3, VertexBuffer.Format.UnsignedInt, intBuffer);
+
+
+        // mesh.setBuffer does exactly that, but refuses changing type:
+        //indexBuffer.updateData(intBuffer);
+        // mesh.updateCounts()
     }
 
     private void updateShort(int numIndices) {
-        if(lastIndexProperty != propIndicesShort) {
-            if(lastIndexProperty == propIndicesInt)
-                triangleData.removeProperty(propIndicesInt);
+        if(lastIndexAttribute != attrIndicesShort) {
+            if(lastIndexAttribute == attrIndicesInt)
+                triangleData.removeAttribute(attrIndicesInt);
 
-            triangleData.addProperty(propIndicesShort);
-            lastIndexProperty = propIndicesShort;
+            triangleData.addAttribute(attrIndicesShort);
+            lastIndexAttribute = attrIndicesShort;
         }
 
         for(Triangle tri : triangleData) {
             int i0 = mapTriangleLoopVertexIndex(tri, 0);
             int i1 = mapTriangleLoopVertexIndex(tri, 1);
             int i2 = mapTriangleLoopVertexIndex(tri, 2);
-            propIndicesShort.setValues(tri, (short) i0, (short) i1, (short) i2);
+            attrIndicesShort.setValues(tri, (short) i0, (short) i1, (short) i2);
         }
 
-        short[] data = triangleData.getCompactData(propIndicesShort);
+        short[] data = triangleData.getCompactData(attrIndicesShort);
         if(shortBuffer == null || shortBuffer.capacity() < numIndices) {
             shortBuffer = BufferUtils.createShortBuffer(data);
             //System.out.println("made new short index buffer");
@@ -256,12 +265,16 @@ public class TriangleIndices {
         }
 
         indexBuffer.setupData(VertexBuffer.Usage.Static, 3, VertexBuffer.Format.UnsignedShort, shortBuffer);
+
+        // mesh.setBuffer does exactly that, but refuses changing type:
+        //indexBuffer.updateData(shortBuffer);
+        // mesh.updateCounts()
     }
 
 
     // Triangle -> Loop -> Vertex -> Index
     private int mapTriangleLoopVertexIndex(Triangle tri, int i) {
-        Loop loop = propTriangleLoops.get(tri, i);
-        return propLoopVertex.get(loop).getIndex();
+        Loop loop = attrTriangleLoops.get(tri, i);
+        return attrLoopVertex.get(loop).getIndex();
     }
 }

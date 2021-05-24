@@ -1,28 +1,28 @@
 package ch.alchemists.jbmesh.data.property;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.Element;
 
-public class FloatTupleProperty<E extends Element> extends BMeshProperty<E, float[]> {
-    public FloatTupleProperty(String name, int components) {
+public class IntTupleAttribute<E extends Element> extends BMeshAttribute<E, int[]> {
+    public IntTupleAttribute(String name, int components) {
         super(name, components);
     }
 
 
-    public float get(E element, int component) {
+    public int get(E element, int component) {
         return data[indexOf(element, component)];
     }
 
-
-    public void set(E element, int component, float value) {
+    
+    public void set(E element, int component, int value) {
         data[indexOf(element, component)] = value;
     }
 
-    public void setValues(E element, float... values) {
+    public void setValues(E element, int... values) {
         // throw?
         assert values.length == numComponents;
-
+        
         int index = indexOf(element);
         for(int i=0; i<numComponents; ++i)
             data[index++] = values[i];
@@ -35,7 +35,7 @@ public class FloatTupleProperty<E extends Element> extends BMeshProperty<E, floa
         int indexB = indexOf(b);
 
         for(int i=0; i<numComponents; ++i) {
-            if(!FloatProperty.floatEquals(data[indexA++], data[indexB++]))
+            if(data[indexA++] != data[indexB++])
                 return false;
         }
 
@@ -44,11 +44,11 @@ public class FloatTupleProperty<E extends Element> extends BMeshProperty<E, floa
 
 
     @Override
-    protected float[] alloc(int size) {
-        return new float[size];
+    protected int[] alloc(int size) {
+        return new int[size];
     }
 
-    public static <E extends Element> FloatTupleProperty<E> get(String name, BMeshData<E> meshData) {
-        return (FloatTupleProperty<E>) getProperty(name, meshData, float[].class);
+    public static <E extends Element> IntTupleAttribute<E> get(String name, BMeshData<E> meshData) {
+        return (IntTupleAttribute<E>) getAttribute(name, meshData, int[].class);
     }
 }

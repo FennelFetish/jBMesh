@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.skeleton;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -8,14 +8,12 @@ import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class StraightSkeleton {
     private final BMesh bmesh;
     private final FaceOps faceOps;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
 
     private float offsetDistance = Float.POSITIVE_INFINITY; // Absolute value
     private float distanceSign = -1.0f;
@@ -28,7 +26,7 @@ public class StraightSkeleton {
     public StraightSkeleton(BMesh bmesh) {
         this.bmesh = bmesh;
         faceOps = new FaceOps(bmesh);
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -65,7 +63,7 @@ public class StraightSkeleton {
         ctx.reset(offsetDistance, distanceSign);
 
         Vector3f n = faceOps.normal(face);
-        coordSys = new PlanarCoordinateSystem(propPosition.get(vertices.get(0)), propPosition.get(vertices.get(1)), n);
+        coordSys = new PlanarCoordinateSystem(positions.get(vertices.get(0)), positions.get(vertices.get(1)), n);
 
         float diagonalSize = createNodes(vertices);
 
@@ -137,7 +135,7 @@ public class StraightSkeleton {
     }
 
     private MovingNode createNode(Vertex vertex, Vector3f vertexPos, Vector3f min, Vector3f max) {
-        propPosition.get(vertex, vertexPos);
+        positions.get(vertex, vertexPos);
         min.minLocal(vertexPos);
         max.maxLocal(vertexPos);
 

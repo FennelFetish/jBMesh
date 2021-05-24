@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.triangulation;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -17,21 +17,21 @@ import java.util.Random;
 public class SeidelTriangulation {
     private final BMesh bmesh;
     private final FaceOps faceOps;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
 
 
     public SeidelTriangulation(BMesh bmesh) {
         this.bmesh = bmesh;
         this.faceOps = new FaceOps(bmesh);
-        this.propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        this.positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
     public void apply(Face face) {
         System.out.println("SeidelTriangulation.apply ----------------------------------------------------");
 
-        Vector3f p0 = propPosition.get(face.loop.vertex);
-        Vector3f p1 = propPosition.get(face.loop.nextFaceLoop.vertex);
+        Vector3f p0 = positions.get(face.loop.vertex);
+        Vector3f p1 = positions.get(face.loop.nextFaceLoop.vertex);
         Vector3f n = faceOps.normal(face);
         PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem(p0, p1, n);
 
@@ -52,10 +52,10 @@ public class SeidelTriangulation {
         for(Loop l : loops) {
             DebugVisual.next("Seidel");
 
-            propPosition.get(l.edge.vertex0, p0);
+            positions.get(l.edge.vertex0, p0);
             Vector2f v0 = coordSys.project(p0);
 
-            propPosition.get(l.edge.vertex1, p1);
+            positions.get(l.edge.vertex1, p1);
             Vector2f v1 = coordSys.project(p1);
 
             System.out.println("Adding Edge " + p0 + " -> " + p1 + " (" + v0 + " -> " + v1 + ")");

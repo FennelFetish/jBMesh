@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -10,7 +10,7 @@ import com.jme3.math.Vector3f;
 public class Inset {
     private final FaceOps faceOps;
     private final ExtrudeFace extrusion;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
 
     private float thickness = 0.6f; // relative factor, TODO: absolute?
     private float depth = 1.0f;
@@ -19,7 +19,7 @@ public class Inset {
     public Inset(BMesh bmesh, float thickness, float depth) {
         faceOps = new FaceOps(bmesh);
         extrusion = new ExtrudeFace(bmesh);
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
         
         this.thickness = thickness;
         this.depth = depth;
@@ -28,27 +28,27 @@ public class Inset {
 
     public void apply(Face face) {
         extrusion.apply(face);
-        extrusion.copyVertexProperties();
+        extrusion.copyVertexAttributes();
 
         Vector3f p = new Vector3f();
         Vector3f centroid = faceOps.centroid(face);
         Vector3f normal = faceOps.normal(face).multLocal(-depth);
 
         for(Vertex vertex : face.vertices()) {
-            propPosition.get(vertex, p);
+            positions.get(vertex, p);
             p.subtractLocal(centroid);
             p.multLocal(thickness);
             p.addLocal(centroid);
-            propPosition.set(vertex, p);
+            positions.set(vertex, p);
         }
 
         extrusion.apply(face);
-        extrusion.copyVertexProperties();
+        extrusion.copyVertexAttributes();
 
         for(Vertex vertex : face.vertices()) {
-            propPosition.get(vertex, p);
+            positions.get(vertex, p);
             p.addLocal(normal);
-            propPosition.set(vertex, p);
+            positions.set(vertex, p);
         }
     }
 }

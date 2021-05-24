@@ -1,61 +1,90 @@
 package ch.alchemists.jbmesh.conversion;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
 import ch.alchemists.jbmesh.data.Element;
-import ch.alchemists.jbmesh.data.property.ColorProperty;
-import ch.alchemists.jbmesh.data.property.FloatTupleProperty;
-import ch.alchemists.jbmesh.data.property.Vec2Property;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
-import ch.alchemists.jbmesh.structure.Vertex;
+import ch.alchemists.jbmesh.data.property.ColorAttribute;
+import ch.alchemists.jbmesh.data.property.FloatTupleAttribute;
+import ch.alchemists.jbmesh.data.property.Vec2Attribute;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.util.BufferUtils;
 import java.nio.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class VertexBufferUtils {
-    public static <E extends Element> BMeshProperty<E, ?> createProperty(VertexBuffer buffer, Class<E> elementType) {
+    private static final Map<String, VertexBuffer.Type> EXPORT_ATTRIBUTE_MAP;
+    static {
+        Map<String, VertexBuffer.Type> map = new HashMap<>();
+
+        map.put(BMeshAttribute.Position,     VertexBuffer.Type.Position);
+        map.put(BMeshAttribute.Normal,       VertexBuffer.Type.Normal);
+        map.put(BMeshAttribute.TexCoord,     VertexBuffer.Type.TexCoord);
+        map.put(BMeshAttribute.Color,        VertexBuffer.Type.Color);
+        map.put(BMeshAttribute.Index,        VertexBuffer.Type.Index);
+
+        EXPORT_ATTRIBUTE_MAP = Collections.unmodifiableMap(map);
+    }
+
+    public static VertexBuffer.Type getVertexBufferType(String bmeshAttributeName) {
+        return EXPORT_ATTRIBUTE_MAP.get(bmeshAttributeName);
+    }
+
+
+    private static final Map<VertexBuffer.Type, String> IMPORT_ATTRIBUTE_MAP;
+    static {
+        Map<VertexBuffer.Type, String> map = new HashMap<>();
+        for(Map.Entry<String, VertexBuffer.Type> entry : EXPORT_ATTRIBUTE_MAP.entrySet())
+            map.put(entry.getValue(), entry.getKey());
+        IMPORT_ATTRIBUTE_MAP = Collections.unmodifiableMap(map);
+    }
+
+    public static String getBMeshAttributeName(VertexBuffer.Type vertexBufferType) {
+        return IMPORT_ATTRIBUTE_MAP.get(vertexBufferType);
+    }
+
+
+
+    public static <E extends Element> BMeshAttribute<E, ?> createBMeshAttribute(VertexBuffer buffer, Class<E> elementType) {
         final int components = buffer.getNumComponents();
 
         switch(buffer.getBufferType()) {
             case Position:
                 assert components == 3;
-                return new Vec3Property<E>(Vertex.Position);
+                return new Vec3Attribute<E>(BMeshAttribute.Position);
 
             case Normal:
                 assert components == 3;
-                return new Vec3Property<E>(Vertex.Normal);
+                return new Vec3Attribute<E>(BMeshAttribute.Normal);
 
             case TexCoord: {
-                // TODO: How are algorithms supposed to deal with properties of different size?
-                //       Wrapper properties that e.g. return z=0 if it only has 2 components?
+                // TODO: How are algorithms supposed to deal with attributes of different size?
+                //       Wrapper attributes that e.g. return z=0 if it only has 2 components?
+                //       Expect users to convert attributes?
                 if(components == 2)
-                    return new Vec2Property<E>(Vertex.TexCoord);
+                    return new Vec2Attribute<E>(BMeshAttribute.TexCoord);
                 else if(components == 3)
-                    return new Vec3Property<E>(Vertex.TexCoord);
+                    return new Vec3Attribute<E>(BMeshAttribute.TexCoord);
                 else
-                    return new FloatTupleProperty<E>(Vertex.TexCoord, components);
+                    return new FloatTupleAttribute<E>(BMeshAttribute.TexCoord, components);
             }
 
             case Color:
                 assert components == 4;
-                return new ColorProperty<>(Vertex.Color);
+                return new ColorAttribute<>(BMeshAttribute.Color);
         }
 
         throw new UnsupportedOperationException("VertexBuffer type '" + buffer.getBufferType().name() + "' not supported.");
     }
 
-    public static BMeshProperty<Vertex, ?> createVertexProperty(BMeshData<Vertex> bmeshData, VertexBuffer buffer) {
-        BMeshProperty<Vertex, ?> property = createProperty(buffer, Vertex.class);
-        setData(bmeshData, buffer, property);
-        return property;
-    }
-
     @SuppressWarnings("unchecked")
-    public static <E extends Element, TArray> void setData(BMeshData<E> bmeshData, VertexBuffer buffer, BMeshProperty<E, TArray> property) {
+    public static <E extends Element, TArray> void setData(BMeshData<E> bmeshData, VertexBuffer buffer, BMeshAttribute<E, TArray> attribute) {
         Object array = VertexBufferUtils.getArray(buffer);
 
-        //System.out.println("Adding property '" + property.name + "' with " + Array.getLength(array) + " elements, components = " + property.numComponents);
-        bmeshData.addProperty(property, (TArray) array);
+        //System.out.println("Adding attribute '" + attribute.name + "' with " + Array.getLength(array) + " elements, components = " + attribute.numComponents);
+        bmeshData.addAttribute(attribute, (TArray) array);
     }
 
 

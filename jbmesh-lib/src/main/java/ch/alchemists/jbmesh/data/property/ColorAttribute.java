@@ -4,8 +4,8 @@ import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.Element;
 import com.jme3.math.ColorRGBA;
 
-public class ColorProperty<E extends Element> extends FloatTupleProperty<E> {
-    public ColorProperty(String name) {
+public class ColorAttribute<E extends Element> extends FloatTupleAttribute<E> {
+    public ColorAttribute(String name) {
         super(name, 4);
     }
 
@@ -37,16 +37,16 @@ public class ColorProperty<E extends Element> extends FloatTupleProperty<E> {
     }
 
 
-    public static <E extends Element> ColorProperty<E> get(String name, BMeshData<E> meshData) {
-        return (ColorProperty<E>) getProperty(name, meshData, float[].class);
+    public static <E extends Element> ColorAttribute<E> get(String name, BMeshData<E> meshData) {
+        return (ColorAttribute<E>) getAttribute(name, meshData, float[].class);
     }
 
-    public static <E extends Element> ColorProperty<E> getOrCreate(String name, BMeshData<E> meshData) {
-        ColorProperty<E> prop = get(name, meshData);
-        if(prop == null) {
-            prop = new ColorProperty<>(name);
-            meshData.addProperty(prop);
+    public static <E extends Element> ColorAttribute<E> getOrCreate(String name, BMeshData<E> meshData) {
+        ColorAttribute<E> attribute = get(name, meshData);
+        if(attribute == null) {
+            attribute = new ColorAttribute<>(name);
+            meshData.addAttribute(attribute);
         }
-        return prop;
+        return attribute;
     }
 }

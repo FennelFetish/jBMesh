@@ -1,18 +1,18 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
-import ch.alchemists.jbmesh.data.property.BooleanProperty;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.BooleanAttribute;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.Vector3f;
 
 public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
-    private static final String PROPERTY_EDGE_CREASE = "AngleNormalCalculator_EdgeCrease";
+    private static final String ATTRIBUTE_EDGE_CREASE = "AngleNormalCalculator_EdgeCrease";
 
     protected FaceOps faceOps;
 
-    protected Vec3Property<Vertex> propPosition;
-    protected BooleanProperty<Edge> propEdgeCrease;
+    protected Vec3Attribute<Vertex> positions;
+    protected BooleanAttribute<Edge> edgeCrease;
     //protected final Map<Edge, Boolean> edgeCreases = new HashMap<>();
 
     protected final transient Vector3f tempV1 = new Vector3f();
@@ -20,14 +20,14 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
 
     public AngleNormalCalculator() {
-        // TODO: Don't add properties but use maps when recalculating normals for only a selection?
+        // TODO: Don't add attributes but use maps when recalculating normals for only a selection?
 
         /*
         With face normals:
         Norm Gen                                               4629.6860000         %     92.5937199  119.623899  50
         Norm Gen                                               4586.8600000         %     91.7371999  119.487299  50
 
-        With propEdgeCrease:
+        With edgeCrease attribute:
         Norm Gen                                               3569.6097000         %     71.3921940  107.608600  50
         Norm Gen                                               3640.2288999         %     72.8045779  108.164400  50
         Norm Gen                                               3605.3930000         %     72.1078600  108.670200  50
@@ -42,8 +42,8 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
     @Override
     public void prepare(BMesh bmesh, float creaseAngle) {
-        propEdgeCrease = BooleanProperty.getOrCreate(PROPERTY_EDGE_CREASE, bmesh.edges());
-        propPosition   = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        edgeCrease = BooleanAttribute.getOrCreate(ATTRIBUTE_EDGE_CREASE, bmesh.edges());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
         faceOps = new FaceOps(bmesh);
 
         for(Edge edge : bmesh.edges()) {
@@ -57,24 +57,24 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
             faceOps.normal(face2, tempV2);
 
             /*if(tempV1.x == 0 && tempV1.y == 0 && tempV1.z == 0) {
-                propEdgeCrease.set(edge, true);
+                attrEdgeCrease.set(edge, true);
                 continue;
             }
             if(tempV2.x == 0 && tempV2.y == 0 && tempV2.z == 0) {
-                propEdgeCrease.set(edge, true);
+                attrEdgeCrease.set(edge, true);
                 continue;
             }*/
 
             boolean crease = tempV1.angleBetween(tempV2) >= creaseAngle;
-            propEdgeCrease.set(edge, crease);
+            edgeCrease.set(edge, crease);
         }
     }
 
     @Override
     public void cleanup(BMesh bmesh) {
-        bmesh.edges().removeProperty(propEdgeCrease);
-        propEdgeCrease = null;
-        propPosition = null;
+        bmesh.edges().removeAttribute(edgeCrease);
+        edgeCrease = null;
+        positions = null;
         faceOps = null;
         //edgeCreases.clear();
     }
@@ -89,13 +89,12 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
         Vertex vNext = loop.nextFaceLoop.vertex;
         Vertex vPrev = loop.prevFaceLoop.vertex;
 
-        propPosition.get(vertex, tempV1);
+        positions.get(vertex, tempV1);
         tempV2.set(tempV1);
-        propPosition.subtractLocal(tempV1, vNext);
-        propPosition.subtractLocal(tempV2, vPrev);
+        positions.subtractLocal(tempV1, vNext);
+        positions.subtractLocal(tempV2, vPrev);
 
-        store.set(tempV1);
-        store.crossLocal(tempV2); // Don't normalize cross product so it includes triangle area
+        store.set(tempV1).crossLocal(tempV2); // Don't normalize cross product so it includes triangle area
 
         // Degenerate faces? (happens for example after cutting)
         if(store.x == 0 && store.y == 0 && store.z == 0) {
@@ -112,7 +111,7 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
     @Override
     public boolean isCrease(Edge edge, Face face1, Face face2, float creaseAngle) {
-        return propEdgeCrease.get(edge);
+        return edgeCrease.get(edge);
 
         /*Boolean crease = edgeCreases.get(edge);
         if(crease != null)

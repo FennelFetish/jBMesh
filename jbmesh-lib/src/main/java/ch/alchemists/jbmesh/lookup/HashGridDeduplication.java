@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.lookup;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.HashGrid;
@@ -27,7 +27,7 @@ public class HashGridDeduplication implements VertexDeduplication {
     private final float cellSize;
 
     private final BMesh bmesh;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
     private final HashGrid<List<Vertex>> grid;
     private final Vector3f p = new Vector3f();
 
@@ -43,13 +43,13 @@ public class HashGridDeduplication implements VertexDeduplication {
         cellSize = epsilon * 2.0f;
 
         grid = new HashGrid<>(cellSize);
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
     @Override
     public void addExisting(Vertex vertex) {
-        propPosition.get(vertex, p);
+        positions.get(vertex, p);
 
         HashGrid.Index gridIndex = grid.getIndexForCoords(p);
         List<Vertex> vertices = grid.get(gridIndex);
@@ -62,7 +62,7 @@ public class HashGridDeduplication implements VertexDeduplication {
     }
 
     public void remove(Vertex vertex) {
-        propPosition.get(vertex, p);
+        positions.get(vertex, p);
 
         HashGrid.Index gridIndex = grid.getIndexForCoords(p);
         List<Vertex> vertices = grid.get(gridIndex);
@@ -82,32 +82,32 @@ public class HashGridDeduplication implements VertexDeduplication {
 
 
     @Override
-    public Vertex getVertex(Vector3f location) {
-        HashGrid.Index gridIndex = grid.getIndexForCoords(location);
+    public Vertex getVertex(Vector3f position) {
+        HashGrid.Index gridIndex = grid.getIndexForCoords(position);
         List<Vertex> vertices = grid.get(gridIndex);
 
         if(vertices != null) {
-            Vertex vertex = searchVertex(vertices, location);
+            Vertex vertex = searchVertex(vertices, position);
             if(vertex != null)
                 return vertex;
         }
 
-        return searchVertexWalk(gridIndex, location);
+        return searchVertexWalk(gridIndex, position);
     }
 
 
     @Override
-    public Vertex getOrCreateVertex(Vector3f location) {
-        HashGrid.Index gridIndex = grid.getIndexForCoords(location);
+    public Vertex getOrCreateVertex(Vector3f position) {
+        HashGrid.Index gridIndex = grid.getIndexForCoords(position);
         List<Vertex> centerVertices = grid.get(gridIndex);
 
         if(centerVertices != null) {
-            Vertex vertex = searchVertex(centerVertices, location);
+            Vertex vertex = searchVertex(centerVertices, position);
             if(vertex != null)
                 return vertex;
         }
 
-        Vertex vertex = searchVertexWalk(gridIndex, location);
+        Vertex vertex = searchVertexWalk(gridIndex, position);
         if(vertex != null)
             return vertex;
 
@@ -116,35 +116,35 @@ public class HashGridDeduplication implements VertexDeduplication {
             grid.set(gridIndex, centerVertices);
         }
 
-        vertex = bmesh.createVertex(location);
+        vertex = bmesh.createVertex(position);
         centerVertices.add(vertex);
         return vertex;
     }
 
 
-    private int[][] getWalkDirections(HashGrid.Index gridIndex, Vector3f location) {
+    private int[][] getWalkDirections(HashGrid.Index gridIndex, Vector3f position) {
         float pivotX = (gridIndex.x * cellSize) - epsilon;
         float pivotY = (gridIndex.y * cellSize) - epsilon;
         float pivotZ = (gridIndex.z * cellSize) - epsilon;
 
         int index = 0;
-        if(location.z > pivotZ) index |= 1;
-        if(location.y > pivotY) index |= 2;
-        if(location.x > pivotX) index |= 4;
+        if(position.z > pivotZ) index |= 1;
+        if(position.y > pivotY) index |= 2;
+        if(position.x > pivotX) index |= 4;
 
         return WALK_DIRECTION[index];
     }
 
 
-    private Vertex searchVertexWalk(HashGrid.Index gridIndex, Vector3f location) {
-        int[][] directions = getWalkDirections(gridIndex, location);
+    private Vertex searchVertexWalk(HashGrid.Index gridIndex, Vector3f position) {
+        int[][] directions = getWalkDirections(gridIndex, position);
 
         for(int[] dir : directions) {
             List<Vertex> vertices = grid.getNeighbor(gridIndex, dir[0], dir[1], dir[2]);
             if(vertices == null)
                 continue;
 
-            Vertex vertex = searchVertex(vertices, location);
+            Vertex vertex = searchVertex(vertices, position);
             if(vertex != null)
                 return vertex;
         }
@@ -153,10 +153,10 @@ public class HashGridDeduplication implements VertexDeduplication {
     }
 
 
-    private Vertex searchVertex(List<Vertex> vertices, Vector3f location) {
+    private Vertex searchVertex(List<Vertex> vertices, Vector3f position) {
         for(Vertex vertex : vertices) {
-            propPosition.get(vertex, p);
-            if(p.distanceSquared(location) <= epsilonSquared)
+            positions.get(vertex, p);
+            if(p.distanceSquared(position) <= epsilonSquared)
                 return vertex;
         }
 

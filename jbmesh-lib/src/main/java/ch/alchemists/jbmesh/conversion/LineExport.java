@@ -1,8 +1,8 @@
 package ch.alchemists.jbmesh.conversion;
 
-import ch.alchemists.jbmesh.data.property.IntTupleProperty;
-import ch.alchemists.jbmesh.data.property.ObjectTupleProperty;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.IntTupleAttribute;
+import ch.alchemists.jbmesh.data.property.ObjectTupleAttribute;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -11,21 +11,20 @@ import com.jme3.scene.VertexBuffer;
 import java.util.List;
 
 public class LineExport extends Export<Edge> {
-    private final ObjectTupleProperty<Edge, Vertex> propEdgeVertex = new ObjectTupleProperty<>(Edge.VertexMap, 2, Vertex[]::new);
-    private final IntTupleProperty<Edge> propEdgeIndices = new IntTupleProperty<>("LineExport_EdgeIndices", 2);
+    private final ObjectTupleAttribute<Edge, Vertex> attrEdgeVertex = new ObjectTupleAttribute<>(Edge.VertexMap, 2, Vertex[]::new);
+    private final IntTupleAttribute<Edge> attrEdgeIndices = new IntTupleAttribute<>("LineExport_EdgeIndices", 2);
 
 
     public LineExport(BMesh bmesh) {
         super(bmesh);
 
-        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
-        addVertexProperty(VertexBuffer.Type.Position, propPosition);
+        useVertexAttribute(VertexBuffer.Type.Position, Vertex.Position);
 
-        propEdgeVertex.setComparable(false);
-        bmesh.edges().addProperty(propEdgeVertex);
+        attrEdgeVertex.setComparable(false);
+        bmesh.edges().addAttribute(attrEdgeVertex);
 
-        propEdgeIndices.setComparable(false);
-        bmesh.edges().addProperty(propEdgeIndices);
+        attrEdgeIndices.setComparable(false);
+        bmesh.edges().addAttribute(attrEdgeIndices);
 
         outputMesh.setMode(Mesh.Mode.Lines);
     }
@@ -41,13 +40,13 @@ public class LineExport extends Export<Edge> {
     protected void setIndexBuffer() {
         // Make index buffer
         for(Edge edge : bmesh.edges()) {
-            Vertex v0 = propEdgeVertex.get(edge, 0);
-            Vertex v1 = propEdgeVertex.get(edge, 1);
-            //propEdgeIndices.set(edge, (short) v0.getIndex(), (short) v1.getIndex()); // TODO: int?
-            propEdgeIndices.setValues(edge, v0.getIndex(), v1.getIndex()); // TODO: int?
+            Vertex v0 = attrEdgeVertex.get(edge, 0);
+            Vertex v1 = attrEdgeVertex.get(edge, 1);
+            //attrEdgeIndices.set(edge, (short) v0.getIndex(), (short) v1.getIndex()); // TODO: int?
+            attrEdgeIndices.setValues(edge, v0.getIndex(), v1.getIndex()); // TODO: int?
         }
 
-        outputMesh.setBuffer(VertexBuffer.Type.Index, 2, propEdgeIndices.array());
+        outputMesh.setBuffer(VertexBuffer.Type.Index, 2, attrEdgeIndices.array());
     }
 
 
@@ -61,10 +60,10 @@ public class LineExport extends Export<Edge> {
     @Override
     protected void setVertexReference(Vertex contactPoint, Edge element, Vertex ref) {
         if(element.vertex0 == contactPoint)
-            propEdgeVertex.set(element, 0, ref);
+            attrEdgeVertex.set(element, 0, ref);
         else {
             assert element.vertex1 == contactPoint;
-            propEdgeVertex.set(element, 1, ref);
+            attrEdgeVertex.set(element, 1, ref);
         }
     }
 
@@ -72,10 +71,10 @@ public class LineExport extends Export<Edge> {
     @Override
     protected Vertex getVertexReference(Vertex contactPoint, Edge element) {
         if(element.vertex0 == contactPoint)
-            return propEdgeVertex.get(element, 0);
+            return attrEdgeVertex.get(element, 0);
         else {
             assert element.vertex1 == contactPoint;
-            return propEdgeVertex.get(element, 1);
+            return attrEdgeVertex.get(element, 1);
         }
     }
 }

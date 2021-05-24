@@ -1,11 +1,11 @@
 package ch.alchemists.jbmesh.data.property;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.Element;
 
-public class ShortTupleProperty<E extends Element> extends BMeshProperty<E, short[]> {
-    public ShortTupleProperty(String name, int components) {
+public class ShortTupleAttribute<E extends Element> extends BMeshAttribute<E, short[]> {
+    public ShortTupleAttribute(String name, int components) {
         super(name, components);
     }
 
@@ -48,7 +48,7 @@ public class ShortTupleProperty<E extends Element> extends BMeshProperty<E, shor
         return new short[size];
     }
 
-    public static <E extends Element> ShortTupleProperty<E> get(String name, BMeshData<E> meshData) {
-        return (ShortTupleProperty<E>) getProperty(name, meshData, short[].class);
+    public static <E extends Element> ShortTupleAttribute<E> get(String name, BMeshData<E> meshData) {
+        return (ShortTupleAttribute<E>) getAttribute(name, meshData, short[].class);
     }
 }

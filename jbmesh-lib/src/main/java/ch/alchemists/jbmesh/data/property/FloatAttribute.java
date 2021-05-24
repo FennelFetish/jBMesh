@@ -1,14 +1,14 @@
 package ch.alchemists.jbmesh.data.property;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.Element;
 
-public class FloatProperty<E extends Element> extends BMeshProperty<E, float[]> {
+public class FloatAttribute<E extends Element> extends BMeshAttribute<E, float[]> {
     private static final float EPSILON = 0.001f;
 
 
-    public FloatProperty(String name) {
+    public FloatAttribute(String name) {
         super(name);
     }
 
@@ -34,17 +34,17 @@ public class FloatProperty<E extends Element> extends BMeshProperty<E, float[]> 
     }
 
 
-    public static <E extends Element> FloatProperty<E> get(String name, BMeshData<E> meshData) {
-        return (FloatProperty<E>) getProperty(name, meshData, float[].class);
+    public static <E extends Element> FloatAttribute<E> get(String name, BMeshData<E> meshData) {
+        return (FloatAttribute<E>) getAttribute(name, meshData, float[].class);
     }
 
-    public static <E extends Element> FloatProperty<E> getOrCreate(String name, BMeshData<E> meshData) {
-        FloatProperty<E> prop = get(name, meshData);
-        if(prop == null) {
-            prop = new FloatProperty<>(name);
-            meshData.addProperty(prop);
+    public static <E extends Element> FloatAttribute<E> getOrCreate(String name, BMeshData<E> meshData) {
+        FloatAttribute<E> attribute = get(name, meshData);
+        if(attribute == null) {
+            attribute = new FloatAttribute<>(name);
+            meshData.addAttribute(attribute);
         }
-        return prop;
+        return attribute;
     }
 
 

@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.sweeptriang;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
@@ -21,12 +21,12 @@ public class SweepTriangulation {
     private final EdgeSet edges = new EdgeSet();
 
     private final Preparation preparation = new Preparation(sweepVertices);
-    private final Vec3Property<Vertex> propPosition; // TODO: Remove? Pass to addFace()?
+    private final Vec3Attribute<Vertex> positions; // TODO: Remove? Pass to addFace()?
     private TriangleCallback cb;
 
 
     public SweepTriangulation(BMesh bmesh) {
-        this.propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        this.positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -40,7 +40,7 @@ public class SweepTriangulation {
 
 
     public void addFace(Face face) {
-        preparation.addFace(face.loops(), new LoopExtractor(propPosition));
+        preparation.addFace(face.loops(), new LoopExtractor(positions));
     }
 
     public void addFaceWithPositions(List<Vector3f> face) {
@@ -48,7 +48,7 @@ public class SweepTriangulation {
     }
 
     public void addFaceWithLoops(List<Loop> face) {
-        preparation.addFace(face, new LoopExtractor(propPosition));
+        preparation.addFace(face, new LoopExtractor(positions));
     }
 
 
@@ -255,15 +255,15 @@ public class SweepTriangulation {
 
 
     private static class LoopExtractor implements Preparation.Extractor<Loop> {
-        private final Vec3Property<Vertex> propPosition;
+        private final Vec3Attribute<Vertex> positions;
 
-        private LoopExtractor(Vec3Property<Vertex> propPosition) {
-            this.propPosition = propPosition;
+        private LoopExtractor(Vec3Attribute<Vertex> positions) {
+            this.positions = positions;
         }
 
         @Override
         public Vector3f position(Loop loop, Vector3f store) {
-            return propPosition.get(loop.vertex, store);
+            return positions.get(loop.vertex, store);
         }
 
         @Override

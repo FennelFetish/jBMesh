@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.tools;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.sweeptriang.SweepTriangulation;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -98,12 +98,12 @@ public class SweepTriangulationEditor extends SimpleApplication {
         PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withX(Vector3f.UNIT_X, Vector3f.UNIT_Z);
         DebugVisual.setPointTransformation("SweepTriangulation", p -> coordSys.unproject(new Vector2f(p.x, p.y)));
 
-        Vec3Property<Vertex> propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
         triangulation.setTriangleCallback((v1, v2, v3) -> {
             //System.out.println("Triangle: " + (v1.index+1) + " " + (v2.index+1) + " " + (v3.index+1));
-            Vector3f p1 = propPosition.get(v1.vertex);
-            Vector3f p2 = propPosition.get(v2.vertex);
-            Vector3f p3 = propPosition.get(v3.vertex);
+            Vector3f p1 = positions.get(v1.vertex);
+            Vector3f p2 = positions.get(v2.vertex);
+            Vector3f p3 = positions.get(v3.vertex);
             dbg.addFace(p1, p2, p3);
         });
 

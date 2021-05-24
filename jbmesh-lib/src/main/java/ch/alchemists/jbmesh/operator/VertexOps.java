@@ -1,18 +1,18 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.math.Vector3f;
 
 public class VertexOps {
     private final BMesh bmesh;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
 
 
     public VertexOps(BMesh bmesh) {
         this.bmesh = bmesh;
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -21,7 +21,7 @@ public class VertexOps {
     }
 
     public void move(Vertex vertex, float dx, float dy, float dz) {
-        propPosition.modify(vertex, v -> {
+        positions.modify(vertex, v -> {
             v.x += dx;
             v.y += dy;
             v.z += dz;
@@ -48,13 +48,13 @@ public class VertexOps {
 
         public VertexEdgeComparator(Vertex vertex) {
             this.vertex = vertex;
-            propPosition.get(vertex, p);
+            positions.get(vertex, p);
         }
 
         @Override
         public int compare(Edge edge1, Edge edge2) {
-            propPosition.get(edge1.getOther(vertex), p1);
-            propPosition.get(edge2.getOther(vertex), p2);
+            positions.get(edge1.getOther(vertex), p1);
+            positions.get(edge2.getOther(vertex), p2);
             p1.subtractLocal(p);
             p2.subtractLocal(p);
 

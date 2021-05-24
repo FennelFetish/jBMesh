@@ -1,14 +1,14 @@
 package ch.alchemists.jbmesh.examples;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.Element;
 import com.jme3.math.Vector2f;
 
-public class UserProperties {
-    // Example user-defined property
-    public static class LongProperty<E extends Element> extends BMeshProperty<E, long[]> {
-        public LongProperty(String name) {
+public class UserAttributes {
+    // Example user-defined attribute
+    public static class LongAttribute<E extends Element> extends BMeshAttribute<E, long[]> {
+        public LongAttribute(String name) {
             super(name);
         }
 
@@ -30,15 +30,15 @@ public class UserProperties {
             return new long[size];
         }
 
-        public static <E extends Element> LongProperty<E> get(String name, BMeshData<E> meshData) {
-            return (LongProperty<E>) getProperty(name, meshData, long[].class);
+        public static <E extends Element> LongAttribute<E> get(String name, BMeshData<E> meshData) {
+            return (LongAttribute<E>) getAttribute(name, meshData, long[].class);
         }
     }
 
 
-    // Example of property for arbitrary objects
-    public static class Vec2TupleProperty<E extends Element> extends BMeshProperty<E, Vector2f[]> {
-        public Vec2TupleProperty(String name) {
+    // Example of attribute for arbitrary objects
+    public static class Vec2TupleAttribute<E extends Element> extends BMeshAttribute<E, Vector2f[]> {
+        public Vec2TupleAttribute(String name) {
             super(name, 2);
         }
 

@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.conversion;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.Element;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -13,14 +13,14 @@ import java.util.Objects;
 import java.util.logging.Logger;
 
 public abstract class Export<E extends Element> {
-    private static class PropertyMapping<E extends Element, TArray> {
+    private static class AttributeMapping<E extends Element, TArray> {
         private final VertexBuffer.Type type;
         private final Class<?> arrayType;
 
-        private final BMeshProperty<E, TArray> src; // null for vertex properties
-        private final BMeshProperty<Vertex, TArray> dest;
+        private final BMeshAttribute<E, TArray> src; // null for vertex attributes
+        private final BMeshAttribute<Vertex, TArray> dest;
 
-        public PropertyMapping(VertexBuffer.Type type, BMeshProperty<E, TArray> src, BMeshProperty<Vertex, TArray> dest) {
+        public AttributeMapping(VertexBuffer.Type type, BMeshAttribute<E, TArray> src, BMeshAttribute<Vertex, TArray> dest) {
             this.type = type;
             this.src  = src;
             this.dest = dest;
@@ -35,8 +35,8 @@ public abstract class Export<E extends Element> {
     protected final BMesh bmesh;
     protected final Mesh outputMesh = new Mesh();
 
-    private final List<PropertyMapping<E, ?>> vertexProperties = new ArrayList<>(4);
-    private final List<PropertyMapping<E, ?>> propertyMappings = new ArrayList<>(4);
+    private final List<AttributeMapping<E, ?>> vertexAttributes = new ArrayList<>(4);
+    private final List<AttributeMapping<E, ?>> mappedAttributes = new ArrayList<>(4);
 
     private final List<Vertex> tempVertices = new ArrayList<>();
     private final List<Vertex> virtualVertices = new ArrayList<>();
@@ -54,46 +54,61 @@ public abstract class Export<E extends Element> {
     protected abstract Vertex getVertexReference(Vertex contactPoint, E element);
 
 
-    public void addVertexProperty(VertexBuffer.Type type, BMeshProperty<Vertex, ?> vertexProperty) {
-        Objects.requireNonNull(vertexProperty);
-        vertexProperties.add(new PropertyMapping<>(type, null, vertexProperty));
+    public void useVertexAttribute(BMeshAttribute<Vertex, ?> vertexAttribute) {
+        Objects.requireNonNull(vertexAttribute);
+        VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(vertexAttribute.name);
+        vertexAttributes.add(new AttributeMapping<>(type, null, vertexAttribute));
     }
 
-    // TODO: Create mapping [BMeshProperty name] -> [VertexBuffer.Type]
-    public void addVertexProperty(VertexBuffer.Type type, String vertexPropertyName) {
-        BMeshProperty<Vertex, ?> property = bmesh.vertices().getProperty(vertexPropertyName);
-        if(property == null)
-            throw new IllegalArgumentException("Vertex property '" + vertexPropertyName + "' does not exist.");
+    public void useVertexAttribute(String attributeName) {
+        VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(attributeName);
+        useVertexAttribute(type, attributeName);
+    }
 
-        vertexProperties.add(new PropertyMapping<>(type, null, property));
+    public void useVertexAttribute(VertexBuffer.Type type, String attributeName) {
+        BMeshAttribute<Vertex, ?> attribute = bmesh.vertices().getAttribute(attributeName);
+        if(attribute == null)
+            throw new IllegalArgumentException("Vertex attribute '" + attributeName + "' does not exist.");
+
+        vertexAttributes.add(new AttributeMapping<>(type, null, attribute));
+    }
+
+    public void useVertexAttribute(VertexBuffer.Type type, BMeshAttribute<Vertex, ?> vertexAttribute) {
+        Objects.requireNonNull(vertexAttribute);
+        vertexAttributes.add(new AttributeMapping<>(type, null, vertexAttribute));
     }
 
 
-    public <TArray> void addPropertyMapping(VertexBuffer.Type type, BMeshProperty<E, TArray> src, BMeshProperty<Vertex, TArray> dest) {
-        Objects.requireNonNull(src);
-        Objects.requireNonNull(dest);
+    public <TArray> void mapAttribute(BMeshAttribute<E, TArray> src, BMeshAttribute<Vertex, TArray> dest) {
+        VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(dest.name);
+        mapAttribute(type, src, dest);
+    }
 
-        if(src.numComponents != dest.numComponents)
-            throw new IllegalArgumentException("Properties don't have the same number of components.");
-
-        propertyMappings.add(new PropertyMapping<>(type, src, dest));
+    public <TArray> void mapAttribute(BMeshAttribute<E, TArray> src, String vertexAttributeName) {
+        VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(vertexAttributeName);
+        mapAttribute(type, src, vertexAttributeName);
     }
 
     @SuppressWarnings("unchecked")
-    public <TArray> void addPropertyMapping(VertexBuffer.Type type, BMeshProperty<E, TArray> src, String vertexPropertyName) {
-        Objects.requireNonNull(src);
-
-        BMeshProperty<Vertex, TArray> dest = (BMeshProperty<Vertex, TArray>) bmesh.vertices().getProperty(vertexPropertyName);
+    public <TArray> void mapAttribute(VertexBuffer.Type type, BMeshAttribute<E, TArray> src, String vertexAttributeName) {
+        BMeshAttribute<Vertex, TArray> dest = (BMeshAttribute<Vertex, TArray>) bmesh.vertices().getAttribute(vertexAttributeName);
         if(dest == null)
-            throw new IllegalArgumentException("Target vertex property '" + vertexPropertyName + "' does not exist.");
+            throw new IllegalArgumentException("Target vertex attribute '" + vertexAttributeName + "' does not exist.");
+
+        mapAttribute(type, src, dest);
+    }
+
+    public <TArray> void mapAttribute(VertexBuffer.Type type, BMeshAttribute<E, TArray> src, BMeshAttribute<Vertex, TArray> dest) {
+        Objects.requireNonNull(src);
+        Objects.requireNonNull(dest);
 
         if(src.getClass() != dest.getClass())
-            throw new IllegalArgumentException("Properties are not of the same type.");
+            throw new IllegalArgumentException("Attributes are not of the same type.");
 
         if(src.numComponents != dest.numComponents)
-            throw new IllegalArgumentException("Properties don't have the same number of components.");
+            throw new IllegalArgumentException("Attributes don't have the same number of components.");
 
-        propertyMappings.add(new PropertyMapping<E, TArray>(type, src, dest));
+        mappedAttributes.add(new AttributeMapping<E, TArray>(type, src, dest));
     }
 
 
@@ -109,13 +124,13 @@ public abstract class Export<E extends Element> {
             bmesh.vertices().destroy(v);
         virtualVertices.clear();
 
-        // If there are no mapped element properties, there is nothing to duplicate
-        if(propertyMappings.isEmpty())
+        // If there are no mapped element attributes, there is nothing to duplicate
+        if(mappedAttributes.isEmpty())
             mapElementsToVertices();
         else
             duplicateVertices();
 
-        bmesh.compactData(); // TODO: Optional
+        bmesh.vertices().compactData(); // TODO: Optional
         setIndexBuffer();
         setBuffers(outputMesh);
         outputMesh.updateBound();
@@ -165,9 +180,9 @@ public abstract class Export<E extends Element> {
 
                 E element = neighbors.get(0);
                 setVertexReference(vertex, element, vertex);
-                copyProperties(element, vertex);
+                copyAttributes(element, vertex);
 
-                // Create virtual Vertex (slot in data array) for elements with different properties
+                // Create virtual Vertex (slot in data array) for elements with different attributes
                 for(int i = 1; i < neighbors.size(); ++i) {
                     element = neighbors.get(i);
 
@@ -183,27 +198,27 @@ public abstract class Export<E extends Element> {
 
 
     private Vertex tryVirtualize(Vertex vertex, List<E> neighbors, E element, int i) {
-        // Compare element properties with previous elements
+        // Compare element attributes with previous elements
         for(int k=0; k<i; ++k) {
             E prev = neighbors.get(k);
-            if(equalProperties(element, prev)) {
+            if(equalAttributes(element, prev)) {
                 Vertex ref = getVertexReference(vertex, prev);
                 assert ref != null;
                 return ref;
             }
         }
 
-        // Different properties found, duplicate vertex
+        // Different attributes found, duplicate vertex
         Vertex ref = bmesh.vertices().createVirtual();
         virtualVertices.add(ref);
-        bmesh.vertices().copyProperties(vertex, ref);
-        copyProperties(element, ref);
+        bmesh.vertices().copyAttributes(vertex, ref);
+        copyAttributes(element, ref);
         return ref;
     }
 
 
-    private boolean equalProperties(E a, E b) {
-        for(PropertyMapping<E, ?> mapping : propertyMappings) {
+    private boolean equalAttributes(E a, E b) {
+        for(AttributeMapping<E, ?> mapping : mappedAttributes) {
             if(!mapping.src.equals(a, b))
                 return false;
         }
@@ -212,28 +227,28 @@ public abstract class Export<E extends Element> {
     }
 
 
-    private void copyProperties(E src, Vertex dest) {
-        for(PropertyMapping<E, ?> mapping : propertyMappings)
+    private void copyAttributes(E src, Vertex dest) {
+        for(AttributeMapping<E, ?> mapping : mappedAttributes)
             mapping.src.copy(src, mapping.dest, dest);
     }
 
 
     private void setBuffers(Mesh outputMesh) {
-        for(PropertyMapping<E, ?> prop : vertexProperties)
-            setBuffer(outputMesh, prop);
+        for(AttributeMapping<E, ?> attr : vertexAttributes)
+            setBuffer(outputMesh, attr);
 
-        for(PropertyMapping<E, ?> mapping : propertyMappings)
+        for(AttributeMapping<E, ?> mapping : mappedAttributes)
             setBuffer(outputMesh, mapping);
     }
 
 
     // TODO: Reuse existing buffers
-    // TODO: Clear previously defined buffers that were removed by removeProperty() (tbd)?
-    private void setBuffer(Mesh mesh, PropertyMapping<E, ?> property) {
-        VertexBuffer.Type type = property.type;
-        Class<?> arrayType     = property.arrayType;
-        int components         = property.dest.numComponents;
-        Object array           = property.dest.array();
+    // TODO: Clear previously defined buffers that were removed by removeAttribute() (tbd)?
+    private void setBuffer(Mesh mesh, AttributeMapping<E, ?> attribute) {
+        VertexBuffer.Type type = attribute.type;
+        Class<?> arrayType     = attribute.arrayType;
+        int components         = attribute.dest.numComponents;
+        Object array           = attribute.dest.array();
 
         if(arrayType == float[].class)
             mesh.setBuffer(type, components, BufferUtils.createFloatBuffer((float[]) array));

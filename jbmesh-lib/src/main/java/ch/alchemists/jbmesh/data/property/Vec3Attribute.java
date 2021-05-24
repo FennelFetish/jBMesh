@@ -5,8 +5,8 @@ import ch.alchemists.jbmesh.data.Element;
 import ch.alchemists.jbmesh.util.Func;
 import com.jme3.math.Vector3f;
 
-public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
-    public Vec3Property(String name) {
+public class Vec3Attribute<E extends Element> extends FloatTupleAttribute<E> {
+    public Vec3Attribute(String name) {
         super(name, 3);
     }
 
@@ -136,16 +136,16 @@ public class Vec3Property<E extends Element> extends FloatTupleProperty<E> {
     }
 
 
-    public static <E extends Element> Vec3Property<E> get(String name, BMeshData<E> meshData) {
-        return (Vec3Property<E>) getProperty(name, meshData, float[].class);
+    public static <E extends Element> Vec3Attribute<E> get(String name, BMeshData<E> meshData) {
+        return (Vec3Attribute<E>) getAttribute(name, meshData, float[].class);
     }
 
-    public static <E extends Element> Vec3Property<E> getOrCreate(String name, BMeshData<E> meshData) {
-        Vec3Property<E> prop = get(name, meshData);
-        if(prop == null) {
-            prop = new Vec3Property<>(name);
-            meshData.addProperty(prop);
+    public static <E extends Element> Vec3Attribute<E> getOrCreate(String name, BMeshData<E> meshData) {
+        Vec3Attribute<E> attribute = get(name, meshData);
+        if(attribute == null) {
+            attribute = new Vec3Attribute<>(name);
+            meshData.addAttribute(attribute);
         }
-        return prop;
+        return attribute;
     }
 }

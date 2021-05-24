@@ -1,8 +1,18 @@
 package ch.alchemists.jbmesh.data;
 
-// TODO: Remember dirty state of elements for each property separately.
-//       A normal generator could use the dirty state of the vertex-position property to determine which face normals have to be regenerated.
-public abstract class BMeshProperty<E extends Element, TArray> {
+// TODO: Remember dirty state of elements for each attribute separately.
+//       A normal generator could use the dirty state of the vertex-position attribute to determine which face normals have to be regenerated.
+public abstract class BMeshAttribute<E extends Element, TArray> {
+    // Attribute names
+    public static final String Position         = "Position";
+    public static final String Normal           = "Normal";
+    public static final String TexCoord         = "TexCoord";
+    public static final String Color            = "Color";
+    public static final String Index            = "Index";
+
+    public static final String VertexMap        = "VertexMap";
+
+
     public final String name;
     public final int numComponents;
 
@@ -11,7 +21,7 @@ public abstract class BMeshProperty<E extends Element, TArray> {
     private boolean comparable = true;
 
 
-    protected BMeshProperty(String name, int numComponents) {
+    protected BMeshAttribute(String name, int numComponents) {
         if(numComponents < 1)
             throw new IllegalArgumentException("Number of components must be at least 1");
 
@@ -19,15 +29,15 @@ public abstract class BMeshProperty<E extends Element, TArray> {
         this.numComponents = numComponents;
     }
 
-    protected BMeshProperty(String name) {
+    protected BMeshAttribute(String name) {
         this(name, 1);
     }
 
 
     @SuppressWarnings("unchecked")
-    protected static <E extends Element, TArray> BMeshProperty<E, TArray> getProperty(String name, BMeshData<E> meshData, Class<TArray> arrayType) {
+    protected static <E extends Element, TArray> BMeshAttribute<E, TArray> getAttribute(String name, BMeshData<E> meshData, Class<TArray> arrayType) {
         // TODO: Check cast?
-        return (BMeshProperty<E, TArray>) meshData.getProperty(name);
+        return (BMeshAttribute<E, TArray>) meshData.getAttribute(name);
     }
 
 
@@ -47,13 +57,13 @@ public abstract class BMeshProperty<E extends Element, TArray> {
         System.arraycopy(data, iFrom, data, iTo, numComponents);
     }
 
-    public <E2 extends Element> void copy(E from, BMeshProperty<E2, ?> otherProperty, E2 otherTo) {
-        if(numComponents != otherProperty.numComponents)
+    public <E2 extends Element> void copy(E from, BMeshAttribute<E2, ?> otherAttribute, E2 otherTo) {
+        if(numComponents != otherAttribute.numComponents)
             throw new IllegalArgumentException("Number of components don't match.");
 
         int iFrom = indexOf(from);
-        int iTo   = otherProperty.indexOf(otherTo);
-        System.arraycopy(data, iFrom, otherProperty.data, iTo, numComponents);
+        int iTo   = otherAttribute.indexOf(otherTo);
+        System.arraycopy(data, iFrom, otherAttribute.data, iTo, numComponents);
     }
 
 

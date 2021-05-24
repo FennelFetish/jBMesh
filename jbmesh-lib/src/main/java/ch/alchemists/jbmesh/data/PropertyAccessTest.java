@@ -1,8 +1,8 @@
 package ch.alchemists.jbmesh.data;
 
-import ch.alchemists.jbmesh.data.property.ColorProperty;
-import ch.alchemists.jbmesh.data.property.IntProperty;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.ColorAttribute;
+import ch.alchemists.jbmesh.data.property.IntAttribute;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -13,8 +13,8 @@ public class PropertyAccessTest {
     
     public PropertyAccessTest(BMesh bmesh) {
         this.bmesh = bmesh;
-        Vec3Property<Face> propFace = new Vec3Property<>("FaceVec");
-        bmesh.faces().addProperty(propFace);
+        Vec3Attribute<Face> propFace = new Vec3Attribute<>("FaceVec");
+        bmesh.faces().addAttribute(propFace);
     }
 
 
@@ -37,20 +37,21 @@ public class PropertyAccessTest {
         //IntProperty<Face> propInt2          = bmesh.faceData().getProperty("FaceVec", IntProperty.class);
         //Vec3Property<Vertex> propInt2          = bmesh.faceData().getProperty("FaceVec", Vec3Property.class);
 
-        IntProperty<Face> propFace6 = IntProperty.get("FaceVec", bmesh.faces()); // ok fails
+        IntAttribute<Face> propFace6 = IntAttribute.get("FaceVec", bmesh.faces()); // ok fails
     }
 
 
     public void shouldWork() {
-        Vec3Property<Face> propFace3 = Vec3Property.get("A", bmesh.faces());
+        Vec3Attribute<Face> propFace3 = Vec3Attribute.get("A", bmesh.faces());
         assert propFace3 == null;
 
-        Vec3Property<Face> propFace5 = (Vec3Property<Face>) bmesh.faces().getProperty("FaceVec");
-        Vec3Property<Face> propFace6 = Vec3Property.get("FaceVec", bmesh.faces());
+        Vec3Attribute<Face> propFace5 = (Vec3Attribute<Face>) bmesh.faces().getAttribute("FaceVec");
+        Vec3Attribute<Face> propFace6 = (Vec3Attribute<Face>) bmesh.faces().getAttribute("FaceVec", float[].class);
+        Vec3Attribute<Face> propFace7 = Vec3Attribute.get("FaceVec", bmesh.faces());
 
         //Vec3Property<Face> propFace4        = bmesh.faceData().getProperty("FaceVec");
 
         //Vec3Property<Vertex> propPosition = (Vec3Property<Vertex>) bmesh.vertexData().getProperty(BMeshProperty.Vertex.POSITION);
-        ColorProperty<Vertex> propVertexColor = (ColorProperty<Vertex>) bmesh.vertices().getProperty(Vertex.Color);
+        ColorAttribute<Vertex> propVertexColor = (ColorAttribute<Vertex>) bmesh.vertices().getAttribute(Vertex.Color);
     }
 }

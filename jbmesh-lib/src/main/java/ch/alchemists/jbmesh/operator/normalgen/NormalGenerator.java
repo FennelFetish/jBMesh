@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
@@ -43,7 +43,7 @@ public class NormalGenerator {
     private final BMesh bmesh;
     private NormalCalculator normalCalculator;
 
-    private final Vec3Property<Loop> propLoopNormal;
+    private final Vec3Attribute<Loop> loopNormals;
     private final Vector3f tempNormal = new Vector3f();
 
     private float creaseAngle = 0.0f; // Minimum angle for hard edges
@@ -65,7 +65,7 @@ public class NormalGenerator {
         this.normalCalculator = normalCalculator;
         setCreaseAngle(creaseAngle);
 
-        propLoopNormal = Vec3Property.getOrCreate(Loop.Normal, bmesh.loops());
+        loopNormals = Vec3Attribute.getOrCreate(Loop.Normal, bmesh.loops());
     }
 
 
@@ -214,7 +214,7 @@ public class NormalGenerator {
         assert normalExists(acc.normal);
 
         do {
-            propLoopNormal.set(loop, acc.normal);
+            loopNormals.set(loop, acc.normal);
 
             if(loop.nextEdgeLoop == loop)
                 break;

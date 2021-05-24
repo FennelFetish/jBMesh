@@ -30,7 +30,7 @@ public class ExtrudeFace {
     public void apply(Face face) {
         // Disconnect face
         // Keep loops, but disconnect
-        // Leave vertices, create new Vertices (without properties)
+        // Leave vertices, create new Vertices (without attributes)
         // (---> no, also new loops, because the original loops have attributes) ???
         //    -> no, keep loops because they belong to the face - attributes are for this face
 
@@ -73,12 +73,12 @@ public class ExtrudeFace {
 
 
     /**
-     * Copy properties from old vertices to the new ones.
+     * Copy attributes from old vertices to the new ones.
      */
-    public void copyVertexProperties() {
+    public void copyVertexAttributes() {
         Loop loop = face.loop;
         for(int i=0; i<originalVertices.size(); ++i) {
-            bmesh.vertices().copyProperties(originalVertices.get(i), loop.vertex);
+            bmesh.vertices().copyAttributes(originalVertices.get(i), loop.vertex);
             loop = loop.nextFaceLoop;
         }
     }

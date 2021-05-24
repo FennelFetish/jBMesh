@@ -1,11 +1,11 @@
 package ch.alchemists.jbmesh.data.property;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.Element;
 
-public class IntProperty<E extends Element> extends BMeshProperty<E, int[]> {
-    public IntProperty(String name) {
+public class IntAttribute<E extends Element> extends BMeshAttribute<E, int[]> {
+    public IntAttribute(String name) {
         super(name);
     }
 
@@ -30,7 +30,7 @@ public class IntProperty<E extends Element> extends BMeshProperty<E, int[]> {
         return new int[size];
     }
 
-    public static <E extends Element> IntProperty<E> get(String name, BMeshData<E> meshData) {
-        return (IntProperty<E>) getProperty(name, meshData, int[].class);
+    public static <E extends Element> IntAttribute<E> get(String name, BMeshData<E> meshData) {
+        return (IntAttribute<E>) getAttribute(name, meshData, int[].class);
     }
 }

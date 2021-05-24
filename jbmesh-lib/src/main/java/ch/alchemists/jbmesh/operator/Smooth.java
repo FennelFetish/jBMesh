@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.*;
 import com.jme3.math.Vector3f;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class Smooth {
     private final BMesh bmesh;
     private final EdgeOps edgeOps;
     private final FaceOps faceOps;
-    private final Vec3Property<Vertex> propPosition;
+    private final Vec3Attribute<Vertex> positions;
 
     private boolean processNonmanifolds = false;
 
@@ -41,7 +41,7 @@ public class Smooth {
         edgeOps = new EdgeOps(bmesh);
         faceOps = new FaceOps(bmesh);
 
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -73,7 +73,7 @@ public class Smooth {
             if(isManifold(edge.loop))
                 edgePoints.add(edgePoint);
 
-            propPosition.set(edgePoint, center);
+            positions.set(edgePoint, center);
         }
 
         // Subdivide faces
@@ -119,7 +119,7 @@ public class Smooth {
             int count = 0; // 4 in manifolds, less at borders
             for(Edge e : edgePoint.edges()) {
                 Vertex other = e.getOther(edgePoint);
-                propPosition.addLocal(p, other);
+                positions.addLocal(p, other);
                 count++;
             }
 
@@ -148,8 +148,8 @@ public class Smooth {
                 // TODO: In case of non-manifolds we may have to traverse in the other direction
                 // TODO: Make iterator for this
 
-                propPosition.addLocal(avgEdge, loop.nextFaceLoop.vertex);
-                propPosition.addLocal(avgFace, loop.nextFaceLoop.nextFaceLoop.vertex);
+                positions.addLocal(avgEdge, loop.nextFaceLoop.vertex);
+                positions.addLocal(avgFace, loop.nextFaceLoop.nextFaceLoop.vertex);
                 count++;
                 loop = loop.nextEdgeLoop.nextFaceLoop;
             } while(loop != startLoop);
@@ -157,19 +157,19 @@ public class Smooth {
             avgFace.divideLocal(count);
             avgEdge.multLocal(2.0f / count);
 
-            Vector3f p = propPosition.get(vertexPoint);
+            Vector3f p = positions.get(vertexPoint);
             p.multLocal(count - 3); // Constant n-3
             p.addLocal(avgFace);
             p.addLocal(avgEdge);
             p.divideLocal(count);
 
-            propPosition.set(vertexPoint, p);
+            positions.set(vertexPoint, p);
         }
 
         // Apply EdgePoint location
         for(int i=0; i<edgePoints.size(); ++i) {
             Vertex edgePoint = edgePoints.get(i);
-            propPosition.set(edgePoint, edgePointLoc[i]);
+            positions.set(edgePoint, edgePointLoc[i]);
         }
     }
 

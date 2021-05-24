@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.bool;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.lookup.HashGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
 import ch.alchemists.jbmesh.operator.VertexOps;
@@ -24,13 +24,13 @@ public class Subtract extends Cut {
     private final Set<Vertex> borderVertices = new HashSet<>();
 
     //private final DFuncMeshBuilder meshBuilder;
-    private final Vec3Property<Vertex> propPosition;
+    //private final Vec3Attribute<Vertex> positions;
 
 
     public Subtract(BMesh bmesh, DistanceFunction dfunc) {
         super(bmesh, dfunc);
         //meshBuilder = new DFuncMeshBuilder(bmesh, dfunc);
-        propPosition = Vec3Property.get(Vertex.Position, bmesh.vertices());
+        //positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
     }
 
 
@@ -110,7 +110,7 @@ public class Subtract extends Cut {
 
         {
             Vertex first = borderVertices.iterator().next();
-            propPosition.get(first, p);
+            positions.get(first, p);
             p = alignToGrid(p, cellSize);
             HashGrid.Index gridIndex = visitedCells.getIndexForCoords(p);
             putQueue(queue, p, visitedCells, gridIndex, cellSize, 63); // Doesn't work, will make cubes on cut <<<<<<<
@@ -118,7 +118,7 @@ public class Subtract extends Cut {
 
 
         for(Vertex v : borderVertices) {
-            propPosition.get(v, p);
+            positions.get(v, p);
             p = alignToGrid(p, cellSize);
             HashGrid.Index gridIndex = visitedCells.getIndexForCoords(p);
             visitedCells.set(gridIndex, p);

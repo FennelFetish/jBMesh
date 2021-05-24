@@ -1,7 +1,7 @@
 package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.data.BMeshData;
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +14,7 @@ public class BMesh {
     private final BMeshData<Face> faceData;
     private final BMeshData<Loop> loopData;
 
-    private final Vec3Property<Vertex> propPosition = new Vec3Property<>(Vertex.Position);
+    private final Vec3Attribute<Vertex> attrPosition = new Vec3Attribute<>(Vertex.Position);
 
     private final transient ArrayList<Loop> tempLoops = new ArrayList<>(4);
 
@@ -25,7 +25,7 @@ public class BMesh {
         faceData   = new BMeshData<>(Face::new);
         loopData   = new BMeshData<>(Loop::new);
 
-        vertexData.addProperty(propPosition);
+        vertexData.addAttribute(attrPosition);
     }
 
 
@@ -66,7 +66,7 @@ public class BMesh {
 
     public Vertex createVertex(float x, float y, float z) {
         Vertex vert = createVertex();
-        propPosition.set(vert, x, y, z);
+        attrPosition.set(vert, x, y, z);
         return vert;
     }
 
@@ -261,7 +261,7 @@ public class BMesh {
      * </pre>
      *
      * @param edge
-     * @return A new Vertex (<i>vNew</i>) with default properties (no specific position).
+     * @return A new Vertex (<i>vNew</i>) with default attributes (undefined position).
      */
     public Vertex splitEdge(final Edge edge) {
         // Throws early if edge is null

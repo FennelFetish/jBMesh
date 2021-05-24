@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.meshgen;
 
-import ch.alchemists.jbmesh.data.property.Vec3Property;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -12,7 +12,7 @@ public class MarchingCube {
     private final float cellSize;
     private final BMesh bmesh;
     private final VertexDeduplication dedup;
-    private final Vec3Property<Loop> propLoopNormals;
+    private final Vec3Attribute<Loop> loopNormals;
 
     // Per vertex
     private final Vector3f[] corners = new Vector3f[8];
@@ -27,7 +27,7 @@ public class MarchingCube {
         this.cellSize = cellSize;
         this.bmesh = bmesh;
         this.dedup = dedup;
-        propLoopNormals = setNormals ? Vec3Property.getOrCreate(Loop.Normal, bmesh.loops()) : null;
+        loopNormals = setNormals ? Vec3Attribute.getOrCreate(Loop.Normal, bmesh.loops()) : null;
 
         for(int i=0; i<corners.length; ++i)
             corners[i] = new Vector3f();
@@ -90,7 +90,7 @@ public class MarchingCube {
             p.multLocal(t);
             p.addLocal(corners[idxV0]);
 
-            if(propLoopNormals != null)
+            if(loopNormals != null)
                 dfunc.normal(p, normals[i]);
         }
 
@@ -108,10 +108,10 @@ public class MarchingCube {
             if(v0 != v1 && v1 != v2 && v0 != v2) {
                 Face face = bmesh.createFace(v0, v1, v2);
 
-                if(propLoopNormals != null) {
-                    propLoopNormals.set(face.loop, normals[idx0]);
-                    propLoopNormals.set(face.loop.nextFaceLoop, normals[idx1]);
-                    propLoopNormals.set(face.loop.prevFaceLoop, normals[idx2]);
+                if(loopNormals != null) {
+                    loopNormals.set(face.loop, normals[idx0]);
+                    loopNormals.set(face.loop.nextFaceLoop, normals[idx1]);
+                    loopNormals.set(face.loop.prevFaceLoop, normals[idx2]);
                 }
             }
         }

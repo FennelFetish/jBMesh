@@ -1,13 +1,13 @@
 package ch.alchemists.jbmesh.data.property;
 
-import ch.alchemists.jbmesh.data.BMeshProperty;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.Element;
 
-public class ObjectTupleProperty<E extends Element, T> extends BMeshProperty<E, T[]> {
-    private final ObjectProperty.ArrayAllocator<T> allocator;
+public class ObjectTupleAttribute<E extends Element, T> extends BMeshAttribute<E, T[]> {
+    private final ObjectAttribute.ArrayAllocator<T> allocator;
 
 
-    public ObjectTupleProperty(String name, int components, ObjectProperty.ArrayAllocator<T> allocator) {
+    public ObjectTupleAttribute(String name, int components, ObjectAttribute.ArrayAllocator<T> allocator) {
         super(name, components);
         this.allocator = allocator;
     }
@@ -52,16 +52,16 @@ public class ObjectTupleProperty<E extends Element, T> extends BMeshProperty<E, 
     }
 
 
-    /*public static <E extends Element, T> ObjectTupleProperty<E, T> get(String name, BMeshData<E> meshData, Class<T[]> arrayType) {
-        return (ObjectTupleProperty<E, T>) getProperty(name, meshData, arrayType);
+    /*public static <E extends Element, T> ObjectTupleAttribute<E, T> get(String name, BMeshData<E> meshData, Class<T[]> arrayType) {
+        return (ObjectTupleAttribute<E, T>) getAttribute(name, meshData, arrayType);
     }
 
-    public static <E extends Element, T> ObjectTupleProperty<E, T> getOrCreate(String name, BMeshData<E> meshData, int numComponents, Class<T[]> arrayType, ObjectProperty.ArrayAllocator<T> allocator) {
-        ObjectTupleProperty<E, T> prop = get(name, meshData, arrayType);
-        if(prop == null) {
-            prop = new ObjectTupleProperty<E, T>(name, numComponents, arrayType, allocator);
-            meshData.addProperty(prop);
+    public static <E extends Element, T> ObjectTupleAttribute<E, T> getOrCreate(String name, BMeshData<E> meshData, int numComponents, Class<T[]> arrayType, ObjectAttribute.ArrayAllocator<T> allocator) {
+        ObjectTupleAttribute<E, T> attribute = get(name, meshData, arrayType);
+        if(attribute == null) {
+            attribute = new ObjectTupleAttribute<E, T>(name, numComponents, allocator);
+            meshData.addAttribute(attribute);
         }
-        return prop;
+        return attribute;
     }*/
 }
