@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class StraightSkeletonEditor extends SimpleApplication {
     private static final String STORAGE_PATH       = "F:/jme/jBMesh/points";
-    private static final String EXPORT_FILE        = "keep.points";
+    private static final String EXPORT_FILE        = "straight-skeleton.points";
 
     private static final String ACT_INC_DISTANCE   = "ACT_INC_DISTANCE";
     private static final String ACT_DEC_DISTANCE   = "ACT_DEC_DISTANCE";
@@ -34,11 +34,17 @@ public class StraightSkeletonEditor extends SimpleApplication {
     private static final String ACT_BENCHMARK      = "ACT_BENCHMARK";
     private static final String ACT_EXPORT         = "ACT_EXPORT";
 
+    private static final String ACT_TOGGLE_SKEL    = "ACT_TOGGLE_SKEL";
+    private static final String ACT_TOGGLE_BISECT  = "ACT_TOGGLE_BISECT";
+
     private static final float SKEL_DISTANCE_STEP  = 0.002f;
-    private static final float SKEL_DISTANCE_LEAP  = 0.2f;
+    private static final float SKEL_DISTANCE_LEAP  = 0.02f;
     private static final float DEFAULT_DISTANCE    = 0.0f;
     private float skeletonDistance                 = DEFAULT_DISTANCE;
     private boolean modStep = false;
+
+    private boolean showSkel = false;
+    private boolean showBisectors = false;
 
     private final PolygonEditorState polygonEditor;
     private final Node node = new Node("StraightSkeletonEditor");
@@ -72,7 +78,11 @@ public class StraightSkeletonEditor extends SimpleApplication {
         inputManager.addMapping(ACT_MAX_DISTANCE, new KeyTrigger(KeyInput.KEY_M));
         inputManager.addMapping(ACT_BENCHMARK, new KeyTrigger(KeyInput.KEY_B));
         inputManager.addMapping(ACT_EXPORT, new KeyTrigger(KeyInput.KEY_E));
-        inputManager.addListener(actionListener, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_MOD_STEP, ACT_RESET_DISTANCE, ACT_MAX_DISTANCE, ACT_BENCHMARK, ACT_EXPORT);
+        inputManager.addMapping(ACT_TOGGLE_SKEL, new KeyTrigger(KeyInput.KEY_S));
+        inputManager.addMapping(ACT_TOGGLE_BISECT, new KeyTrigger(KeyInput.KEY_D));
+
+        inputManager.addListener(actionListener, ACT_INC_DISTANCE, ACT_DEC_DISTANCE, ACT_MOD_STEP, ACT_RESET_DISTANCE, ACT_MAX_DISTANCE,
+            ACT_BENCHMARK, ACT_EXPORT, ACT_TOGGLE_SKEL, ACT_TOGGLE_BISECT);
 
         movingNodeType = new PolygonEditorState.PointDrawType(assetManager, ColorRGBA.Black, 0.02f, 0.15f);
         movingNodeType.textColor = new ColorRGBA(0.0f, 0.6f, 0.6f, 1.0f);
@@ -97,10 +107,16 @@ public class StraightSkeletonEditor extends SimpleApplication {
             }
 
             SkeletonVisualization skelVis = skeleton.getVisualization();
-            node.attachChild( polygonEditor.createLineGeom(skelVis.createSkeletonMappingVis(), ColorRGBA.Yellow) );
-            node.attachChild( polygonEditor.createLineGeom(skelVis.createSkeletonDegeneracyVis(), ColorRGBA.Brown) );
             node.attachChild( polygonEditor.createLineGeom(skelVis.createMovingNodesVis(), ColorRGBA.Cyan) );
-            //node.attachChild( polygonEditor.createLineGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
+
+            if(showSkel) {
+                node.attachChild(polygonEditor.createLineGeom(skelVis.createSkeletonMappingVis(), ColorRGBA.Yellow));
+                node.attachChild(polygonEditor.createLineGeom(skelVis.createSkeletonDegeneracyVis(), ColorRGBA.Brown));
+            }
+
+            if(showBisectors)
+                node.attachChild( polygonEditor.createLineGeom(skelVis.createBisectorVis(), ColorRGBA.Green) );
+
             //node.attachChild( polygonEditor.createLineGeom(skelVis.createMappingVis(), ColorRGBA.Magenta) );
 
             for(SkeletonVisualization.VisNode node : skelVis.getMovingNodes()) {
@@ -194,6 +210,16 @@ public class StraightSkeletonEditor extends SimpleApplication {
 
             case ACT_EXPORT:
                 exportFile();
+                break;
+
+            case ACT_TOGGLE_SKEL:
+                showSkel ^= true;
+                updateSkeletonVis();
+                break;
+
+            case ACT_TOGGLE_BISECT:
+                showBisectors ^= true;
+                updateSkeletonVis();
                 break;
         }
     };
