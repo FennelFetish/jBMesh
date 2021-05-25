@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.operator.normalgen;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.BooleanAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
@@ -43,7 +44,7 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
     @Override
     public void prepare(BMesh bmesh, float creaseAngle) {
         edgeCrease = BooleanAttribute.getOrCreate(ATTRIBUTE_EDGE_CREASE, bmesh.edges());
-        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
         faceOps = new FaceOps(bmesh);
 
         for(Edge edge : bmesh.edges()) {

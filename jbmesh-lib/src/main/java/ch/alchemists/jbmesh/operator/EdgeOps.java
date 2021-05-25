@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.operator;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Edge;
@@ -16,7 +17,7 @@ public class EdgeOps {
 
     public EdgeOps(BMesh bmesh) {
         this.bmesh = bmesh;
-        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
     }
 
 

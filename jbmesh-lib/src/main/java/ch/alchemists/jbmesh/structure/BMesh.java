@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.structure;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import com.jme3.math.Vector3f;
@@ -14,7 +15,7 @@ public class BMesh {
     private final BMeshData<Face> faceData;
     private final BMeshData<Loop> loopData;
 
-    private final Vec3Attribute<Vertex> attrPosition = new Vec3Attribute<>(Vertex.Position);
+    private final Vec3Attribute<Vertex> attrPosition = new Vec3Attribute<>(BMeshAttribute.Position);
 
     private final transient ArrayList<Loop> tempLoops = new ArrayList<>(4);
 

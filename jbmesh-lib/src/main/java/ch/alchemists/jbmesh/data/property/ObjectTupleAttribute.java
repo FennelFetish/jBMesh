@@ -1,6 +1,7 @@
 package ch.alchemists.jbmesh.data.property;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
+import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.Element;
 
 public class ObjectTupleAttribute<E extends Element, T> extends BMeshAttribute<E, T[]> {
@@ -52,16 +53,20 @@ public class ObjectTupleAttribute<E extends Element, T> extends BMeshAttribute<E
     }
 
 
-    /*public static <E extends Element, T> ObjectTupleAttribute<E, T> get(String name, BMeshData<E> meshData, Class<T[]> arrayType) {
+    public static <E extends Element, T> ObjectTupleAttribute<E, T> get(String name, BMeshData<E> meshData, Class<T[]> arrayType) {
         return (ObjectTupleAttribute<E, T>) getAttribute(name, meshData, arrayType);
     }
 
-    public static <E extends Element, T> ObjectTupleAttribute<E, T> getOrCreate(String name, BMeshData<E> meshData, int numComponents, Class<T[]> arrayType, ObjectAttribute.ArrayAllocator<T> allocator) {
+    public static <E extends Element, T> ObjectTupleAttribute<E, T> getOrCreate(String name, int components, BMeshData<E> meshData, Class<T[]> arrayType, ObjectAttribute.ArrayAllocator<T> allocator) {
         ObjectTupleAttribute<E, T> attribute = get(name, meshData, arrayType);
+
         if(attribute == null) {
-            attribute = new ObjectTupleAttribute<E, T>(name, numComponents, allocator);
+            attribute = new ObjectTupleAttribute<E, T>(name, components, allocator);
             meshData.addAttribute(attribute);
         }
+        else if(attribute.numComponents != components)
+            throw new IllegalStateException("Attribute with same name but different number of components already exists.");
+
         return attribute;
-    }*/
+    }
 }

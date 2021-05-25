@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.operator.bool;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.meshgen.DistanceFunction;
 import ch.alchemists.jbmesh.structure.*;
@@ -29,7 +30,7 @@ public abstract class Cut {
     public Cut(BMesh bmesh, DistanceFunction dfunc) {
         this.bmesh = bmesh;
         this.dfunc = dfunc;
-        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
     }
 
 

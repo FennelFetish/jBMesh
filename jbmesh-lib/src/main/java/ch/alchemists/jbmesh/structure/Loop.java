@@ -3,11 +3,6 @@ package ch.alchemists.jbmesh.structure;
 import ch.alchemists.jbmesh.data.Element;
 
 public class Loop extends Element {
-    // Property names
-    public static final String Normal       = "LoopNormal";
-    public static final String VertexMap    = "LoopVertexMap";
-
-
     // Never null on a valid object
     public Face face;
 

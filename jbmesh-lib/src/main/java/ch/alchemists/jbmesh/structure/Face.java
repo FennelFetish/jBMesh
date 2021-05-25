@@ -7,10 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 
 public class Face extends Element {
-    // Property names
-    public static final String Normal = "FaceNormal";
-
-
     // Never null on a valid object
     public Loop loop;
 

@@ -1,8 +1,8 @@
 package ch.alchemists.jbmesh.conversion;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.IntTupleAttribute;
 import ch.alchemists.jbmesh.data.property.ObjectTupleAttribute;
-import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -11,20 +11,20 @@ import com.jme3.scene.VertexBuffer;
 import java.util.List;
 
 public class LineExport extends Export<Edge> {
-    private final ObjectTupleAttribute<Edge, Vertex> attrEdgeVertex = new ObjectTupleAttribute<>(Edge.VertexMap, 2, Vertex[]::new);
-    private final IntTupleAttribute<Edge> attrEdgeIndices = new IntTupleAttribute<>("LineExport_EdgeIndices", 2);
+    private final ObjectTupleAttribute<Edge, Vertex> attrEdgeVertex;
+    private final IntTupleAttribute<Edge> attrEdgeIndices;
 
 
     public LineExport(BMesh bmesh) {
         super(bmesh);
 
-        useVertexAttribute(VertexBuffer.Type.Position, Vertex.Position);
+        useVertexAttribute(VertexBuffer.Type.Position, BMeshAttribute.Position);
 
+        attrEdgeVertex = ObjectTupleAttribute.getOrCreate(BMeshAttribute.VertexMap, 2, bmesh.edges(), Vertex[].class, Vertex[]::new);
         attrEdgeVertex.setComparable(false);
-        bmesh.edges().addAttribute(attrEdgeVertex);
 
+        attrEdgeIndices = IntTupleAttribute.getOrCreate("LineExport_EdgeIndices", 2, bmesh.edges());
         attrEdgeIndices.setComparable(false);
-        bmesh.edges().addAttribute(attrEdgeIndices);
 
         outputMesh.setMode(Mesh.Mode.Lines);
     }

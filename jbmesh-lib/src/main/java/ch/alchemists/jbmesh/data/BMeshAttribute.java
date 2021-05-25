@@ -4,13 +4,49 @@ package ch.alchemists.jbmesh.data;
 //       A normal generator could use the dirty state of the vertex-position attribute to determine which face normals have to be regenerated.
 public abstract class BMeshAttribute<E extends Element, TArray> {
     // Attribute names
-    public static final String Position         = "Position";
-    public static final String Normal           = "Normal";
-    public static final String TexCoord         = "TexCoord";
-    public static final String Color            = "Color";
-    public static final String Index            = "Index";
+    public static final String Position             = "Position";
+    public static final String Normal               = "Normal";
+    public static final String Tangent              = "Tangent";
+    public static final String Binormal             = "Binormal";
+    public static final String Color                = "Color";
+    public static final String Size                 = "Size";
+    public static final String Index                = "Index";
+    public static final String InstanceData         = "InstanceData";
 
-    public static final String VertexMap        = "VertexMap";
+    public static final String TexCoord             = "TexCoord";
+    public static final String TexCoord2            = "TexCoord2";
+    public static final String TexCoord3            = "TexCoord3";
+    public static final String TexCoord4            = "TexCoord4";
+    public static final String TexCoord5            = "TexCoord5";
+    public static final String TexCoord6            = "TexCoord6";
+    public static final String TexCoord7            = "TexCoord7";
+    public static final String TexCoord8            = "TexCoord8";
+
+    public static final String BindPosePosition     = "BindPosePosition";
+    public static final String BindPoseNormal       = "BindPoseNormal";
+    public static final String BoneWeight           = "BoneWeight";
+    public static final String BoneIndex            = "BoneIndex";
+    public static final String BindPoseTangent      = "BindPoseTangent";
+    public static final String HWBoneWeight         = "HWBoneWeight";
+    public static final String HWBoneIndex          = "HWBoneIndex";
+
+    public static final String MorphTarget0         = "MorphTarget0";
+    public static final String MorphTarget1         = "MorphTarget1";
+    public static final String MorphTarget2         = "MorphTarget2";
+    public static final String MorphTarget3         = "MorphTarget3";
+    public static final String MorphTarget4         = "MorphTarget4";
+    public static final String MorphTarget5         = "MorphTarget5";
+    public static final String MorphTarget6         = "MorphTarget6";
+    public static final String MorphTarget7         = "MorphTarget7";
+    public static final String MorphTarget8         = "MorphTarget8";
+    public static final String MorphTarget9         = "MorphTarget9";
+    public static final String MorphTarget10        = "MorphTarget10";
+    public static final String MorphTarget11        = "MorphTarget11";
+    public static final String MorphTarget12        = "MorphTarget12";
+    public static final String MorphTarget13        = "MorphTarget13";
+
+    // Library internal attribute names
+    public static final String VertexMap            = "VertexMap";      // Loop, Edge => Vertex
 
 
     public final String name;

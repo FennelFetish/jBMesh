@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.operator;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
@@ -19,7 +20,7 @@ public class Inset {
     public Inset(BMesh bmesh, float thickness, float depth) {
         faceOps = new FaceOps(bmesh);
         extrusion = new ExtrudeFace(bmesh);
-        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
         
         this.thickness = thickness;
         this.depth = depth;

@@ -1,6 +1,7 @@
 package ch.alchemists.jbmesh.tools;
 
 import ch.alchemists.jbmesh.conversion.Import;
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.lookup.HashGridDeduplication;
 import ch.alchemists.jbmesh.lookup.VertexDeduplication;
@@ -24,7 +25,7 @@ public class TestMesh {
         Sphere sphere = new Sphere(16, 16, 2.0f);
         BMesh bmesh = Import.convertExact(sphere);
 
-        Vec3Attribute<Vertex> positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
         List<Vertex> vertices = bmesh.vertices().getAll();
         for(Vertex v : vertices) {
             Vector3f pos = positions.get(v);

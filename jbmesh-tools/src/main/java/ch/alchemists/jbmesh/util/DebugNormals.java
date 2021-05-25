@@ -1,5 +1,12 @@
 package ch.alchemists.jbmesh.util;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
+import ch.alchemists.jbmesh.operator.FaceOps;
+import ch.alchemists.jbmesh.structure.BMesh;
+import ch.alchemists.jbmesh.structure.Face;
+import ch.alchemists.jbmesh.structure.Loop;
+import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.Vector3f;
@@ -7,12 +14,6 @@ import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
-import ch.alchemists.jbmesh.data.property.Vec3Attribute;
-import ch.alchemists.jbmesh.operator.FaceOps;
-import ch.alchemists.jbmesh.structure.BMesh;
-import ch.alchemists.jbmesh.structure.Face;
-import ch.alchemists.jbmesh.structure.Loop;
-import ch.alchemists.jbmesh.structure.Vertex;
 
 public class DebugNormals {
     public static Geometry faceNormals(AssetManager assetManager, BMesh bmesh, float length) {
@@ -73,11 +74,11 @@ public class DebugNormals {
 
 
     private static Mesh createLoopNormals(BMesh bmesh, float length) {
-        Vec3Attribute<Loop> normals = Vec3Attribute.get(Loop.Normal, bmesh.loops());
+        Vec3Attribute<Loop> normals = Vec3Attribute.get(BMeshAttribute.Normal, bmesh.loops());
         if(normals == null)
             throw new IllegalArgumentException("The provided BMesh object doesn't have Loop normals.");
 
-        Vec3Attribute<Vertex> positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
 
         // Filling an array and then putting it into a FloatBuffer all at once scales better with bigger meshes performance-wise
         float[] vbuf = new float[bmesh.loops().size() * 6];

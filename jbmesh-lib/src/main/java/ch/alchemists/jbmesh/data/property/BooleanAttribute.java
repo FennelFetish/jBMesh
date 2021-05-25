@@ -30,6 +30,7 @@ public class BooleanAttribute<E extends Element> extends BMeshAttribute<E, boole
         return new boolean[size];
     }
 
+
     public static <E extends Element> BooleanAttribute<E> get(String name, BMeshData<E> meshData) {
         return (BooleanAttribute<E>) getAttribute(name, meshData, boolean[].class);
     }

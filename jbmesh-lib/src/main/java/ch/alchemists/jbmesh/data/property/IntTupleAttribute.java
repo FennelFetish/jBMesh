@@ -48,7 +48,21 @@ public class IntTupleAttribute<E extends Element> extends BMeshAttribute<E, int[
         return new int[size];
     }
 
+
     public static <E extends Element> IntTupleAttribute<E> get(String name, BMeshData<E> meshData) {
         return (IntTupleAttribute<E>) getAttribute(name, meshData, int[].class);
+    }
+
+    public static <E extends Element> IntTupleAttribute<E> getOrCreate(String name, int components, BMeshData<E> meshData) {
+        IntTupleAttribute<E> attribute = get(name, meshData);
+
+        if(attribute == null) {
+            attribute = new IntTupleAttribute<>(name, components);
+            meshData.addAttribute(attribute);
+        }
+        else if(attribute.numComponents != components)
+            throw new IllegalStateException("Attribute with same name but different number of components already exists.");
+
+        return attribute;
     }
 }

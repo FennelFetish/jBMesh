@@ -8,17 +8,12 @@ import java.util.Objects;
  * Has no specific direction.
  */
 public class Edge extends Element {
-    // Property names
-    public static final String Color        = "EdgeColor";
-    public static final String VertexMap    = "EdgeVertexMap";
-
-
     // Target vertex (at end).
     // Needed? Can we use BMLoop's reference instead?
     // -> No, we need both vertices since an edge can exist without faces (no loop) and without adjacent edges (wireframe, single line, no nextEdge)
     public Vertex vertex0; // Blender calls these v1 and v2
     public Vertex vertex1;
-    // Make those private? Add setter that checks for null?
+    // TODO: Make those private? Add setter that checks for null?
 
     // Disk cycle at start vertex.
     //Needed? Can we go through BMLoop instead? -> No, wireframe doesn't have loops
@@ -295,7 +290,7 @@ public class Edge extends Element {
     }
 
 
-    private static class EdgeLoopIterator implements Iterator<Loop> {
+    private static final class EdgeLoopIterator implements Iterator<Loop> {
         private final Loop startLoop;
         private Loop currentLoop;
         private boolean first;

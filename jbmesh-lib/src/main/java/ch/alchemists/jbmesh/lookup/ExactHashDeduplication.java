@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.lookup;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -15,7 +16,7 @@ public class ExactHashDeduplication implements VertexDeduplication {
 
     public ExactHashDeduplication(BMesh bmesh) {
         this.bmesh = bmesh;
-        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
     }
 
     public ExactHashDeduplication(BMesh bmesh, Vec3Attribute<Vertex> attrPosition) {

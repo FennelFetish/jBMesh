@@ -1,7 +1,7 @@
 package ch.alchemists.jbmesh.conversion;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.ObjectAttribute;
-import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Edge;
 import ch.alchemists.jbmesh.structure.Loop;
@@ -18,16 +18,9 @@ public class TriangleExport extends Export<Loop> {
     public TriangleExport(BMesh bmesh) {
         super(bmesh);
 
-        useVertexAttribute(VertexBuffer.Type.Position, Vertex.Position);
+        useVertexAttribute(VertexBuffer.Type.Position, BMeshAttribute.Position);
 
-        // TODO: Do this somewhere else. Default JME attribute config?
-        Vec3Attribute<Loop> attrLoopNormals = Vec3Attribute.get(Loop.Normal, bmesh.loops());
-        if(attrLoopNormals != null) {
-            Vec3Attribute<Vertex> attrVertexNormals = Vec3Attribute.getOrCreate(Vertex.Normal, bmesh.vertices());
-            mapAttribute(VertexBuffer.Type.Normal, attrLoopNormals, attrVertexNormals);
-        }
-
-        attrLoopVertex = ObjectAttribute.getOrCreate(Loop.VertexMap, bmesh.loops(), Vertex[].class, Vertex[]::new);
+        attrLoopVertex = ObjectAttribute.getOrCreate(BMeshAttribute.VertexMap, bmesh.loops(), Vertex[].class, Vertex[]::new);
         attrLoopVertex.setComparable(false);
 
         triangleIndices = new TriangleIndices(bmesh, attrLoopVertex);

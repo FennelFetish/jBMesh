@@ -48,7 +48,21 @@ public class FloatTupleAttribute<E extends Element> extends BMeshAttribute<E, fl
         return new float[size];
     }
 
+
     public static <E extends Element> FloatTupleAttribute<E> get(String name, BMeshData<E> meshData) {
         return (FloatTupleAttribute<E>) getAttribute(name, meshData, float[].class);
+    }
+
+    public static <E extends Element> FloatTupleAttribute<E> getOrCreate(String name, int components, BMeshData<E> meshData) {
+        FloatTupleAttribute<E> attribute = get(name, meshData);
+
+        if(attribute == null) {
+            attribute = new FloatTupleAttribute<>(name, components);
+            meshData.addAttribute(attribute);
+        }
+        else if(attribute.numComponents != components)
+            throw new IllegalStateException("Attribute with same name but different number of components already exists.");
+
+        return attribute;
     }
 }

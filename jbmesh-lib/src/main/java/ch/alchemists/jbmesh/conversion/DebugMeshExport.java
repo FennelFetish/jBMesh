@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.conversion;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -115,7 +116,7 @@ public class DebugMeshExport {
 
 
     public void apply(BMesh bmesh) {
-        Vec3Attribute<Vertex> positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
         final ArrayList<Vector3f> faceVertices = new ArrayList<>();
         FaceOps faceOps = new FaceOps(bmesh);
 

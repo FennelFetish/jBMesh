@@ -14,6 +14,7 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class DirectImport {
     public interface VertexDeduplicationFactory {
@@ -31,6 +32,8 @@ public class DirectImport {
         }
     }
 
+
+    private static final Logger LOG = Logger.getLogger(DirectImport.class.getSimpleName());
 
     private final Mesh inputMesh;
     private final List<AttributeMapping> mappedAttributes = new ArrayList<>();
@@ -70,7 +73,7 @@ public class DirectImport {
         Vertex[] virtualVertexMap = createVertices(bmesh, triangleExtractor, dedup); // TODO: should createVerticess() come before dealing with attributes?
         boolean hasVirtual = (virtualVertexMap.length > bmesh.vertices().size());
 
-        ObjectAttribute<Loop, Vertex> attrLoopVertex = new ObjectAttribute<>(Loop.VertexMap, Vertex[]::new);
+        ObjectAttribute<Loop, Vertex> attrLoopVertex = new ObjectAttribute<>(BMeshAttribute.VertexMap, Vertex[]::new);
         bmesh.loops().addAttribute(attrLoopVertex);
 
         triangleExtractor.process((int i0, int i1, int i2) -> {
@@ -134,6 +137,11 @@ public class DirectImport {
 
                 default: {
                     BMeshAttribute<Vertex, ?> vertexAttribute = VertexBufferUtils.createBMeshAttribute(buffer, Vertex.class);
+                    if(vertexAttribute == null) {
+                        LOG.warning("Couldn't create BMeshAttribute for VertexBuffer type " + buffer.getBufferType().name());
+                        continue;
+                    }
+
                     VertexBufferUtils.setData(bmesh.vertices(), buffer, vertexAttribute);
 
                     BMeshAttribute<Loop, ?> loopAttribute = VertexBufferUtils.createBMeshAttribute(buffer, Loop.class);
@@ -147,7 +155,7 @@ public class DirectImport {
 
     // Keep Position attribute because BMesh holds a reference to the original instance.
     private Vec3Attribute<Vertex> replacePositionData(BMesh bmesh, int arrayLength, float[] data) {
-        Vec3Attribute<Vertex> attrPosition = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> attrPosition = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
         //bmesh.vertices().removeAttribute(attrPosition);
         bmesh.vertices().clearAttributes();
         bmesh.vertices().compactData();

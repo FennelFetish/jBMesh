@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.operator.skeleton;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -26,7 +27,7 @@ public class StraightSkeleton {
     public StraightSkeleton(BMesh bmesh) {
         this.bmesh = bmesh;
         faceOps = new FaceOps(bmesh);
-        positions = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
     }
 
 

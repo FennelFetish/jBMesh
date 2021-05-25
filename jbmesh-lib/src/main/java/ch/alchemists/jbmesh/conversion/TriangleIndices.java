@@ -1,5 +1,6 @@
 package ch.alchemists.jbmesh.conversion;
 
+import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.Element;
 import ch.alchemists.jbmesh.data.property.*;
@@ -78,7 +79,7 @@ public class TriangleIndices {
      * TODO: Call only for dirty faces?
      */
     public void apply() {
-        Vec3Attribute<Vertex> attrPosition = Vec3Attribute.get(Vertex.Position, bmesh.vertices());
+        Vec3Attribute<Vertex> attrPosition = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
 
         triangleData.clear();
         triangleData.ensureCapacity(bmesh.faces().size());
@@ -99,7 +100,7 @@ public class TriangleIndices {
             else
                 LOG.warning("Couldn't triangulate face with " + numVertices + " vertices.");
 
-            // TODO: Ear clipping for faces with 5-10 vertcies?
+            // TODO: Ear clipping for faces with 5-10 vertices?
         }
     }
 
