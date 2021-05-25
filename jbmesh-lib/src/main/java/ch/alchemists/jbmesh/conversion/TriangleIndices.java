@@ -3,17 +3,16 @@ package ch.alchemists.jbmesh.conversion;
 import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.Element;
-import ch.alchemists.jbmesh.data.property.*;
+import ch.alchemists.jbmesh.data.property.ObjectAttribute;
+import ch.alchemists.jbmesh.data.property.ObjectTupleAttribute;
+import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.sweeptriang.SweepTriangulation;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.math.Vector3f;
-import com.jme3.scene.VertexBuffer;
-import com.jme3.util.BufferUtils;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
+import com.jme3.scene.Mesh;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
@@ -26,19 +25,7 @@ public class TriangleIndices {
 
     private static final Logger LOG = Logger.getLogger(TriangleIndices.class.getName());
 
-    private static final String ATTRIBUTE_INDICES  = "TriangleIndices";
     private static final String ATTRIBUTE_TRILOOPS = "TriangleIndices_Loops";
-
-
-    // Store triangulation in virtual Loops. Use their references to link them. They are not connected to the real structure.
-    // Make local triangulation accessible to Loop
-    // so normal generator can access virtual triangulation?
-
-    // Result must be int[] or short[]
-    // Sorted by triangle!
-    // Don't add attribute to Loop / don't create virtual Loops because in contrast to Vertex, the loops/indices don't need data:
-    //   Virtual elements would waste memory in all attributes but the index attribute.
-    // Manage own BMeshData<Triangulation> ? Add IntTupleAttribute<Triangulation>("indices", 3)
 
     private final BMesh bmesh;
     private final SweepTriangulation triangulation;
@@ -47,14 +34,7 @@ public class TriangleIndices {
     private final ObjectTupleAttribute<Triangle, Loop> attrTriangleLoops = new ObjectTupleAttribute<>(ATTRIBUTE_TRILOOPS, 3, Loop[]::new);
 
     private final BMeshData<Triangle> triangleData;
-    private final VertexBuffer indexBuffer = new VertexBuffer(VertexBuffer.Type.Index);
-    private Object lastIndexAttribute = null;
-
-    private final IntTupleAttribute<Triangle> attrIndicesInt = new IntTupleAttribute<>(ATTRIBUTE_INDICES, 3);
-    private IntBuffer intBuffer;
-
-    private final ShortTupleAttribute<Triangle> attrIndicesShort = new ShortTupleAttribute<>(ATTRIBUTE_INDICES, 3);
-    private ShortBuffer shortBuffer;
+    private final Indices<Triangle> indices;
 
 
     public TriangleIndices(BMesh bmesh, ObjectAttribute<Loop, Vertex> attrLoopVertex) {
@@ -65,12 +45,8 @@ public class TriangleIndices {
 
         triangleData = new BMeshData<>(Triangle::new);
         triangleData.addAttribute(attrTriangleLoops);
-    }
 
-
-    public VertexBuffer getIndexBuffer() {
-        //System.out.println("VertexBuffer[Index] size: " + indexBuffer.getData().limit());
-        return indexBuffer;
+        indices = new Indices<>(triangleData, 3);
     }
 
 
@@ -78,7 +54,7 @@ public class TriangleIndices {
      * Updates face triangulation. This needs to be called when the face topology changes.
      * TODO: Call only for dirty faces?
      */
-    public void apply() {
+    public void triangulateFaces() {
         Vec3Attribute<Vertex> attrPosition = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
 
         triangleData.clear();
@@ -184,92 +160,17 @@ public class TriangleIndices {
      * This needs to be called when Loop->Vertex mapping (duplication) is changed, e.g. after NormalGenerator.
      * TODO: Maintain Triangle dirty state so only indices of changed faces are updated?
      */
-    public void update() {
+    public void applyIndexBuffer(Mesh mesh) {
         int maxVertexIndex = bmesh.vertices().totalSize()-1;
-        int numIndices = triangleData.size() * 3;
+        indices.prepare(maxVertexIndex);
 
-        if(maxVertexIndex > Short.MAX_VALUE)
-            updateInt(numIndices);
-        else
-            updateShort(numIndices);
+        indices.updateIndices((Triangle tri, int[] indices) -> {
+            indices[0] = mapTriangleLoopVertexIndex(tri, 0);
+            indices[1] = mapTriangleLoopVertexIndex(tri, 1);
+            indices[2] = mapTriangleLoopVertexIndex(tri, 2);
+        });
 
-        // TODO: How to change format in existing VertexBuffer? int -> short / short -> int
-        //       Clear first and then set again?
-
-        // TODO: To update buffer with array of different length:
-        //       VertexBuffer.updateData(), Mesh.updateCounts()
-
-        // TODO: Lazy switching of buffer type (don't change every frame)?
-    }
-
-
-    private void updateInt(int numIndices) {
-        if(lastIndexAttribute != attrIndicesInt) {
-            if(lastIndexAttribute == attrIndicesShort)
-                triangleData.removeAttribute(attrIndicesShort);
-
-            triangleData.addAttribute(attrIndicesInt);
-            lastIndexAttribute = attrIndicesInt;
-        }
-
-        for(Triangle tri : triangleData) {
-            int i0 = mapTriangleLoopVertexIndex(tri, 0);
-            int i1 = mapTriangleLoopVertexIndex(tri, 1);
-            int i2 = mapTriangleLoopVertexIndex(tri, 2);
-            attrIndicesInt.setValues(tri, i0, i1, i2);
-        }
-
-        int[] data = triangleData.getCompactData(attrIndicesInt);
-        if(intBuffer == null || intBuffer.capacity() < numIndices) {
-            intBuffer = BufferUtils.createIntBuffer(data);
-            //System.out.println("made new int index buffer");
-        } else {
-            //System.out.println("updating int index buffer");
-            intBuffer.clear();
-            intBuffer.put(data);
-            intBuffer.flip();
-        }
-
-        indexBuffer.setupData(VertexBuffer.Usage.Static, 3, VertexBuffer.Format.UnsignedInt, intBuffer);
-
-
-        // mesh.setBuffer does exactly that, but refuses changing type:
-        //indexBuffer.updateData(intBuffer);
-        // mesh.updateCounts()
-    }
-
-    private void updateShort(int numIndices) {
-        if(lastIndexAttribute != attrIndicesShort) {
-            if(lastIndexAttribute == attrIndicesInt)
-                triangleData.removeAttribute(attrIndicesInt);
-
-            triangleData.addAttribute(attrIndicesShort);
-            lastIndexAttribute = attrIndicesShort;
-        }
-
-        for(Triangle tri : triangleData) {
-            int i0 = mapTriangleLoopVertexIndex(tri, 0);
-            int i1 = mapTriangleLoopVertexIndex(tri, 1);
-            int i2 = mapTriangleLoopVertexIndex(tri, 2);
-            attrIndicesShort.setValues(tri, (short) i0, (short) i1, (short) i2);
-        }
-
-        short[] data = triangleData.getCompactData(attrIndicesShort);
-        if(shortBuffer == null || shortBuffer.capacity() < numIndices) {
-            shortBuffer = BufferUtils.createShortBuffer(data);
-            //System.out.println("made new short index buffer");
-        } else {
-            //System.out.println("updating short index buffer");
-            shortBuffer.clear();
-            shortBuffer.put(data);
-            shortBuffer.flip();
-        }
-
-        indexBuffer.setupData(VertexBuffer.Usage.Static, 3, VertexBuffer.Format.UnsignedShort, shortBuffer);
-
-        // mesh.setBuffer does exactly that, but refuses changing type:
-        //indexBuffer.updateData(shortBuffer);
-        // mesh.updateCounts()
+        indices.applyIndexBuffer(mesh);
     }
 
 

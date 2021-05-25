@@ -82,6 +82,9 @@ public abstract class BMeshAttribute<E extends Element, TArray> {
     }
 
     public final int indexOf(E element, int component) {
+        if(component >= numComponents || component < 0)
+            throw new IllegalArgumentException("Invalid component index (" + component + ") for attribute with " + numComponents + " components.");
+
         return (element.getIndex() * numComponents) + component;
     }
 

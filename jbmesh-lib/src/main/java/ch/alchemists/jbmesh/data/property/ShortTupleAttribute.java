@@ -19,13 +19,27 @@ public class ShortTupleAttribute<E extends Element> extends BMeshAttribute<E, sh
         data[indexOf(element, component)] = value;
     }
 
+    public void set(E element, int component, int value) {
+        data[indexOf(element, component)] = (short) value;
+    }
+
+
     public void setValues(E element, short... values) {
-        // throw?
-        assert values.length == numComponents;
+        if(values.length != numComponents)
+            throw new IllegalArgumentException("Number of values does not match number of components.");
 
         int index = indexOf(element);
         for(int i = 0; i < numComponents; ++i)
             data[index++] = values[i];
+    }
+
+    public void setValues(E element, int... values) {
+        if(values.length != numComponents)
+            throw new IllegalArgumentException("Number of values does not match number of components.");
+
+        int index = indexOf(element);
+        for(int i = 0; i < numComponents; ++i)
+            data[index++] = (short) values[i];
     }
 
 

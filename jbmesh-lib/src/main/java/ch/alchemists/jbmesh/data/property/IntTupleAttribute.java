@@ -20,8 +20,8 @@ public class IntTupleAttribute<E extends Element> extends BMeshAttribute<E, int[
     }
 
     public void setValues(E element, int... values) {
-        // throw?
-        assert values.length == numComponents;
+        if(values.length != numComponents)
+            throw new IllegalArgumentException("Number of values does not match number of components.");
         
         int index = indexOf(element);
         for(int i=0; i<numComponents; ++i)

@@ -37,10 +37,8 @@ public class TriangleExport extends Export<Loop> {
 
     @Override
     protected void setIndexBuffer() {
-        triangleIndices.apply();
-        triangleIndices.update(); // Requires duplication / existing LoopVertex attribute
-
-        outputMesh.setBuffer(triangleIndices.getIndexBuffer());
+        triangleIndices.triangulateFaces();
+        triangleIndices.applyIndexBuffer(outputMesh);
     }
 
 

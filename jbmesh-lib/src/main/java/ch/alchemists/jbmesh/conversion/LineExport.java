@@ -1,7 +1,6 @@
 package ch.alchemists.jbmesh.conversion;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
-import ch.alchemists.jbmesh.data.property.IntTupleAttribute;
 import ch.alchemists.jbmesh.data.property.ObjectTupleAttribute;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Edge;
@@ -12,7 +11,7 @@ import java.util.List;
 
 public class LineExport extends Export<Edge> {
     private final ObjectTupleAttribute<Edge, Vertex> attrEdgeVertex;
-    private final IntTupleAttribute<Edge> attrEdgeIndices;
+    private final Indices<Edge> indices;
 
 
     public LineExport(BMesh bmesh) {
@@ -23,9 +22,7 @@ public class LineExport extends Export<Edge> {
         attrEdgeVertex = ObjectTupleAttribute.getOrCreate(BMeshAttribute.VertexMap, 2, bmesh.edges(), Vertex[].class, Vertex[]::new);
         attrEdgeVertex.setComparable(false);
 
-        attrEdgeIndices = IntTupleAttribute.getOrCreate("LineExport_EdgeIndices", 2, bmesh.edges());
-        attrEdgeIndices.setComparable(false);
-
+        indices = new Indices<>(bmesh.edges(), 2);
         outputMesh.setMode(Mesh.Mode.Lines);
     }
 
@@ -38,15 +35,15 @@ public class LineExport extends Export<Edge> {
 
     @Override
     protected void setIndexBuffer() {
-        // Make index buffer
-        for(Edge edge : bmesh.edges()) {
-            Vertex v0 = attrEdgeVertex.get(edge, 0);
-            Vertex v1 = attrEdgeVertex.get(edge, 1);
-            //attrEdgeIndices.set(edge, (short) v0.getIndex(), (short) v1.getIndex()); // TODO: int?
-            attrEdgeIndices.setValues(edge, v0.getIndex(), v1.getIndex()); // TODO: int?
-        }
+        int maxVertexIndex = bmesh.vertices().totalSize()-1;
+        indices.prepare(maxVertexIndex);
 
-        outputMesh.setBuffer(VertexBuffer.Type.Index, 2, attrEdgeIndices.array());
+        indices.updateIndices((Edge edge, int[] indices) -> {
+            indices[0] = attrEdgeVertex.get(edge, 0).getIndex();
+            indices[1] = attrEdgeVertex.get(edge, 1).getIndex();
+        });
+
+        indices.applyIndexBuffer(outputMesh);
     }
 
 
