@@ -124,6 +124,8 @@ public class BMeshData<E extends Element> implements Iterable<E> {
 
 
     public void addAttribute(BMeshAttribute<E, ?> attribute) {
+        Objects.requireNonNull(attribute);
+
         if(attributes.containsKey(attribute.name))
             throw new IllegalStateException("Attribute '" + attribute.name + "' already exists");
 
@@ -136,6 +138,9 @@ public class BMeshData<E extends Element> implements Iterable<E> {
     }
 
     public <TArray> void addAttribute(BMeshAttribute<E, TArray> attribute, TArray data) {
+        Objects.requireNonNull(attribute);
+        Objects.requireNonNull(data);
+
         if(attributes.containsKey(attribute.name))
             throw new IllegalStateException("Attribute '" + attribute.name + "' already exists");
 

@@ -7,9 +7,7 @@ import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.util.BufferUtils;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.logging.Logger;
 
 public abstract class Export<E extends Element> {
@@ -35,7 +33,7 @@ public abstract class Export<E extends Element> {
     protected final BMesh bmesh;
     protected final Mesh outputMesh = new Mesh();
 
-    private final List<AttributeMapping<E, ?>> vertexAttributes = new ArrayList<>(4);
+    private final Map<VertexBuffer.Type, AttributeMapping<E, ?>> attributes = new HashMap<>(8);
     private final List<AttributeMapping<E, ?>> mappedAttributes = new ArrayList<>(4);
 
     private final List<Vertex> tempVertices = new ArrayList<>();
@@ -57,7 +55,7 @@ public abstract class Export<E extends Element> {
     public void useVertexAttribute(BMeshAttribute<Vertex, ?> vertexAttribute) {
         Objects.requireNonNull(vertexAttribute);
         VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(vertexAttribute.name);
-        vertexAttributes.add(new AttributeMapping<>(type, null, vertexAttribute));
+        useVertexAttribute(type, vertexAttribute);
     }
 
     public void useVertexAttribute(String attributeName) {
@@ -69,46 +67,74 @@ public abstract class Export<E extends Element> {
         BMeshAttribute<Vertex, ?> attribute = bmesh.vertices().getAttribute(attributeName);
         if(attribute == null)
             throw new IllegalArgumentException("Vertex attribute '" + attributeName + "' does not exist.");
-
-        vertexAttributes.add(new AttributeMapping<>(type, null, attribute));
+        useVertexAttribute(type, attribute);
     }
 
     public void useVertexAttribute(VertexBuffer.Type type, BMeshAttribute<Vertex, ?> vertexAttribute) {
+        Objects.requireNonNull(type);
         Objects.requireNonNull(vertexAttribute);
-        vertexAttributes.add(new AttributeMapping<>(type, null, vertexAttribute));
+
+        AttributeMapping<E, ?> mapping = new AttributeMapping<>(type, null, vertexAttribute);
+        if(attributes.put(type, mapping) != null)
+            LOG.warning("Overriding use of vertex attribute: Now using vertex attribute " + vertexAttribute.name + " for VertexBuffer " + type.name());
     }
 
-
-    public <TArray> void mapAttribute(BMeshAttribute<E, TArray> src, BMeshAttribute<Vertex, TArray> dest) {
-        VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(dest.name);
-        mapAttribute(type, src, dest);
-    }
 
     public <TArray> void mapAttribute(BMeshAttribute<E, TArray> src, String vertexAttributeName) {
         VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(vertexAttributeName);
         mapAttribute(type, src, vertexAttributeName);
     }
 
+    public <TArray> void mapAttribute(VertexBuffer.Type type, BMeshAttribute<E, TArray> src) {
+        String vertexAttributeName = VertexBufferUtils.getBMeshAttributeName(type);
+        mapAttribute(type, src, vertexAttributeName);
+    }
+
     @SuppressWarnings("unchecked")
     public <TArray> void mapAttribute(VertexBuffer.Type type, BMeshAttribute<E, TArray> src, String vertexAttributeName) {
         BMeshAttribute<Vertex, TArray> dest = (BMeshAttribute<Vertex, TArray>) bmesh.vertices().getAttribute(vertexAttributeName);
-        if(dest == null)
-            throw new IllegalArgumentException("Target vertex attribute '" + vertexAttributeName + "' does not exist.");
+
+        if(dest == null) {
+            dest = (BMeshAttribute<Vertex, TArray>) VertexBufferUtils.createBMeshAttribute(type, src.numComponents, Vertex.class);
+            if(dest == null)
+                throw new IllegalStateException("Target vertex attribute '" + vertexAttributeName + "' does not exist and couldn't be created.");
+
+            bmesh.vertices().addAttribute(dest);
+        }
 
         mapAttribute(type, src, dest);
     }
 
+    public <TArray> void mapAttribute(BMeshAttribute<E, TArray> src, BMeshAttribute<Vertex, TArray> dest) {
+        VertexBuffer.Type type = VertexBufferUtils.getVertexBufferType(dest.name);
+        mapAttribute(type, src, dest);
+    }
+
     public <TArray> void mapAttribute(VertexBuffer.Type type, BMeshAttribute<E, TArray> src, BMeshAttribute<Vertex, TArray> dest) {
+        Objects.requireNonNull(type);
         Objects.requireNonNull(src);
         Objects.requireNonNull(dest);
 
-        if(src.getClass() != dest.getClass())
-            throw new IllegalArgumentException("Attributes are not of the same type.");
+        if(src.array().getClass() != dest.array().getClass())
+            throw new IllegalArgumentException("Attribute data types don't match.");
 
         if(src.numComponents != dest.numComponents)
             throw new IllegalArgumentException("Attributes don't have the same number of components.");
 
-        mappedAttributes.add(new AttributeMapping<E, TArray>(type, src, dest));
+        AttributeMapping<E, TArray> mapping = new AttributeMapping<>(type, src, dest);
+        AttributeMapping<E, ?> prev = attributes.put(type, mapping);
+        if(prev != null) {
+            mappedAttributes.remove(prev);
+            LOG.warning("Overriding mapping: Now mapping element attribute " + src.name + " to VertexBuffer " + type.name());
+        }
+
+        mappedAttributes.add(mapping);
+    }
+
+
+    public void clearAttributes() {
+        attributes.clear();
+        mappedAttributes.clear();
     }
 
 
@@ -234,11 +260,8 @@ public abstract class Export<E extends Element> {
 
 
     private void setBuffers(Mesh outputMesh) {
-        for(AttributeMapping<E, ?> attr : vertexAttributes)
+        for(AttributeMapping<E, ?> attr : attributes.values())
             setBuffer(outputMesh, attr);
-
-        for(AttributeMapping<E, ?> mapping : mappedAttributes)
-            setBuffer(outputMesh, mapping);
     }
 
 

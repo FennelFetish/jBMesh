@@ -1,13 +1,11 @@
 package ch.alchemists.jbmesh.tools;
 
-import ch.alchemists.jbmesh.conversion.DebugMeshExport;
-import ch.alchemists.jbmesh.conversion.DirectImport;
-import ch.alchemists.jbmesh.conversion.Export;
-import ch.alchemists.jbmesh.conversion.TriangleExport;
+import ch.alchemists.jbmesh.conversion.*;
 import ch.alchemists.jbmesh.operator.MeshOps;
 import ch.alchemists.jbmesh.operator.normalgen.NormalGenerator;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.util.ColorUtil;
+import ch.alchemists.jbmesh.util.DebugNormals;
 import ch.alchemists.jbmesh.util.Gizmo;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
@@ -91,7 +89,8 @@ public class Main extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        addMesh();
+        //for(int i=0; i<30; ++i)
+            addMesh();
 
         rootNode.attachChild(node);
         rootNode.attachChild(new Gizmo(assetManager, null, 1.0f));
@@ -127,6 +126,7 @@ public class Main extends SimpleApplication {
 
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
+        //mat.getAdditionalRenderState().setWireframe(true);
         //mat.setBoolean("UseVertexColor", true);
         mat.setBoolean("UseMaterialColors", true);
         mat.setColor("Ambient", ColorRGBA.White);
@@ -134,11 +134,12 @@ public class Main extends SimpleApplication {
         mat.setColor("Specular", specular);
         mat.setFloat("Shininess", 120f);
 
-        Export export = new TriangleExport(bmesh);
-        //Export export = new LineExport(bmesh);
-        export.update();
+        Mesh mesh;
+        try(Profiler p = Profiler.start("Export")) {
+            mesh = BMeshJmeExport.exportTriangles(bmesh);
+        }
 
-        Geometry geom = new Geometry("Geom", export.getMesh());
+        Geometry geom = new Geometry("Geom", mesh);
         geom.setMaterial(mat);
         return geom;
     }

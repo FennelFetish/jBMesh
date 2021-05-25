@@ -47,7 +47,7 @@ public class Import {
         bmesh.faces().ensureCapacity(numIndices / 3);
         bmesh.loops().ensureCapacity(numIndices);
 
-        // TODO: Keep duplicated vertices in LoopVertex property?
+        // TODO: Keep duplicated vertices in LoopVertex attribute?
         Vertex[] indexMap = new Vertex[numIndices];
         Vector3f location = new Vector3f();
 
