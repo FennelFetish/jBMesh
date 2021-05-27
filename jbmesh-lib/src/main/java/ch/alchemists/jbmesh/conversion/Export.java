@@ -7,6 +7,7 @@ import ch.alchemists.jbmesh.structure.Vertex;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.util.BufferUtils;
+import java.nio.*;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -31,7 +32,7 @@ public abstract class Export<E extends Element> {
     private static final Logger LOG = Logger.getLogger(Export.class.getName());
 
     protected final BMesh bmesh;
-    protected final Mesh outputMesh = new Mesh();
+    private final Mesh outputMesh = new Mesh();
 
     private final Map<VertexBuffer.Type, AttributeMapping<E, ?>> attributes = new HashMap<>(8);
     private final List<AttributeMapping<E, ?>> mappedAttributes = new ArrayList<>(4);
@@ -40,12 +41,13 @@ public abstract class Export<E extends Element> {
     private final List<Vertex> virtualVertices = new ArrayList<>();
 
 
-    protected Export(BMesh bmesh) {
+    protected Export(BMesh bmesh, Mesh.Mode mode) {
         this.bmesh = bmesh;
+        outputMesh.setMode(mode);
     }
 
 
-    protected abstract void setIndexBuffer();
+    protected abstract void applyIndexBuffer(Mesh mesh);
 
     protected abstract void getVertexNeighborhood(Vertex vertex, List<E> dest);
     protected abstract void setVertexReference(Vertex contactPoint, E element, Vertex ref);
@@ -133,6 +135,9 @@ public abstract class Export<E extends Element> {
 
 
     public void clearAttributes() {
+        for(VertexBuffer.Type type : attributes.keySet())
+            outputMesh.clearBuffer(type);
+
         attributes.clear();
         mappedAttributes.clear();
     }
@@ -156,9 +161,12 @@ public abstract class Export<E extends Element> {
         else
             duplicateVertices();
 
-        bmesh.vertices().compactData(); // TODO: Optional
-        setIndexBuffer();
-        setBuffers(outputMesh);
+        //bmesh.vertices().compactData(); // Optional
+        applyIndexBuffer(outputMesh);
+
+        for(AttributeMapping<E, ?> attribute : attributes.values())
+            applyVertexBuffer(attribute);
+
         outputMesh.updateBound();
 
         LOG.fine("Exported " + bmesh.vertices().size() + " vertices");
@@ -259,63 +267,82 @@ public abstract class Export<E extends Element> {
     }
 
 
-    private void setBuffers(Mesh outputMesh) {
-        for(AttributeMapping<E, ?> attr : attributes.values())
-            setBuffer(outputMesh, attr);
-    }
+    private void applyVertexBuffer(AttributeMapping<E, ?> attribute) {
+        final Class<?> arrayType = attribute.arrayType;
 
-
-    // TODO: Reuse existing buffers
-    // TODO: Clear previously defined buffers that were removed by removeAttribute() (tbd)?
-    private void setBuffer(Mesh mesh, AttributeMapping<E, ?> attribute) {
-        VertexBuffer.Type type = attribute.type;
-        Class<?> arrayType     = attribute.arrayType;
-        int components         = attribute.dest.numComponents;
-        Object array           = attribute.dest.array();
-
-        if(arrayType == float[].class)
-            mesh.setBuffer(type, components, BufferUtils.createFloatBuffer((float[]) array));
-        else if(arrayType == short[].class)
-            mesh.setBuffer(type, components, BufferUtils.createShortBuffer((short[]) array));
-        else if(arrayType == int[].class)
-            mesh.setBuffer(type, components, BufferUtils.createIntBuffer((int[]) array));
-        else if(arrayType == byte[].class)
-            mesh.setBuffer(type, components, BufferUtils.createByteBuffer((byte[]) array));
-        else if(arrayType == double[].class)
-            mesh.setBuffer(type, components, VertexBuffer.Format.Double, VertexBufferUtils.createDoubleBuffer((double[]) array));
+        if(arrayType == float[].class) {
+            applyVertexBuffer(attribute, VertexBuffer.Format.Float, BufferUtils::createFloatBuffer,
+                (FloatBuffer buffer, float[] array, int length) -> buffer.put(array, 0, length));
+        }
+        else if(arrayType == short[].class) {
+            applyVertexBuffer(attribute, VertexBuffer.Format.UnsignedShort, BufferUtils::createShortBuffer,
+                (ShortBuffer buffer, short[] array, int length) -> buffer.put(array, 0, length));
+        }
+        else if(arrayType == int[].class) {
+            applyVertexBuffer(attribute, VertexBuffer.Format.UnsignedInt, BufferUtils::createIntBuffer,
+                (IntBuffer buffer, int[] array, int length) -> buffer.put(array, 0, length));
+        }
+        else if(arrayType == byte[].class) {
+            applyVertexBuffer(attribute, VertexBuffer.Format.UnsignedByte, BufferUtils::createByteBuffer,
+                (ByteBuffer buffer, byte[] array, int length) -> buffer.put(array, 0, length));
+        }
+        else if(arrayType == double[].class) {
+            applyVertexBuffer(attribute, VertexBuffer.Format.Double, VertexBufferUtils::createDoubleBuffer,
+                (DoubleBuffer buffer, double[] array, int length) -> buffer.put(array, 0, length));
+        }
         else
             throw new UnsupportedOperationException("Data of type '" + arrayType.getName() + "' is not supported.");
     }
 
 
+    @SuppressWarnings("unchecked")
+    private <TArray, B extends Buffer> void applyVertexBuffer(AttributeMapping<E, ?> attribute, VertexBuffer.Format format,
+                                                              CreateBufferFunctor<B> createBuffer, PopulateBufferFunctor<B, TArray> populateBuffer)
+    {
+        final VertexBuffer.Type type = attribute.type;
+        final int components         = attribute.dest.numComponents;
+        final TArray array           = (TArray) attribute.dest.array();
+        final int dataSize           = bmesh.vertices().totalSize() * components;
 
-    private void printArr(String name, float[] arr, int comp) {
-        System.out.println(name + " ------");
+        final VertexBuffer vertexBuffer = outputMesh.getBuffer(type);
 
-        int o=0;
-        for(int i=0; i<arr.length; ) {
-            System.out.print(o + ": ");
-            for(int c=0; c<comp; ++c) {
-                System.out.print(arr[i++]);
-                System.out.print(", ");
+        if(vertexBuffer != null) {
+            // If VertexBuffer is incompatible, clear it and create new one below
+            if(vertexBuffer.getNumComponents() != components || vertexBuffer.getFormat() != format) {
+                outputMesh.clearBuffer(type);
             }
-            System.out.println("");
-            o++;
+            // Valid buffer exists
+            else {
+                B buffer = (B) vertexBuffer.getData();
+                if(buffer.capacity() < dataSize)
+                    buffer = createBuffer.apply(dataSize); // Grow buffer
+                else
+                    buffer.clear(); // Reuse buffer
+
+                populateBuffer.apply(buffer, array, dataSize);
+                buffer.flip();
+
+                vertexBuffer.updateData(buffer);
+                outputMesh.updateCounts();
+                return;
+            }
         }
+
+        // Create a new VertexBuffer
+        B buffer = createBuffer.apply(dataSize);
+        populateBuffer.apply(buffer, array, dataSize);
+        buffer.flip();
+        outputMesh.setBuffer(type, components, format, buffer);
     }
 
-    private void printArr(String name, ArrayList<Integer> arr, int comp) {
-        System.out.println(name + " ------");
 
-        int o=0;
-        for(int i=0; i<arr.size(); ) {
-            System.out.print(o + ": ");
-            for(int c=0; c<comp; ++c) {
-                System.out.print(arr.get(i++));
-                System.out.print(", ");
-            }
-            System.out.println("");
-            o++;
-        }
+    @FunctionalInterface
+    private interface CreateBufferFunctor<B extends Buffer> {
+        B apply(int size);
+    }
+
+    @FunctionalInterface
+    private interface PopulateBufferFunctor<B extends Buffer, TArray> {
+        void apply(B buffer, TArray array, int length);
     }
 }

@@ -274,11 +274,19 @@ public class VertexBufferUtils {
     }
 
 
+    public static DoubleBuffer createDoubleBuffer(int size) {
+        return BufferUtils.createByteBuffer(size * 8).asDoubleBuffer();
+    }
+
     public static DoubleBuffer createDoubleBuffer(double... data) {
         DoubleBuffer buff = BufferUtils.createByteBuffer(data.length * 8).asDoubleBuffer();
         buff.put(data);
         buff.flip();
         return buff;
+    }
+
+    public static LongBuffer createLongBuffer(int size) {
+        return BufferUtils.createByteBuffer(size * 8).asLongBuffer();
     }
 
     public static LongBuffer createLongBuffer(long... data) {

@@ -16,7 +16,7 @@ public class TriangleExport extends Export<Loop> {
 
 
     public TriangleExport(BMesh bmesh) {
-        super(bmesh);
+        super(bmesh, Mesh.Mode.Triangles);
 
         useVertexAttribute(VertexBuffer.Type.Position, BMeshAttribute.Position);
 
@@ -24,8 +24,6 @@ public class TriangleExport extends Export<Loop> {
         attrLoopVertex.setComparable(false);
 
         triangleIndices = new TriangleIndices(bmesh, attrLoopVertex);
-
-        outputMesh.setMode(Mesh.Mode.Triangles);
     }
 
 
@@ -36,9 +34,9 @@ public class TriangleExport extends Export<Loop> {
 
 
     @Override
-    protected void setIndexBuffer() {
+    protected void applyIndexBuffer(Mesh mesh) {
         triangleIndices.triangulateFaces();
-        triangleIndices.applyIndexBuffer(outputMesh);
+        triangleIndices.applyIndexBuffer(mesh);
     }
 
 

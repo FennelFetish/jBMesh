@@ -15,7 +15,7 @@ public class LineExport extends Export<Edge> {
 
 
     public LineExport(BMesh bmesh) {
-        super(bmesh);
+        super(bmesh, Mesh.Mode.Lines);
 
         useVertexAttribute(VertexBuffer.Type.Position, BMeshAttribute.Position);
 
@@ -23,7 +23,6 @@ public class LineExport extends Export<Edge> {
         attrEdgeVertex.setComparable(false);
 
         indices = new Indices<>(bmesh.edges(), 2);
-        outputMesh.setMode(Mesh.Mode.Lines);
     }
 
 
@@ -34,7 +33,7 @@ public class LineExport extends Export<Edge> {
 
 
     @Override
-    protected void setIndexBuffer() {
+    protected void applyIndexBuffer(Mesh mesh) {
         int maxVertexIndex = bmesh.vertices().totalSize()-1;
         indices.prepare(maxVertexIndex);
 
@@ -43,7 +42,7 @@ public class LineExport extends Export<Edge> {
             indices[1] = attrEdgeVertex.get(edge, 1).getIndex();
         });
 
-        indices.applyIndexBuffer(outputMesh);
+        indices.applyIndexBuffer(mesh);
     }
 
 
