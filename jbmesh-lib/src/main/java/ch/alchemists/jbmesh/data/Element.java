@@ -1,7 +1,9 @@
 package ch.alchemists.jbmesh.data;
 
 public abstract class Element {
-    public static final int FLAG_VIRTUAL = 1;
+    // This library will start using bits on the left side (MSB).
+    // User code should use bits on the right side (LSB).
+    public static final int FLAG_VIRTUAL = 1 << 31;
 
 
     private int index = -1;
@@ -25,7 +27,7 @@ public abstract class Element {
     }
 
     final boolean isListed() {
-        return isAlive() && !checkFlags(FLAG_VIRTUAL); // TODO: Remove check for isAlive()
+        return !checkFlags(FLAG_VIRTUAL);
     }
 
 
