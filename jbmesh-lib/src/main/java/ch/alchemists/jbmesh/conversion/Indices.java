@@ -30,6 +30,7 @@ public class Indices<E extends Element> {
 
     private boolean useInt = false;
     private int shortHysteresis = Short.MAX_VALUE - 767;
+    private float bufferLoadFactor = 0.75f;
 
 
     @SuppressWarnings("unchecked")
@@ -64,6 +65,10 @@ public class Indices<E extends Element> {
     }
 
 
+    public VertexBuffer getIndexBuffer() {
+        return indexBuffer;
+    }
+
     public void setBufferUsage(VertexBuffer.Usage usage) {
         this.bufferUsage = usage;
 
@@ -72,12 +77,28 @@ public class Indices<E extends Element> {
 
     }
 
-    public void setShortHysteresis(int value) {
-        shortHysteresis = value;
+    /**
+     * If an <i>int</i> buffer is being used for the indices, the maximum vertex index has to drop
+     * below <i>shortHysteresis</i> before the buffer type is switched back to <i>short</i>.<br><br>
+     * Set to 0 to always use <i>int</i> buffers.<br>
+     * Set to <i>Short.MAX_VALUE</i> to disable hysteresis and always use <i>short</i> when possible.<br>
+     * Defaults to 32000.
+     * @param shortHysteresis Truncated at <i>Short.MAX_VALUE</i>.
+     */
+    public void setShortHysteresis(int shortHysteresis) {
+        this.shortHysteresis = Math.min(shortHysteresis, Short.MAX_VALUE);
     }
 
-    public VertexBuffer getIndexBuffer() {
-        return indexBuffer;
+    /**
+     * When the index data uses less that this percentage of an existing VertexBuffer's capacity,
+     * the buffer is resized to the size of the data to save memory.<br><br>
+     * Set to 0.0 to disable shrinking of buffers.<br>
+     * Set to 1.0 to always shrink buffers.<br>
+     * Defaults to 0.75.
+     * @param loadFactor Percentage (0.0 - 1.0). Values greater than 1.0 are truncated to 1.0.
+     */
+    public void setBufferLoadFactor(float loadFactor) {
+        this.bufferLoadFactor = Math.min(loadFactor, 1.0f);
     }
 
 
@@ -157,7 +178,7 @@ public class Indices<E extends Element> {
     private void applyBufferInt(Mesh mesh) {
         final int dataSize = meshData.totalSize() * intIndices.numComponents;
 
-        if(intBuffer == null || intBuffer.capacity() < dataSize)
+        if(intBuffer == null || needsResize(intBuffer, dataSize))
             intBuffer = BufferUtils.createIntBuffer(dataSize);
 
         intBuffer.clear();
@@ -171,7 +192,7 @@ public class Indices<E extends Element> {
     private void applyBufferShort(Mesh mesh) {
         final int dataSize = meshData.totalSize() * shortIndices.numComponents;
 
-        if(shortBuffer == null || shortBuffer.capacity() < dataSize)
+        if(shortBuffer == null || needsResize(shortBuffer, dataSize))
             shortBuffer = BufferUtils.createShortBuffer(dataSize);
 
         shortBuffer.clear();
@@ -194,5 +215,10 @@ public class Indices<E extends Element> {
             mesh.clearBuffer(VertexBuffer.Type.Index);
             mesh.setBuffer(indexBuffer);
         }
+    }
+
+
+    private boolean needsResize(Buffer buffer, int dataSize) {
+        return buffer.capacity() < dataSize || buffer.capacity() * bufferLoadFactor > dataSize;
     }
 }

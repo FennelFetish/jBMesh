@@ -40,6 +40,8 @@ public abstract class Export<E extends Element> {
     private final List<Vertex> tempVertices = new ArrayList<>();
     private final List<Vertex> virtualVertices = new ArrayList<>();
 
+    private float bufferLoadFactor = 0.75f;
+
 
     protected Export(BMesh bmesh, Mesh.Mode mode) {
         this.bmesh = bmesh;
@@ -52,6 +54,24 @@ public abstract class Export<E extends Element> {
     protected abstract void getVertexNeighborhood(Vertex vertex, List<E> dest);
     protected abstract void setVertexReference(Vertex contactPoint, E element, Vertex ref);
     protected abstract Vertex getVertexReference(Vertex contactPoint, E element);
+
+
+    public final Mesh getMesh() {
+        return outputMesh;
+    }
+
+
+    /**
+     * When an attribute's data uses less that this percentage of an existing VertexBuffer's capacity,
+     * the buffer is resized to the size of the data to save memory.<br><br>
+     * Set to 0.0 to disable shrinking of buffers.<br>
+     * Set to 1.0 to always shrink buffers.<br>
+     * Defaults to 0.75.
+     * @param loadFactor Percentage (0.0 - 1.0). Values greater than 1.0 are truncated to 1.0.
+     */
+    public void setBufferLoadFactor(float loadFactor) {
+        this.bufferLoadFactor = Math.min(loadFactor, 1.0f);
+    }
 
 
     public void useVertexAttribute(BMeshAttribute<Vertex, ?> vertexAttribute) {
@@ -140,11 +160,6 @@ public abstract class Export<E extends Element> {
 
         attributes.clear();
         mappedAttributes.clear();
-    }
-
-
-    public final Mesh getMesh() {
-        return outputMesh;
     }
 
 
@@ -314,8 +329,8 @@ public abstract class Export<E extends Element> {
             // Valid buffer exists
             else {
                 B buffer = (B) vertexBuffer.getData();
-                if(buffer.capacity() < dataSize)
-                    buffer = createBuffer.apply(dataSize); // Grow buffer
+                if(buffer.capacity() < dataSize || buffer.capacity() * bufferLoadFactor > dataSize)
+                    buffer = createBuffer.apply(dataSize); // Resize buffer
                 else
                     buffer.clear(); // Reuse buffer
 
