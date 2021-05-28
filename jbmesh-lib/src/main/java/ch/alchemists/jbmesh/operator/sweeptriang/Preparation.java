@@ -1,6 +1,6 @@
 package ch.alchemists.jbmesh.operator.sweeptriang;
 
-import ch.alchemists.jbmesh.structure.Vertex;
+import ch.alchemists.jbmesh.util.Func;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
@@ -8,14 +8,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 class Preparation {
-    interface Extractor<T> {
-        Vector3f position(T element, Vector3f store);
-        Vertex vertex(T element);
-    }
-
     private static final float MIN_VERTEX_DISTANCE = 0.00001f;
-    private static final float MIN_VERTEX_DISTANCE_SQUARED = MIN_VERTEX_DISTANCE * MIN_VERTEX_DISTANCE;
-
     private static final String INVALID_FACE = "Face needs at least 3 valid vertices.";
 
     private final Collection<SweepVertex> sweepVertices;
@@ -39,65 +32,9 @@ class Preparation {
     }
 
 
-    private static <T> PlanarCoordinateSystem createCoordSystem(Iterable<T> face, Extractor<T> extract) {
-        Iterator<T> it = face.iterator();
-        if(!it.hasNext())
-            throw new IllegalArgumentException(INVALID_FACE);
-
-        Vector3f first = extract.position(it.next(), new Vector3f());
-        Vector3f last  = first.clone();
-        Vector3f valid = new Vector3f();
-        Vector3f p     = new Vector3f();
-
-        // Accumulate general direction of polygon
-        Vector3f dirSum = new Vector3f();
-
-        // Calculate face normal using Newell's Method
-        Vector3f n = new Vector3f();
-
-        int numVertices = 1;
-        while(it.hasNext()) {
-            extract.position(it.next(), p);
-            addToNormal(n, last, p);
-            last.set(p);
-
-            p.subtractLocal(first);
-            dirSum.addLocal(p);
-
-            // Count only vertices that are different from 'first'
-            if(p.lengthSquared() > MIN_VERTEX_DISTANCE_SQUARED) {
-                valid.set(p);
-                numVertices++;
-            }
-        }
-
-        if(numVertices < 3)
-            throw new IllegalArgumentException(INVALID_FACE);
-
-        // Add last segment from last to first
-        addToNormal(n, last, first);
-        n.normalizeLocal();
-
-        // Dir sum may be very near at 'first'. In this case use any valid vertex.
-        if(dirSum.distanceSquared(first) <= MIN_VERTEX_DISTANCE_SQUARED)
-            dirSum.set(valid).addLocal(first);
-
-        PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withY(first, dirSum, n);
-        //coordSys.rotate(-45 * FastMath.DEG_TO_RAD);
-        return coordSys;
-    }
-
-
-    private static void addToNormal(Vector3f n, Vector3f last, Vector3f p) {
-        n.x += (last.y - p.y) * (last.z + p.z);
-        n.y += (last.z - p.z) * (last.x + p.x);
-        n.z += (last.x - p.x) * (last.y + p.y);
-    }
-
-
-    <T> void addFace(Iterable<T> face, Extractor<T> extract) {
+    <T> void addFace(Iterable<T> face, Func.MapVec3<T> positionMap, Func.MapVertex<T> vertexMap) {
         if(coordSys == null)
-            coordSys = createCoordSystem(face, extract);
+            coordSys = new PlanarCoordinateSystem().forPolygon(face, positionMap);
 
         Iterator<T> it = face.iterator();
         if(!it.hasNext())
@@ -105,8 +42,8 @@ class Preparation {
         T ele = it.next();
 
         Vector3f p = new Vector3f();
-        SweepVertex first = new SweepVertex(extract.vertex(ele), 0, nextFaceIndex);
-        coordSys.project(extract.position(ele, p), first.p);
+        SweepVertex first = new SweepVertex(vertexMap.get(ele), 0, nextFaceIndex);
+        coordSys.project(positionMap.get(ele, p), first.p);
 
         SweepVertex prev = first;
         int numVertices = 1;
@@ -114,8 +51,8 @@ class Preparation {
         while(it.hasNext()) {
             ele = it.next();
 
-            SweepVertex current = new SweepVertex(extract.vertex(ele), numVertices, nextFaceIndex);
-            coordSys.project(extract.position(ele, p), current.p);
+            SweepVertex current = new SweepVertex(vertexMap.get(ele), numVertices, nextFaceIndex);
+            coordSys.project(positionMap.get(ele, p), current.p);
 
             current.prev = prev;
             prev.next = current;

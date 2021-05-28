@@ -2,6 +2,7 @@ package ch.alchemists.jbmesh.operator;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
+import ch.alchemists.jbmesh.operator.normalgen.NewellNormal;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
@@ -39,10 +40,7 @@ public class FaceOps {
 
         do {
             positions.get(next.vertex, vNext);
-
-            store.x += (vCurrent.y - vNext.y) * (vCurrent.z + vNext.z);
-            store.y += (vCurrent.z - vNext.z) * (vCurrent.x + vNext.x);
-            store.z += (vCurrent.x - vNext.x) * (vCurrent.y + vNext.y);
+            NewellNormal.addToNormal(store, vCurrent, vNext);
 
             vCurrent.set(vNext);
             current = next;

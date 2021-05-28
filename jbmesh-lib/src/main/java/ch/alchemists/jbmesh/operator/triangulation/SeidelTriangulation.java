@@ -2,7 +2,6 @@ package ch.alchemists.jbmesh.operator.triangulation;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
-import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
@@ -17,13 +16,11 @@ import java.util.Random;
 
 public class SeidelTriangulation {
     private final BMesh bmesh;
-    private final FaceOps faceOps;
     private final Vec3Attribute<Vertex> positions;
 
 
     public SeidelTriangulation(BMesh bmesh) {
         this.bmesh = bmesh;
-        this.faceOps = new FaceOps(bmesh);
         this.positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
     }
 
@@ -31,10 +28,7 @@ public class SeidelTriangulation {
     public void apply(Face face) {
         System.out.println("SeidelTriangulation.apply ----------------------------------------------------");
 
-        Vector3f p0 = positions.get(face.loop.vertex);
-        Vector3f p1 = positions.get(face.loop.nextFaceLoop.vertex);
-        Vector3f n = faceOps.normal(face);
-        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem(p0, p1, n);
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem().forFace(face, positions);
 
         ArrayList<Loop> loops = new ArrayList<>();
         face.getLoops(loops);
@@ -49,6 +43,9 @@ public class SeidelTriangulation {
 
         TrapezoidTree tree = new TrapezoidTree();
         tree.printTree();
+
+        Vector3f p0 = new Vector3f();
+        Vector3f p1 = new Vector3f();
 
         for(Loop l : loops) {
             DebugVisual.next("Seidel");

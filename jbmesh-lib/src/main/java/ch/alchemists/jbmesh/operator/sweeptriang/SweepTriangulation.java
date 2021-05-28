@@ -41,15 +41,15 @@ public class SweepTriangulation {
 
 
     public void addFace(Face face) {
-        preparation.addFace(face.loops(), new LoopExtractor(positions));
+        addFaceWithLoops(face.loops());
     }
 
     public void addFaceWithPositions(List<Vector3f> face) {
-        preparation.addFace(face, new Vector3fExtractor());
+        preparation.addFace(face, (Vector3f v, Vector3f store) -> store.set(v), v -> null);
     }
 
-    public void addFaceWithLoops(List<Loop> face) {
-        preparation.addFace(face, new LoopExtractor(positions));
+    public void addFaceWithLoops(Iterable<Loop> face) {
+        preparation.addFace(face, (Loop loop, Vector3f store) -> positions.get(loop.vertex, store), loop -> loop.vertex);
     }
 
 
@@ -252,37 +252,4 @@ public class SweepTriangulation {
         Vector3f end = new Vector3f(dest.p.x, dest.p.y, 0);
         DebugVisual.get("SweepTriangulation").addArrow(start, end);
     }
-
-
-
-    private static class LoopExtractor implements Preparation.Extractor<Loop> {
-        private final Vec3Attribute<Vertex> positions;
-
-        private LoopExtractor(Vec3Attribute<Vertex> positions) {
-            this.positions = positions;
-        }
-
-        @Override
-        public Vector3f position(Loop loop, Vector3f store) {
-            return positions.get(loop.vertex, store);
-        }
-
-        @Override
-        public Vertex vertex(Loop loop) {
-            return loop.vertex;
-        }
-    };
-
-
-    private static class Vector3fExtractor implements Preparation.Extractor<Vector3f> {
-        @Override
-        public Vector3f position(Vector3f v, Vector3f store) {
-            return store.set(v);
-        }
-
-        @Override
-        public Vertex vertex(Vector3f loop) {
-            return null;
-        }
-    };
 }

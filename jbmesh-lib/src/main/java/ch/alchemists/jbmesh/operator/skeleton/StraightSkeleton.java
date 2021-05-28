@@ -2,7 +2,6 @@ package ch.alchemists.jbmesh.operator.skeleton;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
-import ch.alchemists.jbmesh.operator.FaceOps;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Vertex;
@@ -12,8 +11,6 @@ import com.jme3.math.Vector3f;
 import java.util.*;
 
 public class StraightSkeleton {
-    private final BMesh bmesh;
-    private final FaceOps faceOps;
     private final Vec3Attribute<Vertex> positions;
 
     private float offsetDistance = Float.POSITIVE_INFINITY; // Absolute value
@@ -25,8 +22,6 @@ public class StraightSkeleton {
 
 
     public StraightSkeleton(BMesh bmesh) {
-        this.bmesh = bmesh;
-        faceOps = new FaceOps(bmesh);
         positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
     }
 
@@ -62,9 +57,7 @@ public class StraightSkeleton {
         assert vertices.size() >= 3;
 
         ctx.reset(offsetDistance, distanceSign);
-
-        Vector3f n = faceOps.normal(face);
-        coordSys = new PlanarCoordinateSystem(positions.get(vertices.get(0)), positions.get(vertices.get(1)), n);
+        coordSys = new PlanarCoordinateSystem().forFace(face, positions);
 
         float diagonalSize = createNodes(vertices);
 

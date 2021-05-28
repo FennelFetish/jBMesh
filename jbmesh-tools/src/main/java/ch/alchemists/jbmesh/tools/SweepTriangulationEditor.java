@@ -96,7 +96,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
         BMesh bmesh = new BMesh();
         SweepTriangulation triangulation = new SweepTriangulation(bmesh);
 
-        PlanarCoordinateSystem coordSys = PlanarCoordinateSystem.withX(Vector3f.UNIT_X, Vector3f.UNIT_Z);
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem().withX(Vector3f.UNIT_X, Vector3f.UNIT_Z);
         DebugVisual.setPointTransformation("SweepTriangulation", p -> coordSys.unproject(new Vector2f(p.x, p.y)));
 
         Vec3Attribute<Vertex> positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
