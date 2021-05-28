@@ -204,7 +204,7 @@ public class StraightSkeleton {
     // Results
     //
 
-    /*public List<SkeletonNode> getStartNodes() {
+    public List<SkeletonNode> getStartNodes() {
         return Collections.unmodifiableList(initialNodes);
     }
 
@@ -245,7 +245,7 @@ public class StraightSkeleton {
 
     public Vector3f getPosition(SkeletonNode node, Vector3f store) {
         return coordSys.unproject(node.p, store);
-    }*/
+    }
 
 
     public SkeletonVisualization getVisualization() {

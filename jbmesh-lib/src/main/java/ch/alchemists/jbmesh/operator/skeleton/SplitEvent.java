@@ -124,6 +124,7 @@ class SplitEvent extends SkeletonEvent {
         assert op0.next == op1;
         ctx.abortEvents(op0, op1);
 
+        reflexNode.skelNode.setReflex();
         MovingNode node0 = reflexNode;
         MovingNode reflexNext = reflexNode.next;
         MovingNode reflexPrev = reflexNode.prev;

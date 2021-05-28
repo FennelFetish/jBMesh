@@ -43,6 +43,9 @@ class EdgeEvent extends SkeletonEvent {
         n0.next = next;
         next.prev = n0;
 
+        if(n0.isReflex() || n1.isReflex())
+            n0.skelNode.setReflex();
+
         n1.skelNode.remapIncoming(n0.skelNode);
         ctx.removeMovingNode(n1);
 
