@@ -9,7 +9,7 @@ import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import java.util.Iterator;
 
-public class PlanarCoordinateSystem {
+public class PlanarCoordinateSystem implements Cloneable {
     private static final float AXIS_LENGTH_EPSILON = 0.001f;
     private static final float AXIS_LENGTH_EPSILON_SQUARED = AXIS_LENGTH_EPSILON * AXIS_LENGTH_EPSILON;
 
@@ -17,9 +17,9 @@ public class PlanarCoordinateSystem {
     private static final float MIN_VERTEX_DISTANCE_SQUARED = MIN_VERTEX_DISTANCE * MIN_VERTEX_DISTANCE;
 
 
-    private final Vector3f p = new Vector3f();
-    private final Vector3f x = new Vector3f(1, 0, 0);
-    private final Vector3f y = new Vector3f(0, 1, 0);
+    public final Vector3f p = new Vector3f();
+    public final Vector3f x = new Vector3f(1, 0, 0);
+    public final Vector3f y = new Vector3f(0, 1, 0);
 
 
     public PlanarCoordinateSystem() {}
@@ -31,7 +31,6 @@ public class PlanarCoordinateSystem {
         if(Math.abs(1f - y.lengthSquared()) > AXIS_LENGTH_EPSILON_SQUARED)
             throw new IllegalArgumentException("Invalid Y axis (normalized?)");
     }
-
 
 
     public PlanarCoordinateSystem withX(Vector3f x, Vector3f n) {
@@ -187,15 +186,40 @@ public class PlanarCoordinateSystem {
 
 
     public void rotate(float angleRad) {
+        Vector3f normal = x.cross(y).normalizeLocal();
         Quaternion rot = new Quaternion();
-        rot.fromAngleAxis(angleRad, Vector3f.UNIT_Z);
+        rot.fromAngleNormalAxis(angleRad, normal);
         rot.multLocal(x);
         rot.multLocal(y);
     }
 
 
+    public void scale(float scale) {
+        scale(scale, scale);
+    }
+
+    public void scale(Vector2f scale) {
+        scale(scale.x, scale.y);
+    }
+
+    public void scale(float xScale, float yScale) {
+        this.x.multLocal(xScale);
+        this.y.multLocal(yScale);
+    }
+
+
     @Override
     public String toString() {
-        return "PlanarCoordinateSystem{x: " + x + " (" + x.length() + "), y: " + y + " (" + y.length() + "), p: " + p + "}";
+        return "PlanarCoordinateSystem{p: " + p + ", x: " + x + " (" + x.length() + "), y: " + y + " (" + y.length() + ")}";
+    }
+
+
+    @Override
+    public PlanarCoordinateSystem clone() {
+        PlanarCoordinateSystem copy = new PlanarCoordinateSystem();
+        copy.p.set(p);
+        copy.x.set(x);
+        copy.y.set(y);
+        return copy;
     }
 }
