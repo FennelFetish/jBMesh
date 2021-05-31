@@ -14,14 +14,14 @@ public class ObjectTupleAttribute<E extends Element, T> extends BMeshAttribute<E
     }
 
 
-    public T get(E element, int component) {
+    public T getComponent(E element, int component) {
         return data[indexOf(element, component)];
     }
 
-
-    public void set(E element, int component, T value) {
+    public void setComponent(E element, int component, T value) {
         data[indexOf(element, component)] = value;
     }
+
 
     public void setValues(E element, T... values) {
         if(values.length != numComponents)

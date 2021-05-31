@@ -38,30 +38,33 @@ public class Vec3Attribute<E extends Element> extends FloatTupleAttribute<E> {
 
 
     public float getX(E element) {
-        return get(element, 0);
+        return getComponent(element, 0);
     }
 
     public void setX(E element, float x) {
-        set(element, 0, x);
+        setComponent(element, 0, x);
     }
 
     public float getY(E element) {
-        return get(element, 1);
+        return getComponent(element, 1);
     }
 
     public void setY(E element, float y) {
-        set(element, 1, y);
+        setComponent(element, 1, y);
     }
 
     public float getZ(E element) {
-        return get(element, 2);
+        return getComponent(element, 2);
     }
 
     public void setZ(E element, float z) {
-        set(element, 2, z);
+        setComponent(element, 2, z);
     }
 
 
+    /**
+     * store = store + element
+     */
     public void addLocal(Vector3f store, E element) {
         int i = indexOf(element);
         store.x += data[i];
@@ -69,6 +72,9 @@ public class Vec3Attribute<E extends Element> extends FloatTupleAttribute<E> {
         store.z += data[i+2];
     }
 
+    /**
+     * element = element + v
+     */
     public void addLocal(E element, Vector3f v) {
         int i = indexOf(element);
         data[i]   += v.x;
@@ -77,6 +83,9 @@ public class Vec3Attribute<E extends Element> extends FloatTupleAttribute<E> {
     }
 
 
+    /**
+     * store = store - element
+     */
     public void subtractLocal(Vector3f store, E element) {
         int i = indexOf(element);
         store.x -= data[i];
@@ -84,6 +93,9 @@ public class Vec3Attribute<E extends Element> extends FloatTupleAttribute<E> {
         store.z -= data[i+2];
     }
 
+    /**
+     * element = element - v
+     */
     public void subtractLocal(E element, Vector3f v) {
         int i = indexOf(element);
         data[i]   -= v.x;

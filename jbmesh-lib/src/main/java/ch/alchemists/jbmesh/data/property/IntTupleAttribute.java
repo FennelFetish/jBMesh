@@ -10,14 +10,14 @@ public class IntTupleAttribute<E extends Element> extends BMeshAttribute<E, int[
     }
 
 
-    public int get(E element, int component) {
+    public int getComponent(E element, int component) {
         return data[indexOf(element, component)];
     }
-
     
-    public void set(E element, int component, int value) {
+    public void setComponent(E element, int component, int value) {
         data[indexOf(element, component)] = value;
     }
+
 
     public void setValues(E element, int... values) {
         if(values.length != numComponents)

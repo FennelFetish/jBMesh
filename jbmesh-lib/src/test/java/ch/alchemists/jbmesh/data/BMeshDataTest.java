@@ -123,9 +123,9 @@ public class BMeshDataTest {
             if(!elements[i].isAlive())
                 continue;
 
-            assertEquals(i, attr.get(elements[i], 0));
-            assertEquals(i, attr.get(elements[i], 1));
-            assertEquals(i, attr.get(elements[i], 2));
+            assertEquals(i, attr.getComponent(elements[i], 0));
+            assertEquals(i, attr.getComponent(elements[i], 1));
+            assertEquals(i, attr.getComponent(elements[i], 2));
         }
     }
 }

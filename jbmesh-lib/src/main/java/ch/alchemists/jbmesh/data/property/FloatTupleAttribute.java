@@ -10,14 +10,14 @@ public class FloatTupleAttribute<E extends Element> extends BMeshAttribute<E, fl
     }
 
 
-    public float get(E element, int component) {
+    public float getComponent(E element, int component) {
         return data[indexOf(element, component)];
     }
 
-
-    public void set(E element, int component, float value) {
+    public void setComponent(E element, int component, float value) {
         data[indexOf(element, component)] = value;
     }
+
 
     public void setValues(E element, float... values) {
         if(values.length != numComponents)

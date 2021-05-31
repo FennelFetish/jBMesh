@@ -38,8 +38,8 @@ public class LineExport extends Export<Edge> {
         indices.prepare(maxVertexIndex);
 
         indices.updateIndices((Edge edge, int[] indices) -> {
-            indices[0] = attrEdgeVertex.get(edge, 0).getIndex();
-            indices[1] = attrEdgeVertex.get(edge, 1).getIndex();
+            indices[0] = attrEdgeVertex.getComponent(edge, 0).getIndex();
+            indices[1] = attrEdgeVertex.getComponent(edge, 1).getIndex();
         });
 
         indices.applyIndexBuffer(mesh);
@@ -56,10 +56,10 @@ public class LineExport extends Export<Edge> {
     @Override
     protected void setVertexReference(Vertex contactPoint, Edge element, Vertex ref) {
         if(element.vertex0 == contactPoint)
-            attrEdgeVertex.set(element, 0, ref);
+            attrEdgeVertex.setComponent(element, 0, ref);
         else {
             assert element.vertex1 == contactPoint;
-            attrEdgeVertex.set(element, 1, ref);
+            attrEdgeVertex.setComponent(element, 1, ref);
         }
     }
 
@@ -67,10 +67,10 @@ public class LineExport extends Export<Edge> {
     @Override
     protected Vertex getVertexReference(Vertex contactPoint, Edge element) {
         if(element.vertex0 == contactPoint)
-            return attrEdgeVertex.get(element, 0);
+            return attrEdgeVertex.getComponent(element, 0);
         else {
             assert element.vertex1 == contactPoint;
-            return attrEdgeVertex.get(element, 1);
+            return attrEdgeVertex.getComponent(element, 1);
         }
     }
 }

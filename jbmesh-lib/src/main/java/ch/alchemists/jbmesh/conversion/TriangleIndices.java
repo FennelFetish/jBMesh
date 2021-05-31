@@ -129,6 +129,7 @@ public class TriangleIndices {
             length1_3 = diagonal.lengthSquared();
 
         // Choose shorter diagonal
+        // TODO: Use homogenous direction if lengths are almost equal
         if(length0_2 <= length1_3) {
             addTriangle(loops, 0, 1, 2);
             addTriangle(loops, 0, 2, 3);
@@ -176,7 +177,7 @@ public class TriangleIndices {
 
     // Triangle -> Loop -> Vertex -> Index
     private int mapTriangleLoopVertexIndex(Triangle tri, int i) {
-        Loop loop = attrTriangleLoops.get(tri, i);
+        Loop loop = attrTriangleLoops.getComponent(tri, i);
         return attrLoopVertex.get(loop).getIndex();
     }
 }

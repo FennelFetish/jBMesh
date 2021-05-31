@@ -10,16 +10,15 @@ public class ShortTupleAttribute<E extends Element> extends BMeshAttribute<E, sh
     }
 
 
-    public short get(E element, int component) {
+    public short getComponent(E element, int component) {
         return data[indexOf(element, component)];
     }
 
-
-    public void set(E element, int component, short value) {
+    public void setComponent(E element, int component, short value) {
         data[indexOf(element, component)] = value;
     }
 
-    public void set(E element, int component, int value) {
+    public void setComponent(E element, int component, int value) {
         data[indexOf(element, component)] = (short) value;
     }
 
