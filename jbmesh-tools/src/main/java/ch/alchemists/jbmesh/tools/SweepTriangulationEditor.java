@@ -94,7 +94,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
 
         // Prepare BMesh & Triangulation
         BMesh bmesh = new BMesh();
-        SweepTriangulation triangulation = new SweepTriangulation(bmesh);
+        SweepTriangulation triangulation = new SweepTriangulation();
 
         PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem().withX(Vector3f.UNIT_X, Vector3f.UNIT_Z);
         DebugVisual.setPointTransformation("SweepTriangulation", p -> coordSys.unproject(new Vector2f(p.x, p.y)));
@@ -116,7 +116,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
             for(List<Vector2f> points : polygonEditor.getAllPoints()) {
                 Face face = polygonEditor.createBMeshFace(bmesh, points);
                 if(face != null) {
-                    triangulation.addFace(face);
+                    triangulation.addFace(positions, face);
                     hasFaces = true;
                 }
             }
@@ -149,18 +149,18 @@ public class SweepTriangulationEditor extends SimpleApplication {
         BMesh bmesh = new BMesh();
         Face face = polygonEditor.createBMeshFace(bmesh);
 
-        SweepTriangulation triangulation = new SweepTriangulation(bmesh);
+        SweepTriangulation triangulation = new SweepTriangulation();
         triangulation.setTriangleCallback((v1, v2, v3) -> {});
 
         for(int i=runs/15; i>=0; --i) {
-            triangulation.addFace(face);
+            triangulation.addFace(bmesh, face);
             triangulation.triangulate();
         }
 
         try(Profiler p0 = Profiler.start("SweepTriangulation Benchmark")) {
             for(int i = 0; i < runs; ++i) {
                 try(Profiler p = Profiler.start("SweepTriangulation.apply")) {
-                    triangulation.addFace(face);
+                    triangulation.addFace(bmesh, face);
                     triangulation.triangulate();
                 }
 

@@ -22,17 +22,18 @@ public class SweepTriangulation {
     private final EdgeSet edges = new EdgeSet();
 
     private final Preparation preparation = new Preparation(sweepVertices);
-    private final Vec3Attribute<Vertex> positions; // TODO: Remove? Pass to addFace()?
     private TriangleCallback cb;
 
 
-    public SweepTriangulation(BMesh bmesh) {
-        this.positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
+    public SweepTriangulation() {}
+
+    public SweepTriangulation(TriangleCallback triangleCallback) {
+        this.cb = triangleCallback;
     }
 
 
-    public void setTriangleCallback(TriangleCallback callback) {
-        this.cb = callback;
+    public void setTriangleCallback(TriangleCallback triangleCallback) {
+        this.cb = triangleCallback;
     }
 
     public void setCoordinateSystem(PlanarCoordinateSystem coordSys) {
@@ -40,25 +41,34 @@ public class SweepTriangulation {
     }
 
 
-    public void addFace(Face face) {
-        addFaceWithLoops(face.loops());
+    public void addFace(BMesh bmesh, Face face) {
+        addFaceWithLoops(bmesh, face.loops());
     }
 
-    public void addFaceWithPositions(List<Vector3f> face) {
-        preparation.addFace(face, (Vector3f v, Vector3f store) -> store.set(v), v -> null);
+    public void addFace(Vec3Attribute<Vertex> positions, Face face) {
+        addFaceWithLoops(positions, face.loops());
     }
 
-    public void addFaceWithLoops(Iterable<Loop> face) {
+    public void addFaceWithLoops(BMesh bmesh, Iterable<Loop> face) {
+        Vec3Attribute<Vertex> positions = Vec3Attribute.get(BMeshAttribute.Position, bmesh.vertices());
+        addFaceWithLoops(positions, face);
+    }
+
+    public void addFaceWithLoops(Vec3Attribute<Vertex> positions, Iterable<Loop> face) {
         preparation.addFace(face, (Loop loop, Vector3f store) -> positions.get(loop.vertex, store), loop -> loop.vertex);
+    }
+
+    public void addFaceWithPositions(Iterable<Vector3f> face) {
+        preparation.addFace(face, (Vector3f v, Vector3f store) -> store.set(v), v -> null);
     }
 
 
     public void triangulate() {
         if(sweepVertices.size() < 3)
-            throw new IllegalArgumentException("Triangulation needs at least 3 valid vertices");
+            throw new IllegalStateException("Triangulation needs a face with at least 3 valid vertices");
 
         if(cb == null)
-            throw new IllegalArgumentException("Missing TriangleCallback");
+            throw new IllegalStateException("Missing TriangleCallback");
 
         try {
             for(SweepVertex v : sweepVertices)
@@ -76,10 +86,10 @@ public class SweepTriangulation {
         //System.out.println("SweepTriangulation.triangulateDebug ----------------------------------------------------");
 
         if(sweepVertices.size() < 3)
-            throw new IllegalArgumentException("Triangulation needs at least 3 valid vertices");
+            throw new IllegalStateException("Triangulation needs a face with at least 3 valid vertices");
 
         if(cb == null)
-            throw new IllegalArgumentException("Missing TriangleCallback");
+            throw new IllegalStateException("Missing TriangleCallback");
 
         final float limit = yLimit + sweepVertices.first().p.y;
 

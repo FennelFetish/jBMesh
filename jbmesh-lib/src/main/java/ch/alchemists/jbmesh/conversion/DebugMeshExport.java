@@ -3,6 +3,7 @@ package ch.alchemists.jbmesh.conversion;
 import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.FaceOps;
+import ch.alchemists.jbmesh.operator.sweeptriang.SweepTriangulation;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
@@ -11,6 +12,7 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class DebugMeshExport {
     private static final float INNER_SCALE       = 0.85f;
@@ -120,6 +122,8 @@ public class DebugMeshExport {
         final ArrayList<Vector3f> faceVertices = new ArrayList<>();
         FaceOps faceOps = new FaceOps(bmesh);
 
+        SweepTriangulation triangulation = new SweepTriangulation();
+
         for(Face face : bmesh.faces()) {
             faceVertices.clear();
             for(Vertex vertex : face.vertices())
@@ -129,7 +133,7 @@ public class DebugMeshExport {
             final Vector3f normal   = faceOps.normal(face);
             final Vector3f centroid = faceOps.centroid(face);
 
-            // Scale vertices
+            // Scale vertices, TODO: Use inset operator
             Vector3f[] innerVerts = new Vector3f[size];
             for(int i=0; i<size; ++i)
                 innerVerts[i] = faceVertices.get(i).subtract(centroid).multLocal(INNER_SCALE).addLocal(centroid);
@@ -172,11 +176,20 @@ public class DebugMeshExport {
 
             // Fan-like triangulation for inner area
             // TODO: This creates superfluous triangles for collinear edges?
-            for(int i=2; i<size; ++i) {
+            /*for(int i=2; i<size; ++i) {
                 indices.add(innerIdx[0]);
                 indices.add(innerIdx[i-1]);
                 indices.add(innerIdx[i]);
-            }
+            }*/
+
+            triangulation.setTriangleCallback((v1, v2, v3) -> {
+                indices.add(innerIdx[v1.index]);
+                indices.add(innerIdx[v2.index]);
+                indices.add(innerIdx[v3.index]);
+            });
+
+            triangulation.addFaceWithPositions(Arrays.asList(innerVerts));
+            triangulation.triangulate();
         }
     }
 }

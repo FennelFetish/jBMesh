@@ -39,7 +39,7 @@ public class TriangleIndices {
 
     public TriangleIndices(BMesh bmesh, ObjectAttribute<Loop, Vertex> attrLoopVertex) {
         this.bmesh = bmesh;
-        triangulation = new SweepTriangulation(bmesh);
+        triangulation = new SweepTriangulation();
 
         this.attrLoopVertex = attrLoopVertex;
 
@@ -61,6 +61,9 @@ public class TriangleIndices {
         triangleData.ensureCapacity(bmesh.faces().size());
 
         ArrayList<Loop> loops = new ArrayList<>(6);
+        triangulation.setTriangleCallback((v1, v2, v3) -> {
+            addTriangle(loops, v1.index, v2.index, v3.index);
+        });
 
         for(Face face : bmesh.faces()) {
             loops.clear();
@@ -72,7 +75,7 @@ public class TriangleIndices {
             else if(numVertices == 4)
                 triangulateQuad(attrPosition, loops);
             else if(numVertices > 4)
-                triangulatePolygon(loops);
+                triangulatePolygon(attrPosition, loops);
             else
                 LOG.warning("Couldn't triangulate face with " + numVertices + " vertices.");
 
@@ -141,13 +144,9 @@ public class TriangleIndices {
     }
 
 
-    private void triangulatePolygon(ArrayList<Loop> loops) {
+    private void triangulatePolygon(Vec3Attribute<Vertex> attrPosition, ArrayList<Loop> loops) {
         try {
-            triangulation.setTriangleCallback((v1, v2, v3) -> {
-                addTriangle(loops, v1.index, v2.index, v3.index);
-            });
-
-            triangulation.addFaceWithLoops(loops);
+            triangulation.addFaceWithLoops(attrPosition, loops);
             triangulation.triangulate();
         }
         catch(Throwable t) {
