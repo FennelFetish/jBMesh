@@ -98,7 +98,7 @@ public class ExtrudePath {
         // and move backwards from there, segment by segment (made of quads).
         ArrayList<Loop> loops = face.getLoops();
 
-        for(int seg=numSegments; seg>0; --seg) {
+        for(int i=0; i<numSegments; ++i) {
             yBack -= yFeed;
 
             for(int side=0; side<loops.size(); ++side) {

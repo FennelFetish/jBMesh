@@ -57,6 +57,16 @@ public class BMesh {
     }
 
 
+    public void clear() {
+        vertexData.clear();
+        edgeData.clear();
+        faceData.clear();
+        loopData.clear();
+
+        tempLoops.trimToSize();
+    }
+
+
     /**
      * Creates a new vertex.
      * @return A new vertex.
