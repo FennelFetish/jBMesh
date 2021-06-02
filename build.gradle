@@ -7,7 +7,7 @@ allprojects {
     group = 'ch.alchemists.jbmesh'
     version = '0.1'
 
-    ext.jmonkeyengineVersion = '3.3.2-stable'
+    ext.jmonkeyengineVersion = '3.4.0-stable'
     ext.junitVersion = '5.7.1'
    
     repositories {
