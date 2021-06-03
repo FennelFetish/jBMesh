@@ -1,3 +1,9 @@
+// Copyright (c) 2020-2021 Rolf Müri
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package ch.alchemists.jbmesh.operator.normalgen;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
@@ -83,7 +89,7 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
 
     @Override
     public void getWeightedNormal(Loop loop, Vector3f store) {
-        // Use normal of triangle because faces are not always planar (?). Requires convex polygon.
+        // Use normal of triangle because faces are not always planar (?). Requires convex polygon. -> This makes ugly normals when faces are not planar.
         // -> TODO: Compare with face normal to make it work for concave (flip normal in this case)? -> Make separate NormalCalculator for that
 
         Vertex vertex = loop.vertex;
@@ -102,6 +108,9 @@ public class AngleNormalCalculator implements NormalGenerator.NormalCalculator {
             faceOps.normal(loop.face, store);
             return;
         }
+
+        // Debug
+        //faceOps.normal(loop.face, store);
 
         tempV1.normalizeLocal();
         tempV2.normalizeLocal();

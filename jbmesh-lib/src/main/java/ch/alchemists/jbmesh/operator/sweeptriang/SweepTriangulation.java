@@ -1,3 +1,9 @@
+// Copyright (c) 2020-2021 Rolf Müri
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package ch.alchemists.jbmesh.operator.sweeptriang;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
@@ -9,7 +15,6 @@ import ch.alchemists.jbmesh.structure.Vertex;
 import ch.alchemists.jbmesh.util.DebugVisual;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
 import com.jme3.math.Vector3f;
-import java.util.List;
 import java.util.TreeSet;
 
 public class SweepTriangulation {

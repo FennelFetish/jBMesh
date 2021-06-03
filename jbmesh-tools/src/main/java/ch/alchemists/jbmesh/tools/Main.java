@@ -1,11 +1,18 @@
+// Copyright (c) 2020-2021 Rolf Müri
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package ch.alchemists.jbmesh.tools;
 
-import ch.alchemists.jbmesh.conversion.*;
+import ch.alchemists.jbmesh.conversion.BMeshJmeExport;
+import ch.alchemists.jbmesh.conversion.DebugMeshExport;
+import ch.alchemists.jbmesh.conversion.DirectImport;
 import ch.alchemists.jbmesh.operator.MeshOps;
 import ch.alchemists.jbmesh.operator.normalgen.NormalGenerator;
 import ch.alchemists.jbmesh.structure.BMesh;
 import ch.alchemists.jbmesh.util.ColorUtil;
-import ch.alchemists.jbmesh.util.DebugNormals;
 import ch.alchemists.jbmesh.util.Gizmo;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
@@ -55,8 +62,8 @@ public class Main extends SimpleApplication {
         }
 
         /*try(Profiler p0 = Profiler.start("Marching Cubes")) {
-            //bmesh = TestMesh.marchingCubes(bmesh);
-            bmesh = MarchingCube.build(bmesh, TestMesh.dfunc(), 0.05f, false);
+            bmesh = TestMesh.marchingCubes(bmesh);
+            //bmesh = MarchingCube.build(bmesh, TestMesh.dfunc(), 0.05f, false);
         }*/
 
         return bmesh;
@@ -100,7 +107,7 @@ public class Main extends SimpleApplication {
         rootNode.addLight(new DirectionalLight(new Vector3f(0.7f, -1, 1.5f).normalizeLocal(), ColorRGBA.White.mult(0.07f)));
 
         flyCam.setMoveSpeed(2);
-        viewPort.setBackgroundColor(ColorUtil.hsb(0.75f, 0.35f, 0.02f));
+        viewPort.setBackgroundColor(ColorUtil.hsv(0.75f, 0.35f, 0.02f));
         cam.setFrustumPerspective(60, (float)cam.getWidth()/cam.getHeight(), 0.01f, 100f);
         initCamera(25, 1.2f);
     }
@@ -114,8 +121,8 @@ public class Main extends SimpleApplication {
 
 
     private Geometry createMesh(BMesh bmesh) {
-        ColorRGBA diffuse  = ColorUtil.hsb(0.16f, 0.25f, 0.7f);
-        ColorRGBA specular = ColorUtil.hsb(0.10f, 0.4f, 1.0f);
+        ColorRGBA diffuse  = ColorUtil.hsv(0.16f, 0.25f, 0.7f);
+        ColorRGBA specular = ColorUtil.hsv(0.10f, 0.4f, 1.0f);
         /*ColorProperty<Vertex> propVertexColor = new ColorProperty<>(BMeshProperty.Vertex.COLOR);
         bmesh.vertices().addProperty(propVertexColor);
 

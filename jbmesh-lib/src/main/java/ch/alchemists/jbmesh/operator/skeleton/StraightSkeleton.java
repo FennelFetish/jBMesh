@@ -1,3 +1,9 @@
+// Copyright (c) 2020-2021 Rolf Müri
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package ch.alchemists.jbmesh.operator.skeleton;
 
 import ch.alchemists.jbmesh.data.BMeshAttribute;
@@ -222,6 +228,7 @@ public class StraightSkeleton {
         Set<MovingNode> nodes = new HashSet<>(ctx.getNodes());
         List<List<SkeletonNode>> nodeLoops = new ArrayList<>(2);
 
+        // TODO: Make a generic class that finds such loops? (also for edge loops)
         while(!nodes.isEmpty()) {
             List<SkeletonNode> loop = new ArrayList<>(4);
             nodeLoops.add(loop);

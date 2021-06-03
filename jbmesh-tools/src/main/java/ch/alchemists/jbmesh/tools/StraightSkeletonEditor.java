@@ -1,3 +1,9 @@
+// Copyright (c) 2020-2021 Rolf Müri
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package ch.alchemists.jbmesh.tools;
 
 import ch.alchemists.jbmesh.operator.skeleton.SkeletonVisualization;
@@ -21,6 +27,7 @@ import com.simsilica.lemur.style.BaseStyles;
 import java.util.ArrayList;
 import java.util.Map;
 
+// TODO: See bug7 example
 public class StraightSkeletonEditor extends SimpleApplication {
     private static final String STORAGE_PATH       = "F:/jme/jBMesh/points";
     private static final String EXPORT_FILE        = "straight-skeleton.points";
@@ -43,7 +50,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
     private float skeletonDistance                 = DEFAULT_DISTANCE;
     private boolean modStep = false;
 
-    private boolean showSkel = false;
+    private boolean showSkel = true;
     private boolean showBisectors = false;
 
     private final PolygonEditorState polygonEditor;

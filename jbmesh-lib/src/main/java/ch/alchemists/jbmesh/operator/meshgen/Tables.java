@@ -1,3 +1,10 @@
+// Edge and triangle table: Copyright (c) 1994 Paul Bourke
+// Extensions:              Copyright (c) 2020-2021 Rolf Müri
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package ch.alchemists.jbmesh.operator.meshgen;
 
 public class Tables {
@@ -43,6 +50,7 @@ public class Tables {
         0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0
     };
 
+    // http://paulbourke.net/geometry/polygonise/
     public static final byte[][] MC_triTable = { // [256][16]
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -312,6 +320,7 @@ public class Tables {
         {0, 0, -1}, // 32
     };
 
+    // Bitmask: Each bit represents an entry in the 'WALK_DIRECTIONS' array above
     public static final byte[] EDGE_WALK_DIRECTIONS = { // [12]
         40, // 0: -Y, -Z
         9,  // 1: +X, -Y

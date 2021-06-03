@@ -1,69 +1,75 @@
+// Copyright (c) 2020-2021 Rolf Müri
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package ch.alchemists.jbmesh.util;
 
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
 
 public class ColorUtil {
-    public static ColorRGBA hsb(float h, float s, float b) {
-        ColorRGBA color = new ColorRGBA();
-        color.a = 1.0f;
+    /**
+     * Converts from HSV/HSB color space to RGB.<br>
+     *
+     * @param h Hue (0.0 - 1.0)
+     * @param s Saturation (0.0 - 1.0)
+     * @param v Value/Brightness (0.0 - 1.0)
+     * @return ColorRGBA with default alpha value
+     */
+    public static ColorRGBA hsv(float h, float s, float v) {
+        return hsv(h, s, v, new ColorRGBA());
+    }
 
-        if (s == 0) {
-            // achromatic ( grey )
-            color.r = b;
-            color.g = b;
-            color.b = b;
-            return color;
-        }
+    /**
+     * Converts from HSV/HSB color space to RGB.<br>
+     * The alpha value of <code>store</code> remains unaltered.
+     *
+     * @param h Hue (0.0 - 1.0)
+     * @param s Saturation (0.0 - 1.0)
+     * @param v Value/Brightness (0.0 - 1.0)
+     * @param store Destination color
+     * @return store
+     */
+    public static ColorRGBA hsv(float h, float s, float v, ColorRGBA store) {
+        h %= 1f;
+        if(h < 0)
+            h += 1f;
 
-        //float hh = h / 60.0f;
-        float hh = h * 6f;
-        int i = (int) hh;
-        float f = hh - i;
-        float p = b * (1 - s);
-        float q = b * (1 - s * f);
-        float t = b * (1 - s * (1 - f));
+        s = FastMath.saturate(s);
+        v = FastMath.saturate(v);
 
-        switch(i) {
-            case 0:
-                color.r = b;
-                color.g = t;
-                color.b = p;
-                break;
+        h *= 6f;
+        int interval = (int) h;
+        float f = h - interval;
+
+        float p = v * (1f - s);
+        float q = v * (1f - (s*f));
+        float t = v * (1f - (s*(1f-f)));
+        float a = store.a;
+
+        switch(interval) {
             case 1:
-                color.r = q;
-                color.g = b;
-                color.b = p;
-                break;
+                return store.set(q, v, p, a);
             case 2:
-                color.r = p;
-                color.g = b;
-                color.b = t;
-                break;
+                return store.set(p, v, t, a);
             case 3:
-                color.r = p;
-                color.g = q;
-                color.b = b;
-                break;
+                return store.set(p, q, v, a);
             case 4:
-                color.r = t;
-                color.g = p;
-                color.b = b;
-                break;
+                return store.set(t, p, v, a);
+            case 5:
+                return store.set(v, p, q, a);
+            // interval 0 & 6
             default:
-                color.r = b;
-                color.g = p;
-                color.b = q;
-                break;
+                return store.set(v, t, p, a);
         }
-
-        return color;
     }
 
 
-    public static ColorRGBA getRandomColor(float h, float hVariance, float s, float b) {
-        float rnd = ((float)Math.random() * 2.0f) - 1.0f;
-        h += rnd * (hVariance*0.5f);
-        h = h % 1.0f;
-        return hsb(h, s, b);
+    public static ColorRGBA getRandomColor(float hue, float hueVariance, float saturation, float value) {
+        float rnd = (FastMath.nextRandomFloat() * 2.0f) - 1.0f;
+        hue += rnd * (hueVariance*0.5f);
+        return hsv(hue, saturation, value);
     }
 }
