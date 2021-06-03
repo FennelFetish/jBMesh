@@ -2,7 +2,7 @@
 A Java mesh processing library for the programmatic and procedural creation and modification of meshes for jMonkeyEngine.  
 It implements the BMesh data structure that holds adjacency information for its elements: Vertex, Edge, Face and Loop.
 
-The BMesh data structure is similar to the Half-Edge structure or DCELs. Loops are much like Half-Edges and can be seen as fragments of a face. The structure adds an explicit elements for Edge, which allows for the modelling of wireframe meshes. More than 2 faces can be adjacent to an edge: BMesh supports non-manifold surfaces.
+The BMesh data structure is similar to the Half-Edge structure or DCELs. Loops are much like Half-Edges and can be seen as fragments of a face. The structure adds an explicit element for Edge, which allows for the modelling of wireframe meshes. More than 2 faces can be adjacent to an edge: BMesh supports non-manifold surfaces.
 
 This documentation is work in progress. Meanwhile, the code examples can act as a starting point for using this library:
 https://github.com/FennelFetish/jBMesh/tree/master/jbmesh-tools/src/main/java/ch/alchemists/jbmesh/examples
