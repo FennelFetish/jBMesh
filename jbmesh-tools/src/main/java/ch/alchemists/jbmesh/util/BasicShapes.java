@@ -16,7 +16,10 @@ import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
 
+// TODO: Move to jbmesh-lib
 public abstract class BasicShapes {
+    // Circles
+
     public static Face createDisc(BMesh bmesh, PlanarCoordinateSystem coordSys, int numSamples, float radius) {
         float angleBetweenSamples = FastMath.TWO_PI / numSamples;
         Vector2f p = new Vector2f();
@@ -49,6 +52,23 @@ public abstract class BasicShapes {
         return bmesh.createFace(vertices);
     }
 
+
+    // Quads
+
+    public static Face createQuad(BMesh bmesh, PlanarCoordinateSystem coordSys, float width, float height) {
+        Vertex v0 = bmesh.createVertex( coordSys.unproject(0, 0) );
+        Vertex v1 = bmesh.createVertex( coordSys.unproject(width, 0) );
+        Vertex v2 = bmesh.createVertex( coordSys.unproject(width, height) );
+        Vertex v3 = bmesh.createVertex( coordSys.unproject(0, height) );
+        return bmesh.createFace(v0, v1, v2, v3);
+    }
+
+    public static Face createSquare(BMesh bmesh, PlanarCoordinateSystem coordSys, float sideLength) {
+        return createQuad(bmesh, coordSys, sideLength, sideLength);
+    }
+
+
+    // JME Mesh
 
     public static Mesh disc(int numSamples, float radius) {
         BMesh bmesh = new BMesh();

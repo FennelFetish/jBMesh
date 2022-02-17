@@ -31,6 +31,37 @@ public class PlanarCoordinateSystem implements Cloneable {
     public PlanarCoordinateSystem() {}
 
 
+    /**
+     * Plane normal: [0, 0, 1]
+     * @return A new coordinate system for the X/Y plane.
+     */
+    public static PlanarCoordinateSystem XY() {
+        return new PlanarCoordinateSystem();
+    }
+
+    /**
+     * Plane normal: [0, 1, 0]
+     * @return A new coordinate system for the X/Z plane.
+     */
+    public static PlanarCoordinateSystem XZ() {
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem();
+        coordSys.x.set(0, 0, 1);
+        coordSys.y.set(1, 0, 0);
+        return coordSys;
+    }
+
+    /**
+     * Plane normal: [1, 0, 0]
+     * @return A new coordinate system for the Y/Z plane.
+     */
+    public static PlanarCoordinateSystem YZ() {
+        PlanarCoordinateSystem coordSys = new PlanarCoordinateSystem();
+        coordSys.x.set(0, 0, -1);
+        coordSys.y.set(0, 1, 0);
+        return coordSys;
+    }
+
+
     private void validate() {
         if(Math.abs(1f - x.lengthSquared()) > AXIS_LENGTH_EPSILON_SQUARED)
             throw new IllegalArgumentException("Invalid X axis (normalized?)");
@@ -145,18 +176,14 @@ public class PlanarCoordinateSystem implements Cloneable {
     }
 
 
-    public Vector2f project(Vector3f v) {
-        return project(v.x, v.y, v.z, new Vector2f());
-    }
-
-    public Vector2f project(Vector3f v, Vector2f store) {
-        return project(v.x, v.y, v.z, store);
-    }
-
-    public Vector2f project(float vx, float vy, float vz) {
-        return project(vx, vy, vz, new Vector2f());
-    }
-
+    /**
+     * Transforms the input 3D-point to local 2D-space by projecting it onto this plane.
+     * @param vx
+     * @param vy
+     * @param vz
+     * @param store
+     * @return store
+     */
     public Vector2f project(float vx, float vy, float vz, Vector2f store) {
         Vector3f diff = new Vector3f(vx, vy, vz);
         diff.subtractLocal(p);
@@ -167,19 +194,35 @@ public class PlanarCoordinateSystem implements Cloneable {
         return store;
     }
 
-
-    public Vector3f unproject(Vector2f v) {
-        return unproject(v.x, v.y, new Vector3f());
+    /**
+     * @see #project(float, float, float, Vector2f)
+     */
+    public Vector2f project(float vx, float vy, float vz) {
+        return project(vx, vy, vz, new Vector2f());
     }
 
-    public Vector3f unproject(Vector2f v, Vector3f store) {
-        return unproject(v.x, v.y, store);
+    /**
+     * @see #project(float, float, float, Vector2f)
+     */
+    public Vector2f project(Vector3f v, Vector2f store) {
+        return project(v.x, v.y, v.z, store);
     }
 
-    public Vector3f unproject(float vx, float vy) {
-        return unproject(vx, vy, new Vector3f());
+    /**
+     * @see #project(float, float, float, Vector2f)
+     */
+    public Vector2f project(Vector3f v) {
+        return project(v.x, v.y, v.z, new Vector2f());
     }
 
+
+    /**
+     * Transforms the input 2D-point to global 3D-space.
+     * @param vx
+     * @param vy
+     * @param store
+     * @return store
+     */
     public Vector3f unproject(float vx, float vy, Vector3f store) {
         // store = (v.x * x) + (v.y * y) + p
         store.x = (vx * x.x) + (vy * y.x);
@@ -190,27 +233,89 @@ public class PlanarCoordinateSystem implements Cloneable {
         return store;
     }
 
+    /**
+     * @see #unproject(float, float, Vector3f)
+     */
+    public Vector3f unproject(float vx, float vy) {
+        return unproject(vx, vy, new Vector3f());
+    }
 
-    public void rotate(float angleRad) {
+    /**
+     * @see #unproject(float, float, Vector3f)
+     */
+    public Vector3f unproject(Vector2f v, Vector3f store) {
+        return unproject(v.x, v.y, store);
+    }
+
+    /**
+     * @see #unproject(float, float, Vector3f)
+     */
+    public Vector3f unproject(Vector2f v) {
+        return unproject(v.x, v.y, new Vector3f());
+    }
+
+
+    /**
+     * Moves the origin of this coordinate system by the give offset value.
+     * @param xOffset
+     * @param yOffset
+     * @param zOffset
+     * @return this
+     */
+    public PlanarCoordinateSystem move(float xOffset, float yOffset, float zOffset) {
+        p.x += xOffset;
+        p.y += yOffset;
+        p.z += zOffset;
+        return this;
+    }
+
+    /**
+     * @see #move(float, float, float)
+     */
+    public PlanarCoordinateSystem move(Vector3f offset) {
+        return move(offset.x, offset.y, offset.z);
+    }
+
+
+    /**
+     * Rotates the axes of this coordinate system around its origin by the given angle.
+     * @param angleRad Rotation angle in Radians.
+     * @return this
+     */
+    public PlanarCoordinateSystem rotate(float angleRad) {
         Vector3f normal = x.cross(y).normalizeLocal();
         Quaternion rot = new Quaternion();
         rot.fromAngleNormalAxis(angleRad, normal);
         rot.multLocal(x);
         rot.multLocal(y);
+        return this;
     }
 
 
-    public void scale(float scale) {
-        scale(scale, scale);
+    /**
+     * Scales the axes of this coordinate system by the given values.
+     * @param xScale
+     * @param yScale
+     * @return this
+     */
+    public PlanarCoordinateSystem scale(float xScale, float yScale) {
+        x.multLocal(xScale);
+        y.multLocal(yScale);
+        return this;
     }
 
-    public void scale(Vector2f scale) {
-        scale(scale.x, scale.y);
+    /**
+     * @see #scale(float, float)
+     */
+    public PlanarCoordinateSystem scale(float scale) {
+        return scale(scale, scale);
     }
 
-    public void scale(float xScale, float yScale) {
-        this.x.multLocal(xScale);
-        this.y.multLocal(yScale);
+    /**
+     * @see #scale(float, float)
+     */
+    public PlanarCoordinateSystem scale(Vector2f scale) {
+        return scale(scale.x, scale.y);
     }
 
 

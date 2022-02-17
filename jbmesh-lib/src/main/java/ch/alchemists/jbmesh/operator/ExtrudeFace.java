@@ -33,6 +33,29 @@ public class ExtrudeFace {
     }
 
 
+    /**
+     * Extrudes the input Face by creating <i>n</i> quads on its periphery,
+     * where <i>n</i> is the number of sides of the input Face.<br><br>
+     * Note that the input Face <i>F</i> will keep its loops (and their attributes), but
+     * will receive new vertices and edges with undefined attributes.
+     * To apply the attributes of the original vertices (<i>v0-3</i>) to the new vertices (<i>v0'-3')</i>,
+     * {@link #copyVertexAttributes()} can be called.<br><br>
+     *
+     * <pre>
+     *     Before:  v3-----v2
+     *              |   F   |
+     *              v0-----v1
+     *
+     *     After:   v3----------v2
+     *              | \        / |
+     *              |  v3'---v2' |
+     *              |  |   F  |  |
+     *              |  v0'---v1' |
+     *              | /        \ |
+     *              v0----------v1
+     * </pre>
+     * @param face The Face to be extruded.
+     */
     public void apply(Face face) {
         // Disconnect face
         // Keep loops, but disconnect
@@ -65,8 +88,8 @@ public class ExtrudeFace {
                 Loop loop = tempLoops.get(i);
                 Loop nextLoop = tempLoops.get(nextIndex);
 
-                Face newFace = bmesh.createFace(nextLoop.vertex, loop.vertex, originalVertices.get(i), originalVertices.get(nextIndex));
-                resultFaces.add(newFace);
+                Face sideFace = bmesh.createFace(nextLoop.vertex, loop.vertex, originalVertices.get(i), originalVertices.get(nextIndex));
+                resultFaces.add(sideFace);
 
                 loop.edge = loop.vertex.getEdgeTo(nextLoop.vertex);
                 loop.edge.addLoop(loop);
@@ -90,6 +113,18 @@ public class ExtrudeFace {
     }
 
 
+    /**
+     * Recreates the Face that was formed by the original input vertices given to the last invocation of {@link #apply(Face)}.<br>
+     * This will close the hole that is left behind after an extrude operation.<br>
+     * Typically, the returned Face should be inverted with an additional call to {@link BMesh#invertFace(Face)} so it faces outwards.
+     * @return A new Face consisting of the original input vertices in the same order.
+     */
+    public Face recreateOriginalFace() {
+        return bmesh.createFace(originalVertices);
+    }
+
+
+    // TODO: Don't need to store them in 'resultFaces', can use data structure to traverse
     public List<Face> getResultFaces() {
         return resultFaces;
     }
