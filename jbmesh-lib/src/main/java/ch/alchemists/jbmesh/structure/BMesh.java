@@ -262,10 +262,10 @@ public class BMesh {
 
 
     /**
-     * Splits the edge into two:
+     * Splits the edge into two by introducing a new Vertex (<i>vNew</i>):
      * <ul>
      * <li>Creates a new Edge (from <i>vNew</i> to <i>v1</i>).</li>
-     * <li>Reference <i>edge.vertex1</i> changes to <i>vNew</i>.</li>
+     * <li>Reference <i>edge.vertex1</i> changes from <i>v1</i> to <i>vNew</i>.</li>
      * <li>Updates disk cycle accordingly.</li>
      * <li>Adds one additional Loop to all adjacent Faces, increasing the number of sides,<br>
      *     and adds these Loops to the radial cycle of the new Edge.</li>
@@ -278,7 +278,7 @@ public class BMesh {
      * </pre>
      *
      * @param edge
-     * @return A new Vertex (<i>vNew</i>) with default attributes (undefined position).
+     * @return A new Vertex (<i>vNew</i>) with undefined attributes (undefined position).
      */
     public Vertex splitEdge(final Edge edge) {
         // Throws early if edge is null
@@ -326,7 +326,7 @@ public class BMesh {
 
     /**
      * Removes edge and vertex.<br>
-     * Vertex <i>v</i>must be adjacent to <i>edge</i> and exactly one other Edge.
+     * Vertex <i>v</i> must be adjacent to <i>edge</i> and exactly one other Edge.
      * <pre>
      *              edge
      * Before: (tv)======(v)-----(ov)
@@ -557,21 +557,25 @@ public class BMesh {
             assert tempLoops.isEmpty();
             face.getLoops(tempLoops);
 
-            Vertex firstVertex = tempLoops.get(0).vertex;
-            Loop prev = tempLoops.get(tempLoops.size()-1);
+            Loop current  = tempLoops.get(0);
+            Loop prev     = current.prevFaceLoop;
+            Edge prevEdge = prev.edge;
 
             for(int i=0; i<tempLoops.size(); ++i) {
-                int nextIndex = (i+1) % tempLoops.size();
+                Loop next = current.nextFaceLoop;
 
-                Loop current = tempLoops.get(i);
-                current.vertex = current.nextFaceLoop.vertex;
                 current.nextFaceLoop = prev;
-                current.prevFaceLoop = tempLoops.get(nextIndex);
-                prev = current;
-            }
+                current.prevFaceLoop = next;
 
-            prev.vertex = firstVertex;
-            face.loop = prev; // Keep first vertex
+                Edge edge = current.edge;
+                edge.removeLoop(current);
+                current.edge = prevEdge;
+                prevEdge.addLoop(current);
+                prevEdge = edge;
+
+                prev = current;
+                current = next;
+            }
         }
         finally {
             tempLoops.clear();

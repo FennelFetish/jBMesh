@@ -7,7 +7,9 @@
 package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.TestUtil;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
@@ -41,9 +43,16 @@ public class BMeshEulerTest {
         assertEquals(3, bmesh.faces().size());
         assertEquals(9, bmesh.loops().size());
 
+        SameLoopVertexTester sameLoopVertexTester = new SameLoopVertexTester();
+        sameLoopVertexTester.addAll(face1.getLoops());
+        sameLoopVertexTester.addAll(face2.getLoops());
+        sameLoopVertexTester.addAll(face3.getLoops());
+        sameLoopVertexTester.removeAll(vEdge0.getEdgeTo(vEdge1).loops());
+
         // Do split
         Edge edge = vEdge0.getEdgeTo(vEdge1);
         Vertex vSplit = bmesh.splitEdge(edge);
+        sameLoopVertexTester.test();
 
         TestUtil.assertFace(face1, vEdge0, vSplit, vEdge1, vFace1);
         TestUtil.assertFace(face2, vSplit, vEdge0, vFace2, vEdge1);
@@ -131,8 +140,14 @@ public class BMeshEulerTest {
         Face ft = bmesh.createFace(v0, v1, v2, vt);
         Face fb = bmesh.createFace(vb, v2, v1, v0);
 
+        SameLoopVertexTester sameLoopVertexTester = new SameLoopVertexTester();
+        sameLoopVertexTester.addAll(ft.getLoops());
+        sameLoopVertexTester.addAll(fb.getLoops());
+        sameLoopVertexTester.remove(ft.getLoop(v1, v2));
+
         Edge e0 = v0.getEdgeTo(v1);
         bmesh.joinEdge(e0, v1);
+        sameLoopVertexTester.test();
 
         TestUtil.assertFace(ft, v0, v2, vt);
         TestUtil.assertFace(fb, vb, v2, v0);
@@ -153,13 +168,13 @@ public class BMeshEulerTest {
         assertEquals(ft, loop.face);
         assertTrue(loop.prevFaceLoop.edge.connects(v0, vt));
         assertTrue(loop.nextFaceLoop.edge.connects(v2, vt));
-        assertTrue(loop.nextEdgeLoop.nextEdgeLoop == loop);
+        assertEquals(loop, loop.nextEdgeLoop.nextEdgeLoop);
 
         loop = itLoop.next();
         assertEquals(fb, loop.face);
         assertTrue(loop.prevFaceLoop.edge.connects(v2, vb));
         assertTrue(loop.nextFaceLoop.edge.connects(v0, vb));
-        assertTrue(loop.nextEdgeLoop.nextEdgeLoop == loop);
+        assertEquals(loop, loop.nextEdgeLoop.nextEdgeLoop);
 
         assertFalse(itLoop.hasNext());
 
@@ -189,7 +204,12 @@ public class BMeshEulerTest {
         Vertex vb = bmesh.createVertex(); // Bottom
 
         Face face = bmesh.createFace(v0, vb, v1, vt);
+
+        SameLoopVertexTester sameLoopVertexTester = new SameLoopVertexTester();
+        sameLoopVertexTester.addAll(face.getLoops());
+
         Edge edge = bmesh.splitFace(v0, v1);
+        sameLoopVertexTester.test();
 
         assertNotNull(edge);
         assertNotNull(edge.loop);
@@ -230,7 +250,12 @@ public class BMeshEulerTest {
         TestUtil.assertFace(ft, v0, v1, vt);
         TestUtil.assertFace(fb, v1, v0, vb);
 
+        SameLoopVertexTester sameLoopVertexTester = new SameLoopVertexTester();
+        sameLoopVertexTester.addAll(ft.getLoops());
+        sameLoopVertexTester.addAll(fb.getLoops());
+
         bmesh.joinFace(ft, fb);
+        sameLoopVertexTester.test();
 
         assertEquals(4, bmesh.vertices().size());
         assertEquals(4, bmesh.edges().size());
@@ -253,10 +278,14 @@ public class BMeshEulerTest {
 
         Face face = bmesh.createFace(v0, v1, v2);
         Loop[] originalLoops = TestUtil.getLoops(face);
-        Loop[] expectedLoops = new Loop[] { originalLoops[2], originalLoops[1], originalLoops[0] };
+        Loop[] expectedLoops = new Loop[] { originalLoops[0], originalLoops[2], originalLoops[1] };
+
+        SameLoopVertexTester sameLoopVertexTester = new SameLoopVertexTester();
+        sameLoopVertexTester.addAll(originalLoops);
 
         bmesh.invertFace(face);
         TestUtil.assertFace(face, v0, v2, v1);
+        sameLoopVertexTester.test();
 
         Loop[] invertedLoops = TestUtil.getLoops(face);
 
@@ -275,5 +304,43 @@ public class BMeshEulerTest {
         assertEquals(v0, invertedLoops[0].vertex);
         assertEquals(v2, invertedLoops[1].vertex);
         assertEquals(v1, invertedLoops[2].vertex);
+    }
+
+
+
+    private static class SameLoopVertexTester {
+        private final Map<Loop, Vertex> loopVertexMap = new HashMap<>();
+
+        public void addAll(Loop... loops) {
+            for(Loop loop : loops)
+                add(loop);
+        }
+
+        public void addAll(Iterable<Loop> loops) {
+            for(Loop loop : loops)
+                add(loop);
+        }
+
+        public void add(Loop loop) {
+            Vertex prev = loopVertexMap.put(loop, loop.vertex);
+            assertNull(prev);
+        }
+
+        public void removeAll(Iterable<Loop> loops) {
+            for(Loop loop : loops)
+                remove(loop);
+        }
+
+        public void remove(Loop loop) {
+            loopVertexMap.remove(loop);
+        }
+
+        public void test() {
+            for(Map.Entry<Loop, Vertex> entry : loopVertexMap.entrySet()) {
+                Loop loop = entry.getKey();
+                if(loop.isAlive())
+                    assertEquals(entry.getValue(), loop.vertex);
+            }
+        }
     }
 }
