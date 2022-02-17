@@ -10,7 +10,6 @@ import ch.alchemists.jbmesh.data.BMeshAttribute;
 import ch.alchemists.jbmesh.data.BMeshData;
 import ch.alchemists.jbmesh.data.Element;
 import ch.alchemists.jbmesh.data.property.ObjectAttribute;
-import ch.alchemists.jbmesh.data.property.ObjectTupleAttribute;
 import ch.alchemists.jbmesh.data.property.Vec3Attribute;
 import ch.alchemists.jbmesh.operator.sweeptriang.SweepTriangulation;
 import ch.alchemists.jbmesh.structure.BMesh;
@@ -24,6 +23,8 @@ import java.util.logging.Logger;
 
 public class TriangleIndices {
     private static class Triangle extends Element {
+        public Loop l1, l2, l3;
+
         @Override
         protected void releaseElement() {}
     }
@@ -31,13 +32,9 @@ public class TriangleIndices {
 
     private static final Logger LOG = Logger.getLogger(TriangleIndices.class.getName());
 
-    private static final String ATTRIBUTE_TRILOOPS = "TriangleIndices_Loops";
-
     private final BMesh bmesh;
     private final SweepTriangulation triangulation;
-
     private final ObjectAttribute<Loop, Vertex> attrLoopVertex;
-    private final ObjectTupleAttribute<Triangle, Loop> attrTriangleLoops = new ObjectTupleAttribute<>(ATTRIBUTE_TRILOOPS, 3, Loop[]::new);
 
     private final BMeshData<Triangle> triangleData;
     private final Indices<Triangle> indices;
@@ -46,12 +43,9 @@ public class TriangleIndices {
     public TriangleIndices(BMesh bmesh, ObjectAttribute<Loop, Vertex> attrLoopVertex) {
         this.bmesh = bmesh;
         triangulation = new SweepTriangulation();
-
         this.attrLoopVertex = attrLoopVertex;
 
         triangleData = new BMeshData<>(Triangle::new);
-        triangleData.addAttribute(attrTriangleLoops);
-
         indices = new Indices<>(triangleData, 3);
     }
 
@@ -92,15 +86,14 @@ public class TriangleIndices {
 
     private void addTriangle(ArrayList<Loop> loops, int i1, int i2, int i3) {
         Triangle tri = triangleData.create();
-        Loop l1 = loops.get(i1);
-        Loop l2 = loops.get(i2);
-        Loop l3 = loops.get(i3);
-        attrTriangleLoops.setValues(tri, l1, l2, l3);
+        tri.l1 = loops.get(i1);
+        tri.l2 = loops.get(i2);
+        tri.l3 = loops.get(i3);
     }
 
 
     /**
-     * Triangulates a quadliteral with a split along the shorter diagonal.
+     * Triangulates a quadrilateral with a split along the shorter diagonal.
      * If a vertex is reflex and the quad forms an arrowhead, this reflex vertex will be part of the chosen diagonal.
      */
     private void triangulateQuad(Vec3Attribute<Vertex> attrPosition, ArrayList<Loop> loops) {
@@ -171,18 +164,11 @@ public class TriangleIndices {
         indices.prepare(maxVertexIndex);
 
         indices.updateIndices((Triangle tri, int[] indices) -> {
-            indices[0] = mapTriangleLoopVertexIndex(tri, 0);
-            indices[1] = mapTriangleLoopVertexIndex(tri, 1);
-            indices[2] = mapTriangleLoopVertexIndex(tri, 2);
+            indices[0] = attrLoopVertex.get(tri.l1).getIndex();
+            indices[1] = attrLoopVertex.get(tri.l2).getIndex();
+            indices[2] = attrLoopVertex.get(tri.l3).getIndex();
         });
 
         indices.applyIndexBuffer(mesh);
-    }
-
-
-    // Triangle -> Loop -> Vertex -> Index
-    private int mapTriangleLoopVertexIndex(Triangle tri, int i) {
-        Loop loop = attrTriangleLoops.getComponent(tri, i);
-        return attrLoopVertex.get(loop).getIndex();
     }
 }

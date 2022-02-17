@@ -86,10 +86,10 @@ public class Indices<E extends Element> {
     /**
      * If an <i>int</i> buffer is being used for the indices, the maximum vertex index has to drop
      * below <i>shortHysteresis</i> before the buffer type is switched back to <i>short</i>.<br><br>
-     * Set to 0 to always use <i>int</i> buffers.<br>
-     * Set to <i>Short.MAX_VALUE</i> to disable hysteresis and always use <i>short</i> when possible.<br>
-     * Defaults to 32000.
-     * @param shortHysteresis Truncated at <i>Short.MAX_VALUE</i>.
+     * Set to <code>0</code> to never switch back to <i>short</i> buffers.<br>
+     * Set to <code>Short.MAX_VALUE</code> to disable hysteresis and always use <i>short</i> when possible.<br>
+     * Defaults to <code>32000</code>.
+     * @param shortHysteresis Truncated at <code>Short.MAX_VALUE</code>.
      */
     public void setShortHysteresis(int shortHysteresis) {
         this.shortHysteresis = Math.min(shortHysteresis, Short.MAX_VALUE);
