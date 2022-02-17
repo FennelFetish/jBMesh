@@ -57,7 +57,7 @@ public class BMeshData<E extends Element> implements Iterable<E> {
         return elements.get(index);
     }
 
-    public Collection<E> getAll(Collection<E> dest) {
+    public <C extends Collection<E>> C getAll(C dest) {
         // TODO: Don't return virtual elements?
         for(E e : this)
             dest.add(e);

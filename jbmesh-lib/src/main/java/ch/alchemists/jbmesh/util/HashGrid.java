@@ -66,8 +66,9 @@ public class HashGrid<T> {
     }
 
 
-    public void getAll(Collection<T> dest) {
+    public <C extends Collection<T>> C getAll(C dest) {
         dest.addAll(grid.values());
+        return dest;
     }
 
 
