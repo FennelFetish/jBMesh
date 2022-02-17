@@ -13,6 +13,7 @@ import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.tools.polygoneditor.PolygonEditorState;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.AppState;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -60,7 +61,7 @@ public class StraightSkeletonEditor extends SimpleApplication {
 
 
     private StraightSkeletonEditor() {
-        super(null);
+        super((AppState[])null);
 
         polygonEditor = new PolygonEditorState(pointListener);
         polygonEditor.setStoragePath(STORAGE_PATH);

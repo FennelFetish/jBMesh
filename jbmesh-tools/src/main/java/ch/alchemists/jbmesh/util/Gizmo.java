@@ -42,7 +42,9 @@ public class Gizmo extends Node {
             0, 0, 1, 1
         });
 
+
         MESH.setMode(Mesh.Mode.Lines);
+        MESH.updateBound();
     }
 
 

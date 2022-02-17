@@ -145,6 +145,7 @@ public class NormalGenerator {
         Loop loop = startEdge.loop;
         if(loop.vertex != vertex)
             loop = loop.nextFaceLoop;
+        assert loop.vertex == vertex;
 
         final Loop startLoop = loop;
         NormalAccumulator acc = accumulators.pushBack(startLoop);

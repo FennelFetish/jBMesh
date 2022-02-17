@@ -18,6 +18,7 @@ import ch.alchemists.jbmesh.util.DebugVisualState;
 import ch.alchemists.jbmesh.util.PlanarCoordinateSystem;
 import ch.alchemists.jbmesh.util.Profiler;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.AppState;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -54,7 +55,7 @@ public class SweepTriangulationEditor extends SimpleApplication {
 
 
     private SweepTriangulationEditor() {
-        super(null);
+        super((AppState[])null);
 
         polygonEditor = new PolygonEditorState(pointListener);
         polygonEditor.setStoragePath(STORAGE_PATH);

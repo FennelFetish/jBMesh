@@ -84,11 +84,13 @@ public class UserAttributes {
             int iFrom = indexOf(from);
             int iTo = indexOf(to);
 
-            for(int i=0; i<numComponents; ++i) {
+            for(int i=0; i<numComponents; i++) {
                 if(data[iTo] == null)
                     data[iTo] = new Vector2f();
 
-                data[iTo].set(data[iFrom+i]);
+                data[iTo].set(data[iFrom]);
+
+                iFrom++;
                 iTo++;
             }
         }
