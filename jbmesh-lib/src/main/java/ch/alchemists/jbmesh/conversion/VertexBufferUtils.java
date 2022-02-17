@@ -14,6 +14,7 @@ import com.jme3.scene.VertexBuffer;
 import com.jme3.util.BufferUtils;
 import java.nio.*;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -77,7 +78,7 @@ public class VertexBufferUtils {
     static final Map<VertexBuffer.Type, String> IMPORT_ATTRIBUTE_MAP;
     static {
         // Invert mapping
-        Map<VertexBuffer.Type, String> map = new HashMap<>();
+        Map<VertexBuffer.Type, String> map = new EnumMap<>(VertexBuffer.Type.class);
         for(Map.Entry<String, VertexBuffer.Type> entry : EXPORT_ATTRIBUTE_MAP.entrySet())
             map.put(entry.getValue(), entry.getKey());
         IMPORT_ATTRIBUTE_MAP = Collections.unmodifiableMap(map);
@@ -101,6 +102,7 @@ public class VertexBufferUtils {
 
         switch(bufferType) {
             case Position:
+            case Size:
             case Normal:
             case Tangent:
             case Binormal:
@@ -132,19 +134,13 @@ public class VertexBufferUtils {
             case MorphTarget11:
             case MorphTarget12:
             case MorphTarget13:
-                return createFloatTupleAttribute(name, components);
+                return createFloatAttribute(name, components);
 
             case Color:
                 if(components == 4)
                     return new ColorAttribute<>(name);
                 else
-                    return createFloatTupleAttribute(name, components);
-
-            case Size:
-                if(components == 1)
-                    return new FloatAttribute<>(name);
-                else
-                    createFloatTupleAttribute(name, components);
+                    return createFloatAttribute(name, components);
 
             case BoneIndex:
             case HWBoneIndex:
@@ -152,24 +148,25 @@ public class VertexBufferUtils {
                     break;
                 return new ByteAttribute<>(name);
 
-            case Index:
-                return null;
+            /*case Index:
+                return null;*/
         }
 
         //throw new UnsupportedOperationException("VertexBuffer type '" + bufferType.name() + "' not supported.");
         return null;
     }
 
-    private static <E extends Element> FloatTupleAttribute<E> createFloatTupleAttribute(String name, int components) {
+    private static <E extends Element> BMeshAttribute<E, float[]> createFloatAttribute(String name, int components) {
         // TODO: How are algorithms supposed to deal with attributes of different size?
         //       Wrapper attributes that e.g. return z=0 if it only has 2 components?
         //       Expect users to convert attributes?
-        if(components == 2)
-            return new Vec2Attribute<E>(name);
-        else if(components == 3)
-            return new Vec3Attribute<E>(name);
-        else
-            return new FloatTupleAttribute<E>(name, components);
+        switch(components) {
+            case 1: return new FloatAttribute<E>(name);
+            case 2: return new Vec2Attribute<E>(name);
+            case 3: return new Vec3Attribute<E>(name);
+            case 4: return new Vec4Attribute<E>(name);
+            default: return new FloatTupleAttribute<E>(name, components);
+        }
     }
 
 
