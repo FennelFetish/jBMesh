@@ -23,16 +23,12 @@ public class VertexOps {
     }
 
 
-    public void move(Vertex vertex, Vector3f distance) {
-        move(vertex, distance.x, distance.y, distance.z);
+    public void move(Vertex vertex, Vector3f offset) {
+        positions.addLocal(vertex, offset);
     }
 
     public void move(Vertex vertex, float dx, float dy, float dz) {
-        positions.modify(vertex, v -> {
-            v.x += dx;
-            v.y += dy;
-            v.z += dz;
-        });
+        move(vertex, new Vector3f(dx, dy, dz));
     }
 
 

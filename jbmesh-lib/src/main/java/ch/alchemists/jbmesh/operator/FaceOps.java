@@ -150,4 +150,20 @@ public class FaceOps {
     public void makePlanar(Face face) {
         // TODO: ... Find plane with smallest deviation from existing vertices?
     }
+
+
+    public void move(Face face, Vector3f offset) {
+        for(Vertex v : face.vertices())
+            positions.addLocal(v, offset);
+    }
+
+    public void move(Face face, float dx, float dy, float dz) {
+        move(face, new Vector3f(dx, dy, dz));
+    }
+
+    public void moveAlongNormal(Face face, float distance) {
+        Vector3f offset = normal(face);
+        offset.multLocal(distance);
+        move(face, offset);
+    }
 }
