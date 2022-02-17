@@ -1,6 +1,7 @@
 // jbmesh-tools
 
 plugins {
+    id 'java'
     id 'application'
     id 'distribution'
 }
@@ -20,8 +21,11 @@ tasks.withType(JavaExec) { // runtime options:
     enableAssertions true
     //jvmArgs '-verbose:gc'
     //jvmArgs '-Xbatch'
-    jvmArgs '-Xms512m', '-Xmx4069m'
+    jvmArgs '-Xms512m', '-Xmx4096m'
     jvmArgs '-XX:+UseG1GC', '-XX:MaxGCPauseMillis=10'
+
+    // LWJGL Debug
+    //jvmArgs '-Dorg.lwjgl.util.DebugLoader=true', '-Dorg.lwjgl.util.Debug=true'
     
     // JITWatch
     /*jvmArgs '-XX:+UnlockDiagnosticVMOptions', '-XX:+TraceClassLoading', '-XX:+LogCompilation'
@@ -29,7 +33,8 @@ tasks.withType(JavaExec) { // runtime options:
     jvmArgs '-XX:+PrintNMethods'
     //jvmArgs '-XX:+DebugNonSafepoints'
     jvmArgs '-XX:+PrintAssembly'
-    jvmArgs '-XX:LogFile=jbmesh-hotspot.log'*/
+    //jvmArgs '-XX:LogFile=jbmesh-hotspot.log'
+    jvmArgs '-XX:LogFile=jbmesh-graalvm.log'*/
 }
 
 
@@ -46,17 +51,17 @@ dependencies {
     implementation 'org.jmonkeyengine:jme3-core:'    + jmonkeyengineVersion
     implementation 'org.jmonkeyengine:jme3-desktop:' + jmonkeyengineVersion
     implementation 'org.jmonkeyengine:jme3-plugins:' + jmonkeyengineVersion
-    
+
     runtimeOnly 'org.jmonkeyengine:jme3-lwjgl3:'     + jmonkeyengineVersion
 
 
     // Lemur GUI library
     // https://mvnrepository.com/artifact/com.simsilica/lemur
-    compile group: 'com.simsilica', name: 'lemur', version: '1.14.0'
+    implementation group: 'com.simsilica', name: 'lemur', version: '1.14.0'
 
     // https://mvnrepository.com/artifact/com.simsilica/lemur-proto
-    compile group: 'com.simsilica', name: 'lemur-proto', version: '1.11.0'
+    implementation group: 'com.simsilica', name: 'lemur-proto', version: '1.11.0'
 
     // https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-all
-    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.15'
+    implementation group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.15'
 }

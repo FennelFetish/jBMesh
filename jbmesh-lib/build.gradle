@@ -1,5 +1,9 @@
 // jbmesh-lib
 
+plugins {
+    id 'java-library'
+}
+
 tasks.withType(JavaCompile) { // compile-time options:
     options.compilerArgs << '-Xdiags:verbose'
     options.compilerArgs << '-Xlint:unchecked'
@@ -9,7 +13,7 @@ tasks.withType(JavaCompile) { // compile-time options:
 
 
 dependencies {
-    implementation 'org.jmonkeyengine:jme3-core:' + jmonkeyengineVersion
+    api 'org.jmonkeyengine:jme3-core:' + jmonkeyengineVersion
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:' + junitVersion
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + junitVersion
