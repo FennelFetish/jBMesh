@@ -9,11 +9,15 @@ package ch.alchemists.jbmesh;
 import ch.alchemists.jbmesh.structure.Face;
 import ch.alchemists.jbmesh.structure.Loop;
 import ch.alchemists.jbmesh.structure.Vertex;
+import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestUtil {
+    public static final float EPSILON = 0.001f;
+
+
     public static Loop[] getLoops(Face face) {
         ArrayList<Loop> loops = new ArrayList<>(3);
         for(Loop loop : face.loops())
@@ -46,7 +50,17 @@ public class TestUtil {
 
 
     public static void assertFloat(float expected, float actual) {
-        final float epsilon = 0.001f;
-        assertEquals(expected, actual, epsilon);
+        assertEquals(expected, actual, EPSILON);
+    }
+
+
+    public static void assertVec3Similar(Vector3f expected, Vector3f actual) {
+        assertVec3Similar(expected.x, expected.y, expected.z, actual);
+    }
+
+    public static void assertVec3Similar(float xExpected, float yExpected, float zExpected, Vector3f actual) {
+        assertFloat(xExpected, actual.x);
+        assertFloat(yExpected, actual.y);
+        assertFloat(zExpected, actual.z);
     }
 }
