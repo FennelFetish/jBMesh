@@ -16,11 +16,11 @@ class MovingNode {
     public MovingNode next = null;
     public MovingNode prev = null;
 
-    public final Vector2f edgeDir = new Vector2f();
-    public float edgeCollapseTime = 0;
+    final Vector2f edgeDir = new Vector2f();
+    private float edgeCollapseTime = 0;
 
     // Bisector points in move direction which depends on whether we're growing or shrinking. Length determines speed.
-    public final Vector2f bisector = new Vector2f();
+    final Vector2f bisector = new Vector2f();
     private boolean reflex = false;
 
     private final ArrayList<SkeletonEvent> events = new ArrayList<>(); // ArrayList is faster than HashSet. Does its performance scale properly?
@@ -30,6 +30,10 @@ class MovingNode {
         this.id = id;
     }
 
+
+    public float getEdgeCollapseTime() {
+        return edgeCollapseTime;
+    }
 
     public boolean isReflex() {
         return reflex;

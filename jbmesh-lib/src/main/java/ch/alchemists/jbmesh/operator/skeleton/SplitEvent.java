@@ -63,7 +63,7 @@ class SplitEvent extends SkeletonEvent {
      */
     private static float canHit(MovingNode reflexNode, MovingNode edgeStart, float distanceSign, float time) {
         // Check if edge collapses before split occurs. If edge grows (invalid edgeCollapseTime = NaN), this will evaluate to false.
-        if(time >= edgeStart.edgeCollapseTime)
+        if(time >= edgeStart.getEdgeCollapseTime())
             return INVALID_TIME;
 
         // This check is not reliable because there could be another event that prevents the collapse of neighboring edges.

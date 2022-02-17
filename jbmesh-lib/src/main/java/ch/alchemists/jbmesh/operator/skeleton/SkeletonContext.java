@@ -146,7 +146,7 @@ class SkeletonContext {
     //
 
     public void tryQueueEdgeEvent(MovingNode n0, MovingNode n1) {
-        float eventTime = time + n0.edgeCollapseTime;
+        float eventTime = time + n0.getEdgeCollapseTime();
 
         // In case of an invalid time (=NaN), this condition will be false.
         if(eventTime <= distance)
