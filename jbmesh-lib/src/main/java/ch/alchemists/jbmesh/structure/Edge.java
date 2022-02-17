@@ -7,32 +7,61 @@
 package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.data.Element;
+import ch.alchemists.jbmesh.util.LoopMapIterator;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * Has no specific direction.
+ * An Edge connects two Vertex elements in the BMesh data structure.
+ * It has no specific direction.<br><br>
+ * Adjacent Faces are connected through the <i>Radial Cycle</i> formed by Loops.
+ * They follow no particular order.<br><br>
+ * In a manifold mesh, an Edge has two adjacent Faces.
+ * The BMesh structure however also allows
+ * <ul>
+ * <li><code>0</code> (line mesh),</li>
+ * <li><code>1</code> (mesh border) or</li>
+ * <li><code>&gt;2</code> (T-structure)</li>
+ * </ul>
+ * adjacent Faces to form non-manifold meshes.
  */
 public class Edge extends Element {
-    // Target vertex (at end).
-    // Needed? Can we use BMLoop's reference instead?
-    // -> No, we need both vertices since an edge can exist without faces (no loop) and without adjacent edges (wireframe, single line, no nextEdge)
-    public Vertex vertex0; // Blender calls these v1 and v2
-    public Vertex vertex1;
+    // Can't use Loop's reference: We need both vertices since an edge can exist
+    // without faces (no loop) and without adjacent edges (wireframe, single line, no nextEdge)
     // TODO: Make those private? Add setter that checks for null?
+    /**
+     * The first adjacent Vertex of this Edge.<br>
+     * Edges are generally undirected.<br>
+     * Never <code>null</code> on a valid object.
+     */
+    public Vertex vertex0; // Blender calls this 'v1'
 
-    // Disk cycle at start vertex.
-    //Needed? Can we go through BMLoop instead? -> No, wireframe doesn't have loops
+    /**
+     * The second adjacent Vertex of this Edge.<br>
+     * Edges are generally undirected.<br>
+     * Never <code>null</code> on a valid object.
+     */
+    public Vertex vertex1; // Blender calls this 'v2'
+
+
+    // Disk cycle at first vertex.
+    // Needed? Can we go through BMLoop instead? -> No, wireframe doesn't have loops
     // Never null on a valid object
     private Edge v0NextEdge = this; // Blender calls this v0DiskNext (v1_disk_link.next)
     private Edge v0PrevEdge = this; // v0DiskPrev
 
-    // Disk cycle at end vertex
+    // Disk cycle at second vertex
     // Never null on a valid object
     private Edge v1NextEdge = this; // v1DiskNext
     private Edge v1PrevEdge = this; // v1DiskPrev
 
-    // Can be null
+
+    /**
+     * Any Loop along this Edge.<br>
+     * Can be <code>null</code> when there are no adjacent Faces (e.g. line meshes).
+     */
     public Loop loop;
 
 
@@ -57,7 +86,7 @@ public class Edge extends Element {
      */
     public void addLoop(Loop loop) {
         assert loop.edge == this;
-        //Objects.requireNonNull(loop);
+        Objects.requireNonNull(loop);
 
         // TODO: Is this check needed?
         // TODO: Also see if the 'exists already in cycle' check is needed in Vertex.addEdge. -> Could make manipulations more difficult.
@@ -72,7 +101,6 @@ public class Edge extends Element {
         }
 
         // Insert loop at end of linked list
-        // Throws NPE if loop is null
         loop.radialSetBetween(this.loop.prevEdgeLoop, this.loop);
     }
 
@@ -290,6 +318,31 @@ public class Edge extends Element {
             throw new IllegalArgumentException("Edge is not adjacent to Vertex");
     }
 
+
+    public ArrayList<Face> getFaces() {
+        return getFaces(new ArrayList<>(2));
+    }
+
+    public <C extends Collection<Face>> C getFaces(C collection) {
+        for(Loop loop : loops())
+            collection.add(loop.face);
+        return collection;
+    }
+
+    public Iterable<Face> faces() {
+        return () -> new LoopMapIterator<>(new EdgeLoopIterator(loop), loop -> loop.face);
+    }
+
+
+    public ArrayList<Loop> getLoops() {
+        return getLoops(new ArrayList<>(2));
+    }
+
+    public <C extends Collection<Loop>> C getLoops(C collection) {
+        for(Loop loop : loops())
+            collection.add(loop);
+        return collection;
+    }
 
     public Iterable<Loop> loops() {
         return () -> new EdgeLoopIterator(loop);

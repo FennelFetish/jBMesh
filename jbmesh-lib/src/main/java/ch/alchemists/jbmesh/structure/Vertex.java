@@ -9,8 +9,15 @@ package ch.alchemists.jbmesh.structure;
 import ch.alchemists.jbmesh.data.Element;
 import java.util.Iterator;
 
+/**
+ * Vertex defines a point inside the BMesh data structure.<br>
+ * It is this element that has a position attribute.
+ */
 public class Vertex extends Element {
-    // Can be null
+    /**
+     * Any adjacent Edge.<br>
+     * Can be <code>null</code> when there are no adjacent Edges (e.g. point meshes).
+     */
     public Edge edge;
 
 
@@ -141,20 +148,7 @@ public class Vertex extends Element {
 
 
 
-    public Iterable<Face> faces() {
+    /*public Iterable<Face> faces() {
         return VertexFaceIterator::new;
-    }
-
-    private static class VertexFaceIterator implements Iterator<Face> {
-        @Override
-        public boolean hasNext() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-
-        @Override
-        public Face next() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-    }
+    }*/
 }

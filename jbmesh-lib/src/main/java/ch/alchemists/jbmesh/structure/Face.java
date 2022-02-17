@@ -7,13 +7,21 @@
 package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.data.Element;
+import ch.alchemists.jbmesh.util.LoopMapIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * A Face spans at least 3 vertices to form a facet in the BMesh data structure.<br>
+ * Its winding order is defined by the order of its Loops.
+ */
 public class Face extends Element {
-    // Never null on a valid object
+    /**
+     * Any Loop of this Face.<br>
+     * Never <code>null</code> on a valid object.
+     */
     public Loop loop;
 
 
@@ -74,50 +82,40 @@ public class Face extends Element {
 
 
     public ArrayList<Vertex> getVertices() {
-        return (ArrayList<Vertex>) getVertices(new ArrayList<>(4));
+        return getVertices(new ArrayList<>(4));
     }
 
-    public Collection<Vertex> getVertices(Collection<Vertex> collection) {
+    public <C extends Collection<Vertex>> C getVertices(C collection) {
         for(Loop loop : loops())
             collection.add(loop.vertex);
         return collection;
     }
 
     public Iterable<Vertex> vertices() {
-        return () -> new FaceElementIterator<>(loop) {
-            @Override
-            public Vertex next() {
-                return it.next().vertex;
-            }
-        };
+        return () -> new LoopMapIterator<>(new FaceLoopIterator(loop), loop -> loop.vertex);
     }
 
 
     public ArrayList<Edge> getEdges() {
-        return (ArrayList<Edge>) getEdges(new ArrayList<>(4));
+        return getEdges(new ArrayList<>(4));
     }
 
-    public Collection<Edge> getEdges(Collection<Edge> collection) {
+    public <C extends Collection<Edge>> C getEdges(C collection) {
         for(Loop loop : loops())
             collection.add(loop.edge);
         return collection;
     }
 
     public Iterable<Edge> edges() {
-        return () -> new FaceElementIterator<>(loop) {
-            @Override
-            public Edge next() {
-                return it.next().edge;
-            }
-        };
+        return () -> new LoopMapIterator<>(new FaceLoopIterator(loop), loop -> loop.edge);
     }
 
 
     public ArrayList<Loop> getLoops() {
-        return (ArrayList<Loop>) getLoops(new ArrayList<>(4));
+        return getLoops(new ArrayList<>(4));
     }
 
-    public Collection<Loop> getLoops(Collection<Loop> collection) {
+    public <C extends Collection<Loop>> C getLoops(C collection) {
         Loop current = loop;
         do {
             collection.add(current);
@@ -129,6 +127,21 @@ public class Face extends Element {
 
     public Iterable<Loop> loops() {
         return () -> new FaceLoopIterator(loop);
+    }
+
+    /**
+     * Searches for the Loop between the given vertices in this Face.
+     * @param from The Loop's source vertex.
+     * @param to The Loop's next vertex.
+     * @return The Loop between the given vertices, or null if not found.
+     */
+    public Loop getLoop(Vertex from, Vertex to) {
+        for(Loop loop : loops()) {
+            if(loop.vertex == from && loop.nextFaceLoop.vertex == to)
+                return loop;
+        }
+
+        return null;
     }
 
 
@@ -153,20 +166,6 @@ public class Face extends Element {
             Loop loop = currentLoop;
             currentLoop = currentLoop.nextFaceLoop;
             return loop;
-        }
-    }
-
-
-    private static abstract class FaceElementIterator<E extends Element> implements Iterator<E> {
-        protected final FaceLoopIterator it;
-
-        public FaceElementIterator(Loop loop) {
-            it = new FaceLoopIterator(loop);
-        }
-
-        @Override
-        public final boolean hasNext() {
-            return it.hasNext();
         }
     }
 }

@@ -8,28 +8,67 @@ package ch.alchemists.jbmesh.structure;
 
 import ch.alchemists.jbmesh.data.Element;
 
+/**
+ * Loops are elements of the BMesh data structure and can be regarded as fragments of a Face.<br>
+ * They are located along the Edges of a Face and form a circular
+ * linked list which defines the Face's winding order.<br>
+ * Loops can store vertex attributes that are different for each Face.
+ */
 public class Loop extends Element {
-    // Never null on a valid object
+    /**
+     * The associated Face.<br>
+     * Never <code>null</code> on a valid object.
+     */
     public Face face;
 
-    // Never null on a valid object
+    /**
+     * The associated Edge.<br>
+     * Never <code>null</code> on a valid object.
+     */
     public Edge edge;
 
     // Reference is needed for properly defining winding order.
     // Can't rely on BMEdge's reference, since BMEdge has no specifc direction.
-    // Never null on a valid object
-    public Vertex vertex; // source
-    // Can also store in this loop whether the vertex was merged/remapped during conversion
+    // Can also store in this loop whether the vertex was merged/remapped during conversion?
+    /**
+     * Source Vertex.<br>
+     * Never <code>null</code> on a valid object.
+     */
+    public Vertex vertex;
 
-    // Loop Cycle: Loop around face (iterate to list vertices of a face)
-    // Never null on a valid object
-    public Loop nextFaceLoop; // Blender calls this next
-    public Loop prevFaceLoop; // prev
 
-    // Radial Cycle: Loop around edge (iterate to list faces on an edge)
-    // Never null on a valid object
-    public Loop nextEdgeLoop = this; // Blender calls this radialNext
-    public Loop prevEdgeLoop = this; // radialPrev
+    /**
+     * The next Loop in the <i>Loop Cycle</i> around the associated Face.
+     * Never <code>null</code> on a valid object.<br><br>
+     * These references form a circular linked list of the Face's Loops.
+     * This defines the winding order of the Face.
+     */
+    public Loop nextFaceLoop; // Blender calls this 'next'
+
+    /**
+     * The previous Loop in the <i>Loop Cycle</i> around the associated Face.
+     * Never <code>null</code> on a valid object.<br><br>
+     * These references form a circular linked list of the Face's Loops.
+     * This defines the winding order of the Face.
+     */
+    public Loop prevFaceLoop; // Blender calls this 'prev'
+
+
+    /**
+     * The next Loop in the <i>Radial Cycle</i> around the associated Edge.
+     * Never <code>null</code> on a valid object.<br><br>
+     * These references form a circular linked list of the edge's loops.
+     * No sorting takes place.<br>The <i>Radial Cycle</i> is <b>unordered</b>.
+     */
+    public Loop nextEdgeLoop = this; // Blender calls this 'radialNext'
+
+    /**
+     * The previous Loop in the <i>Radial Cycle</i> around the associated Edge.
+     * Never <code>null</code> on a valid object.<br><br>
+     * These references form a circular linked list of the edge's loops.
+     * No sorting takes place.<br>The <i>Radial Cycle</i> is <b>unordered</b>.
+     */
+    public Loop prevEdgeLoop = this; // Blender calls this 'radialPrev'
 
 
     Loop() {}
